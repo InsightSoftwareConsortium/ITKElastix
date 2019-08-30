@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(Elastix)
 
-set(Elastix_LIBRARIES Elastix)
-
 include(FetchContent)
 
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
