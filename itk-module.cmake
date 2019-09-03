@@ -14,7 +14,9 @@ file(READ "${MY_CURRENT_DIR}/README.rst" DOCUMENTATION)
 itk_module(Elastix
   DEPENDS
     ITKCommon
-    ITKStatistics
+    ITKIOImageBase
+    ITKImageGrid
+    ITKSmoothing
   COMPILE_DEPENDS
     ITKImageSources
   TEST_DEPENDS
