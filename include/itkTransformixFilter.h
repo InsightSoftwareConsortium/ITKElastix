@@ -44,6 +44,8 @@
 /**
  * \class TransformixFilter
  * \brief ITK Filter interface to the Transformix library.
+ *
+ * \ingroup Elastix
  */
 
 namespace itk
