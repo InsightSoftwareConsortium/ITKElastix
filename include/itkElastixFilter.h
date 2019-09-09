@@ -164,6 +164,14 @@ public:
   const ParameterObjectType *
   GetTransformParameterObject() const;
 
+  /* Standard filter indexed input / output methods */
+
+  /** Get the fixed image */
+  const FixedImageType *
+  GetInput() const;
+  const DataObject *
+  GetInput(DataObjectPointerArraySizeType index) const;
+
   /** Set/Get/Remove initial transform parameter filename. */
   itkSetMacro(InitialTransformParameterFileName, std::string);
   itkGetMacro(InitialTransformParameterFileName, std::string);
@@ -238,11 +246,11 @@ private:
 
   /** IsInputOfType. */
   bool
-  IsInputOfType(const DataObjectIdentifierType & InputOfType, DataObjectIdentifierType inputName);
+  IsInputOfType(const DataObjectIdentifierType & InputOfType, DataObjectIdentifierType inputName) const;
 
   /** GetNumberOfInputsOfType */
   unsigned int
-  GetNumberOfInputsOfType(const DataObjectIdentifierType & intputType);
+  GetNumberOfInputsOfType(const DataObjectIdentifierType & intputType) const;
 
   /** RemoveInputsOfType. */
   void

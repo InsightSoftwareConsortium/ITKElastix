@@ -408,7 +408,7 @@ TransformixFilter< TMovingImage >
 template< typename TMovingImage >
 const typename TransformixFilter< TMovingImage >::ParameterObjectType *
 TransformixFilter< TMovingImage >
-::GetTransformParameterObject( void ) const
+::GetTransformParameterObject() const
 {
   return dynamic_cast< const ParameterObjectType * >( this->GetInput( "TransformParameterObject" ) );
 }
@@ -419,7 +419,6 @@ typename TransformixFilter< TMovingImage >::OutputDeformationFieldType *
 TransformixFilter< TMovingImage >
 ::GetOutputDeformationField()
 {
-
   return itkDynamicCastInDebugMode< OutputDeformationFieldType * >(
     this->itk::ProcessObject::GetOutput( "ResultDeformationField" ) );
 }

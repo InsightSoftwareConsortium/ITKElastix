@@ -101,13 +101,13 @@ ElastixFilter< TFixedImage, TMovingImage >
   {
     if( this->IsInputOfType( "FixedImage", inputNames[ i ] ) )
     {
-      fixedImageContainer->push_back( this->GetInput( inputNames[ i ] ) );
+      fixedImageContainer->push_back( this->ProcessObject::GetInput( inputNames[ i ] ) );
       continue;
     }
 
     if( this->IsInputOfType( "MovingImage", inputNames[ i ] ) )
     {
-      movingImageContainer->push_back( this->GetInput( inputNames[ i ] ) );
+      movingImageContainer->push_back( this->ProcessObject::GetInput( inputNames[ i ] ) );
       continue;
     }
 
@@ -118,7 +118,7 @@ ElastixFilter< TFixedImage, TMovingImage >
         fixedMaskContainer = DataObjectContainerType::New();
       }
 
-      fixedMaskContainer->push_back( this->GetInput( inputNames[ i ] ) );
+      fixedMaskContainer->push_back( this->ProcessObject::GetInput( inputNames[ i ] ) );
       continue;
     }
 
@@ -129,12 +129,12 @@ ElastixFilter< TFixedImage, TMovingImage >
         movingMaskContainer = DataObjectContainerType::New();
       }
 
-      movingMaskContainer->push_back( this->GetInput( inputNames[ i ] ) );
+      movingMaskContainer->push_back( this->ProcessObject::GetInput( inputNames[ i ] ) );
     }
   }
 
   // Set ParameterMap
-  ParameterObjectPointer parameterObject    = itkDynamicCastInDebugMode< elastix::ParameterObject * >( this->GetInput( "ParameterObject" ) );
+  ParameterObjectPointer parameterObject    = itkDynamicCastInDebugMode< elastix::ParameterObject * >( this->ProcessObject::GetInput( "ParameterObject" ) );
   ParameterMapVectorType parameterMapVector = parameterObject->GetParameterMap();
 
   if( parameterMapVector.size() == 0 )
@@ -373,7 +373,7 @@ void
 ElastixFilter< TFixedImage, TMovingImage >
 ::AddFixedImage( TFixedImage * fixedImage )
 {
-  if( this->GetInput( "FixedImage" ) == ITK_NULLPTR )
+  if( this->ProcessObject::GetInput( "FixedImage" ) == ITK_NULLPTR )
   {
     this->SetFixedImage( fixedImage );
   }
@@ -394,7 +394,7 @@ ElastixFilter< TFixedImage, TMovingImage >
     itkExceptionMacro( "Please provide an index when more than one fixed images are available." );
   }
 
-  return itkDynamicCastInDebugMode< const TFixedImage * >( this->GetInput( "FixedImage" ) );
+  return itkDynamicCastInDebugMode< const TFixedImage * >( this->ProcessObject::GetInput( "FixedImage" ) );
 }
 
 
@@ -448,7 +448,7 @@ void
 ElastixFilter< TFixedImage, TMovingImage >
 ::AddMovingImage( TMovingImage * movingImage )
 {
-  if( this->GetInput( "MovingImage" ) == ITK_NULLPTR )
+  if( this->ProcessObject::GetInput( "MovingImage" ) == ITK_NULLPTR )
   {
     this->SetMovingImage( movingImage );
   }
@@ -469,7 +469,7 @@ ElastixFilter< TFixedImage, TMovingImage >
     itkExceptionMacro( "Please provide an index when more than one fixed images are available." );
   }
 
-  return itkDynamicCastInDebugMode< const TMovingImage * >( this->GetInput( "MovingImage" ) );
+  return itkDynamicCastInDebugMode< const TMovingImage * >( this->ProcessObject::GetInput( "MovingImage" ) );
 }
 
 
@@ -653,6 +653,33 @@ ElastixFilter< TFixedImage, TMovingImage >
 
 
 template< typename TFixedImage, typename TMovingImage >
+const typename ElastixFilter< TFixedImage, TMovingImage >::FixedImageType *
+ElastixFilter< TFixedImage, TMovingImage >
+::GetInput() const
+{
+  return this->GetFixedImage();
+}
+
+
+template< typename TFixedImage, typename TMovingImage >
+const DataObject *
+ElastixFilter< TFixedImage, TMovingImage >
+::GetInput(DataObjectPointerArraySizeType index) const
+{
+  switch(index)
+  {
+  case 0:
+    return this->GetFixedImage();
+  case 1:
+    return this->GetMovingImage();
+  case 2:
+    return this->GetParameterObject();
+  default:
+    return this->ProcessObject::GetInput(index);
+  }
+}
+
+template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
 ::SetLogFileName( const std::string logFileName )
@@ -684,7 +711,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 bool
 ElastixFilter< TFixedImage, TMovingImage >
-::IsInputOfType( const DataObjectIdentifierType & inputType, DataObjectIdentifierType inputName )
+::IsInputOfType( const DataObjectIdentifierType & inputType, DataObjectIdentifierType inputName ) const
 {
   return std::strncmp( inputType.c_str(), inputName.c_str(), std::min( inputType.size(), inputName.size() ) ) == 0;
 }
@@ -693,7 +720,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 unsigned int
 ElastixFilter< TFixedImage, TMovingImage >
-::GetNumberOfInputsOfType( const DataObjectIdentifierType & inputType )
+::GetNumberOfInputsOfType( const DataObjectIdentifierType & inputType ) const
 {
   unsigned int  n          = 0;
   NameArrayType inputNames = this->GetInputNames();
