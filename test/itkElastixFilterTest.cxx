@@ -67,14 +67,12 @@ int itkElastixFilterTest( int argc, char * argv[] )
   const char * movingImageFileName = argv[2];
   const char * resultImageFileName = argv[3];
 
-  constexpr unsigned int Dimension = 2;
+  constexpr unsigned int Dimension = 3;
   using PixelType = float;
   using ImageType = itk::Image< PixelType, Dimension >;
 
   using FilterType = itk::ElastixFilter< ImageType, ImageType >;
   FilterType::Pointer filter = FilterType::New();
-
-  EXERCISE_BASIC_OBJECT_METHODS( filter, ElastixFilter, ImageSource );
 
   using ReaderType = itk::ImageFileReader< ImageType >;
   ReaderType::Pointer fixedImageReader = ReaderType::New();
@@ -88,6 +86,10 @@ int itkElastixFilterTest( int argc, char * argv[] )
   filter->AddObserver( itk::ProgressEvent(), showProgress );
   filter->SetFixedImage( fixedImageReader->GetOutput() );
   filter->SetMovingImage( movingImageReader->GetOutput() );
+
+  filter->Update();
+
+  EXERCISE_BASIC_OBJECT_METHODS( filter, ElastixFilter, ImageSource );
 
   using TransformixFilterType = itk::TransformixFilter< ImageType >;
   TransformixFilterType::Pointer transformixFilter = TransformixFilterType::New();

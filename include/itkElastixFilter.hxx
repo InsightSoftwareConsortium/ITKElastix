@@ -46,7 +46,7 @@ namespace itk
 
 template< typename TFixedImage, typename TMovingImage >
 ElastixFilter< TFixedImage, TMovingImage >
-::ElastixFilter( void )
+::ElastixFilter()
 {
   this->SetPrimaryInputName( "FixedImage" );
   this->SetPrimaryOutputName( "ResultImage" );
@@ -84,7 +84,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
-::GenerateData( void )
+::GenerateData()
 {
   // Force compiler to instantiate the image dimensions, otherwise we may get
   //   Undefined symbols for architecture x86_64:
@@ -330,7 +330,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 typename ElastixFilter< TFixedImage, TMovingImage >::ParameterObjectType *
 ElastixFilter< TFixedImage, TMovingImage >
-::GetParameterObject( void )
+::GetParameterObject()
 {
   return itkDynamicCastInDebugMode< ParameterObjectType * >( itk::ProcessObject::GetInput( "ParameterObject" ) );
 }
@@ -342,7 +342,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 const typename ElastixFilter< TFixedImage, TMovingImage >::ParameterObjectType *
 ElastixFilter< TFixedImage, TMovingImage >
-::GetParameterObject( void ) const
+::GetParameterObject() const
 {
   return itkDynamicCastInDebugMode< const ParameterObjectType * >( itk::ProcessObject::GetInput( "ParameterObject" ) );
 }
@@ -354,7 +354,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 typename ElastixFilter< TFixedImage, TMovingImage >::ParameterObjectType *
 ElastixFilter< TFixedImage, TMovingImage >
-::GetTransformParameterObject( void )
+::GetTransformParameterObject()
 {
   if( this->HasOutput( "TransformParameterObject") )
   {
@@ -371,7 +371,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 const typename ElastixFilter< TFixedImage, TMovingImage >::ParameterObjectType *
 ElastixFilter< TFixedImage, TMovingImage >
-::GetTransformParameterObject( void ) const
+::GetTransformParameterObject() const
 {
   if( this->HasOutput( "TransformParameterObject") )
   {
@@ -422,7 +422,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 typename ElastixFilter< TFixedImage, TMovingImage >::FixedImageConstPointer
 ElastixFilter< TFixedImage, TMovingImage >
-::GetFixedImage( void ) const
+::GetFixedImage() const
 {
   if( this->GetNumberOfInputsOfType( "FixedImage" ) > 1 )
   {
@@ -470,7 +470,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 unsigned int
 ElastixFilter< TFixedImage, TMovingImage >
-::GetNumberOfFixedImages( void ) const
+::GetNumberOfFixedImages() const
 {
   return this->GetNumberOfInputsOfType( "FixedImage" );
 }
@@ -517,7 +517,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 typename ElastixFilter< TFixedImage, TMovingImage >::MovingImageConstPointer
 ElastixFilter< TFixedImage, TMovingImage >
-::GetMovingImage( void ) const
+::GetMovingImage() const
 {
   if( this->GetNumberOfInputsOfType( "MovingImage" ) > 1 )
   {
@@ -565,7 +565,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 unsigned int
 ElastixFilter< TFixedImage, TMovingImage >
-::GetNumberOfMovingImages( void ) const
+::GetNumberOfMovingImages() const
 {
   return this->GetNumberOfInputsOfType( "MovingImage" );
 }
@@ -605,7 +605,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 typename ElastixFilter< TFixedImage, TMovingImage >::FixedMaskConstPointer
 ElastixFilter< TFixedImage, TMovingImage >
-::GetFixedMask( void ) const
+::GetFixedMask() const
 {
   return itkDynamicCastInDebugMode< const FixedMaskType * >( this->GetInput( "FixedMask" ) );
 }
@@ -648,7 +648,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
-::RemoveFixedMask( void )
+::RemoveFixedMask()
 {
   this->RemoveInputsOfType( "FixedMask" );
 } // end RemoveFixedMask()
@@ -661,7 +661,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 unsigned int
 ElastixFilter< TFixedImage, TMovingImage >
-::GetNumberOfFixedMasks( void ) const
+::GetNumberOfFixedMasks() const
 {
   return this->GetNumberOfInputsOfType( "FixedMask" );
 }
@@ -701,9 +701,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 typename ElastixFilter< TFixedImage, TMovingImage >::MovingMaskConstPointer
 ElastixFilter< TFixedImage, TMovingImage >
-::GetMovingMask( void ) const
+::GetMovingMask() const
 {
-
   return itkDynamicCastInDebugMode< const MovingMaskType * >( this->GetInput( "MovingMask" ) );
 }
 
@@ -745,7 +744,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
-::RemoveMovingMask( void )
+::RemoveMovingMask()
 {
   this->RemoveInputsOfType( "MovingMask" );
 } // end RemoveMovingMask()
@@ -758,7 +757,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 unsigned int
 ElastixFilter< TFixedImage, TMovingImage >
-::GetNumberOfMovingMasks( void ) const
+::GetNumberOfMovingMasks() const
 {
   return this->GetNumberOfInputsOfType( "MovingMask" );
 }
@@ -785,7 +784,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
-::RemoveLogFileName( void )
+::RemoveLogFileName()
 {
   this->m_LogFileName = "";
   this->LogToFileOff();

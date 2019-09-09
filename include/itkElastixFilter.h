@@ -65,7 +65,7 @@ public:
   itkNewMacro(Self);
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(Self, itk::ImageSource);
+  itkTypeMacro(ElastixFilter, ImageSource);
 
   /** Typedefs. */
   typedef elastix::ElastixMain                      ElastixMainType;
@@ -111,11 +111,11 @@ public:
   virtual void
   AddFixedImage(TFixedImage * fixedImage);
   FixedImageConstPointer
-  GetFixedImage(void) const;
+  GetFixedImage() const;
   FixedImageConstPointer
   GetFixedImage(const unsigned int index) const;
   unsigned int
-  GetNumberOfFixedImages(void) const;
+  GetNumberOfFixedImages() const;
 
   /** Set/Add/Get/NumberOf moving images. */
   virtual void
@@ -123,11 +123,11 @@ public:
   virtual void
   AddMovingImage(TMovingImage * movingImage);
   MovingImageConstPointer
-  GetMovingImage(void) const;
+  GetMovingImage() const;
   MovingImageConstPointer
   GetMovingImage(const unsigned int index) const;
   unsigned int
-  GetNumberOfMovingImages(void) const;
+  GetNumberOfMovingImages() const;
 
   /** Set/Add/Get/Remove/NumberOf fixed masks. */
   virtual void
@@ -135,13 +135,13 @@ public:
   virtual void
   SetFixedMask(FixedMaskType * fixedMask);
   FixedMaskConstPointer
-  GetFixedMask(void) const;
+  GetFixedMask() const;
   FixedMaskConstPointer
   GetFixedMask(const unsigned int index) const;
   void
-  RemoveFixedMask(void);
+  RemoveFixedMask();
   unsigned int
-  GetNumberOfFixedMasks(void) const;
+  GetNumberOfFixedMasks() const;
 
   /** Set/Add/Get/Remove/NumberOf moving masks. */
   virtual void
@@ -153,29 +153,29 @@ public:
   MovingMaskConstPointer
   GetMovingMask(const unsigned int index) const;
   virtual void
-  RemoveMovingMask(void);
+  RemoveMovingMask();
   unsigned int
-  GetNumberOfMovingMasks(void) const;
+  GetNumberOfMovingMasks() const;
 
   /** Set/Get parameter object.*/
   virtual void
   SetParameterObject(ParameterObjectType * parameterObject);
   ParameterObjectType *
-  GetParameterObject(void);
+  GetParameterObject();
   const ParameterObjectType *
-  GetParameterObject(void) const;
+  GetParameterObject() const;
 
   /** Get transform parameter object.*/
   ParameterObjectType *
-  GetTransformParameterObject(void);
+  GetTransformParameterObject();
   const ParameterObjectType *
-  GetTransformParameterObject(void) const;
+  GetTransformParameterObject() const;
 
   /** Set/Get/Remove initial transform parameter filename. */
   itkSetMacro(InitialTransformParameterFileName, std::string);
   itkGetMacro(InitialTransformParameterFileName, std::string);
   virtual void
-  RemoveInitialTransformParameterFileName(void)
+  RemoveInitialTransformParameterFileName()
   {
     this->SetInitialTransformParameterFileName("");
   }
@@ -184,7 +184,7 @@ public:
   itkSetMacro(FixedPointSetFileName, std::string);
   itkGetMacro(FixedPointSetFileName, std::string);
   void
-  RemoveFixedPointSetFileName(void)
+  RemoveFixedPointSetFileName()
   {
     this->SetFixedPointSetFileName("");
   }
@@ -193,7 +193,7 @@ public:
   itkSetMacro(MovingPointSetFileName, std::string);
   itkGetMacro(MovingPointSetFileName, std::string);
   void
-  RemoveMovingPointSetFileName(void)
+  RemoveMovingPointSetFileName()
   {
     this->SetMovingPointSetFileName("");
   }
@@ -213,7 +213,7 @@ public:
 
   itkGetConstMacro(LogFileName, std::string);
   void
-  RemoveLogFileName(void);
+  RemoveLogFileName();
 
   /** Log to std::cout on/off. */
   itkSetMacro(LogToConsole, bool);
@@ -229,10 +229,10 @@ public:
   itkGetMacro(NumberOfThreads, int);
 
 protected:
-  ElastixFilter(void);
+  ElastixFilter();
 
   virtual void
-  GenerateData(void) override;
+  GenerateData() override;
 
 private:
   ElastixFilter(const Self &); // purposely not implemented
