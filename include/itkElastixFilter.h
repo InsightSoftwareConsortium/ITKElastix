@@ -56,10 +56,10 @@ class ITK_TEMPLATE_EXPORT ElastixFilter : public itk::ImageSource<TFixedImage>
 {
 public:
   /** Standard ITK typedefs. */
-  typedef ElastixFilter                 Self;
-  typedef itk::ImageSource<TFixedImage> Superclass;
-  typedef itk::SmartPointer<Self>       Pointer;
-  typedef itk::SmartPointer<const Self> ConstPointer;
+  typedef ElastixFilter            Self;
+  typedef ImageSource<TFixedImage> Superclass;
+  typedef SmartPointer<Self>       Pointer;
+  typedef SmartPointer<const Self> ConstPointer;
 
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
@@ -76,12 +76,12 @@ public:
   typedef ArgumentMapType::value_type               ArgumentMapEntryType;
   typedef ElastixMainType::FlatDirectionCosinesType FlatDirectionCosinesType;
 
-  typedef ElastixMainType::DataObjectContainerType           DataObjectContainerType;
-  typedef ElastixMainType::DataObjectContainerPointer        DataObjectContainerPointer;
-  typedef DataObjectContainerType::Iterator                  DataObjectContainerIterator;
-  typedef itk::ProcessObject::DataObjectIdentifierType       DataObjectIdentifierType;
-  typedef itk::ProcessObject::DataObjectPointerArraySizeType DataObjectPointerArraySizeType;
-  typedef itk::ProcessObject::NameArray                      NameArrayType;
+  typedef ElastixMainType::DataObjectContainerType      DataObjectContainerType;
+  typedef ElastixMainType::DataObjectContainerPointer   DataObjectContainerPointer;
+  typedef DataObjectContainerType::Iterator             DataObjectContainerIterator;
+  typedef ProcessObject::DataObjectIdentifierType       DataObjectIdentifierType;
+  typedef ProcessObject::DataObjectPointerArraySizeType DataObjectPointerArraySizeType;
+  typedef ProcessObject::NameArray                      NameArrayType;
 
   typedef elastix::ParameterObject                      ParameterObjectType;
   typedef ParameterObjectType::ParameterMapType         ParameterMapType;
@@ -90,29 +90,23 @@ public:
   typedef ParameterObjectType::Pointer                  ParameterObjectPointer;
   typedef ParameterObjectType::ConstPointer             ParameterObjectConstPointer;
 
-  typedef typename TFixedImage::Pointer       FixedImagePointer;
-  typedef typename TFixedImage::ConstPointer  FixedImageConstPointer;
-  typedef typename TMovingImage::Pointer      MovingImagePointer;
-  typedef typename TMovingImage::ConstPointer MovingImageConstPointer;
+  static constexpr unsigned int FixedImageDimension = TFixedImage::ImageDimension;
+  static constexpr unsigned int MovingImageDimension = TMovingImage::ImageDimension;
 
-  itkStaticConstMacro(FixedImageDimension, unsigned int, TFixedImage::ImageDimension);
-  itkStaticConstMacro(MovingImageDimension, unsigned int, TMovingImage::ImageDimension);
+  typedef Image<unsigned char, FixedImageDimension>  FixedMaskType;
+  typedef Image<unsigned char, MovingImageDimension> MovingMaskType;
 
-  typedef itk::Image<unsigned char, FixedImageDimension>  FixedMaskType;
-  typedef typename FixedMaskType::Pointer                 FixedMaskPointer;
-  typedef typename FixedMaskType::Pointer                 FixedMaskConstPointer;
-  typedef itk::Image<unsigned char, MovingImageDimension> MovingMaskType;
-  typedef typename MovingMaskType::Pointer                MovingMaskPointer;
-  typedef typename MovingMaskType::Pointer                MovingMaskConstPointer;
+  using FixedImageType = TFixedImage;
+  using MovingImageType = TMovingImage;
 
   /** Set/Add/Get/NumberOf fixed images. */
   virtual void
   SetFixedImage(TFixedImage * fixedImage);
   virtual void
   AddFixedImage(TFixedImage * fixedImage);
-  FixedImageConstPointer
+  const FixedImageType *
   GetFixedImage() const;
-  FixedImageConstPointer
+  const FixedImageType *
   GetFixedImage(const unsigned int index) const;
   unsigned int
   GetNumberOfFixedImages() const;
@@ -122,9 +116,9 @@ public:
   SetMovingImage(TMovingImage * movingImages);
   virtual void
   AddMovingImage(TMovingImage * movingImage);
-  MovingImageConstPointer
+  const MovingImageType *
   GetMovingImage() const;
-  MovingImageConstPointer
+  const MovingImageType *
   GetMovingImage(const unsigned int index) const;
   unsigned int
   GetNumberOfMovingImages() const;
@@ -134,9 +128,9 @@ public:
   AddFixedMask(FixedMaskType * fixedMask);
   virtual void
   SetFixedMask(FixedMaskType * fixedMask);
-  FixedMaskConstPointer
+  const FixedMaskType *
   GetFixedMask() const;
-  FixedMaskConstPointer
+  const FixedMaskType *
   GetFixedMask(const unsigned int index) const;
   void
   RemoveFixedMask();
@@ -148,9 +142,9 @@ public:
   SetMovingMask(MovingMaskType * movingMask);
   virtual void
   AddMovingMask(MovingMaskType * movingMask);
-  MovingMaskConstPointer
+  const MovingMaskType *
   GetMovingMask(void) const;
-  MovingMaskConstPointer
+  const MovingMaskType *
   GetMovingMask(const unsigned int index) const;
   virtual void
   RemoveMovingMask();
@@ -231,7 +225,7 @@ public:
 protected:
   ElastixFilter();
 
-  virtual void
+  void
   GenerateData() override;
 
 private:

@@ -381,9 +381,6 @@ ElastixFilter< TFixedImage, TMovingImage >
   itkExceptionMacro( "TransformParameterObject has not been generated. Update() ElastixFilter before requesting this output.")
 }
 
-/**
- * ********************* SetFixedImage *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 void
@@ -392,12 +389,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 {
   this->RemoveInputsOfType( "FixedImage" );
   this->SetInput( "FixedImage", fixedImage );
-} // end SetFixedImage()
+}
 
-
-/**
- * ********************* AddFixedImage *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 void
@@ -412,15 +405,11 @@ ElastixFilter< TFixedImage, TMovingImage >
   {
     this->SetInput( this->MakeUniqueName( "FixedImage" ), fixedImage );
   }
-} // end AddFixedImage()
+}
 
-
-/**
- * ********************* GetFixedImage *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
-typename ElastixFilter< TFixedImage, TMovingImage >::FixedImageConstPointer
+const typename ElastixFilter< TFixedImage, TMovingImage >::FixedImageType *
 ElastixFilter< TFixedImage, TMovingImage >
 ::GetFixedImage() const
 {
@@ -433,12 +422,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* GetFixedImage *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
-typename ElastixFilter< TFixedImage, TMovingImage >::FixedImageConstPointer
+const typename ElastixFilter< TFixedImage, TMovingImage >::FixedImageType *
 ElastixFilter< TFixedImage, TMovingImage >
 ::GetFixedImage( const unsigned int index ) const
 {
@@ -507,15 +492,11 @@ ElastixFilter< TFixedImage, TMovingImage >
   {
     this->SetInput( this->MakeUniqueName( "MovingImage" ), movingImage );
   }
-} // end AddMovingImage()
+}
 
-
-/**
- * ********************* GetMovingImage *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
-typename ElastixFilter< TFixedImage, TMovingImage >::MovingImageConstPointer
+const typename ElastixFilter< TFixedImage, TMovingImage >::MovingImageType *
 ElastixFilter< TFixedImage, TMovingImage >
 ::GetMovingImage() const
 {
@@ -528,12 +509,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* GetMovingImage *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
-typename ElastixFilter< TFixedImage, TMovingImage >::MovingImageConstPointer
+const typename ElastixFilter< TFixedImage, TMovingImage >::MovingImageType *
 ElastixFilter< TFixedImage, TMovingImage >
 ::GetMovingImage( const unsigned int index ) const
 {
@@ -558,10 +535,6 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* GetNumberOfMovingImages *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 unsigned int
 ElastixFilter< TFixedImage, TMovingImage >
@@ -571,10 +544,6 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* SetFixedMask *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
@@ -582,12 +551,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 {
   this->RemoveInputsOfType( "FixedMask" );
   this->SetInput( "FixedMask", fixedMask );
-} // end SetFixedMask()
+}
 
-
-/**
- * ********************* AddFixedMask *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 void
@@ -595,15 +560,11 @@ ElastixFilter< TFixedImage, TMovingImage >
 ::AddFixedMask( FixedMaskType * fixedMask )
 {
   this->SetInput( this->MakeUniqueName( "FixedMask" ), fixedMask );
-} // end AddFixedMask()
+}
 
-
-/**
- * ********************* GetFixedMask *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
-typename ElastixFilter< TFixedImage, TMovingImage >::FixedMaskConstPointer
+const typename ElastixFilter< TFixedImage, TMovingImage >::FixedMaskType *
 ElastixFilter< TFixedImage, TMovingImage >
 ::GetFixedMask() const
 {
@@ -611,12 +572,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* GetFixedMask *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
-typename ElastixFilter< TFixedImage, TMovingImage >::FixedMaskConstPointer
+const typename ElastixFilter< TFixedImage, TMovingImage >::FixedMaskType *
 ElastixFilter< TFixedImage, TMovingImage >
 ::GetFixedMask( const unsigned int index ) const
 {
@@ -641,22 +598,14 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* RemoveFixedMask *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
 ::RemoveFixedMask()
 {
   this->RemoveInputsOfType( "FixedMask" );
-} // end RemoveFixedMask()
+}
 
-
-/**
- * ********************* GetNumberOfFixedMasks *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 unsigned int
@@ -667,10 +616,6 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* SetMovingMask *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
@@ -678,12 +623,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 {
   this->RemoveInputsOfType( "MovingMask" );
   this->AddMovingMask( movingMask );
-} // end SetMovingMask()
+}
 
-
-/**
- * ********************* AddMovingMask *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 void
@@ -691,15 +632,11 @@ ElastixFilter< TFixedImage, TMovingImage >
 ::AddMovingMask( MovingMaskType * movingMask )
 {
   this->SetInput( this->MakeUniqueName( "MovingMask" ), movingMask );
-} // end AddMovingMask()
+}
 
-
-/**
- * ********************* GetMovingMask *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
-typename ElastixFilter< TFixedImage, TMovingImage >::MovingMaskConstPointer
+const typename ElastixFilter< TFixedImage, TMovingImage >::MovingMaskType *
 ElastixFilter< TFixedImage, TMovingImage >
 ::GetMovingMask() const
 {
@@ -707,12 +644,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* GetMovingMask *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
-typename ElastixFilter< TFixedImage, TMovingImage >::MovingMaskConstPointer
+const typename ElastixFilter< TFixedImage, TMovingImage >::MovingMaskType *
 ElastixFilter< TFixedImage, TMovingImage >
 ::GetMovingMask( const unsigned int index ) const
 {
@@ -737,22 +670,14 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* RemoveMovingMask *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
 ::RemoveMovingMask()
 {
   this->RemoveInputsOfType( "MovingMask" );
-} // end RemoveMovingMask()
+}
 
-
-/**
- * ********************* GetNumberOfMovingMasks *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 unsigned int
@@ -763,10 +688,6 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* SetLogFileName ****************************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
@@ -774,12 +695,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 {
   this->m_LogFileName = logFileName;
   this->LogToFileOn();
-} // end SetLogFileName()
+}
 
-
-/**
- * ********************* RemoveLogFileName ****************************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 void
@@ -788,12 +705,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 {
   this->m_LogFileName = "";
   this->LogToFileOff();
-} // end RemoveLogFileName()
+}
 
-
-/**
- * ********************* MakeUniqueName *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 std::string
@@ -801,12 +714,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 ::MakeUniqueName( const DataObjectIdentifierType & inputName )
 {
   return inputName + std::to_string( this->m_InputUID++ );
-} // end MakeUniqueName()
+}
 
-
-/**
- * ********************* IsInputOfType *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 bool
@@ -814,12 +723,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 ::IsInputOfType( const DataObjectIdentifierType & inputType, DataObjectIdentifierType inputName )
 {
   return std::strncmp( inputType.c_str(), inputName.c_str(), std::min( inputType.size(), inputName.size() ) ) == 0;
-} // end IsInputOfType()
+}
 
-
-/**
- * ********************* IsInputOfType *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 unsigned int
@@ -837,12 +742,8 @@ ElastixFilter< TFixedImage, TMovingImage >
   }
 
   return n;
-} // end IsInputOfType()
+}
 
-
-/**
- * ********************* RemoveInputsOfType *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 void
@@ -857,7 +758,7 @@ ElastixFilter< TFixedImage, TMovingImage >
       this->RemoveInput( inputNames[ i ] );
     }
   }
-} // end RemoveInputsOfType()
+}
 
 
 } // namespace itk
