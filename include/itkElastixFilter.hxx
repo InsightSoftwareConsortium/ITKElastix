@@ -40,10 +40,6 @@
 namespace itk
 {
 
-/**
- * ********************* Constructor *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 ElastixFilter< TFixedImage, TMovingImage >
 ::ElastixFilter()
@@ -74,12 +70,8 @@ ElastixFilter< TFixedImage, TMovingImage >
   this->SetParameterObject( defaultParameterObject );
 
   this->m_InputUID = 0;
-} // end Constructor
+}
 
-
-/**
- * ********************* GenerateData *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 void
@@ -310,10 +302,6 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* SetParameterObject *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
@@ -323,10 +311,6 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* GetParameterObject *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 typename ElastixFilter< TFixedImage, TMovingImage >::ParameterObjectType *
 ElastixFilter< TFixedImage, TMovingImage >
@@ -335,9 +319,6 @@ ElastixFilter< TFixedImage, TMovingImage >
   return itkDynamicCastInDebugMode< ParameterObjectType * >( itk::ProcessObject::GetInput( "ParameterObject" ) );
 }
 
-/**
- * ********************* GetParameterObject *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 const typename ElastixFilter< TFixedImage, TMovingImage >::ParameterObjectType *
@@ -347,9 +328,6 @@ ElastixFilter< TFixedImage, TMovingImage >
   return itkDynamicCastInDebugMode< const ParameterObjectType * >( itk::ProcessObject::GetInput( "ParameterObject" ) );
 }
 
-/**
- * ********************* GetTransformParameterObject *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 typename ElastixFilter< TFixedImage, TMovingImage >::ParameterObjectType *
@@ -364,9 +342,6 @@ ElastixFilter< TFixedImage, TMovingImage >
   itkExceptionMacro( "TransformParameterObject has not been generated. Update() ElastixFilter before requesting this output.")
 }
 
-/**
- * ********************* GetTransformParameterObject *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 const typename ElastixFilter< TFixedImage, TMovingImage >::ParameterObjectType *
@@ -448,10 +423,6 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* GetNumberOfFixedImages *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 unsigned int
 ElastixFilter< TFixedImage, TMovingImage >
@@ -461,10 +432,6 @@ ElastixFilter< TFixedImage, TMovingImage >
 }
 
 
-/**
- * ********************* SetMovingImage *********************
- */
-
 template< typename TFixedImage, typename TMovingImage >
 void
 ElastixFilter< TFixedImage, TMovingImage >
@@ -472,12 +439,8 @@ ElastixFilter< TFixedImage, TMovingImage >
 {
   this->RemoveInputsOfType( "MovingImage" );
   this->SetInput( "MovingImage", movingImage );
-} // end SetMovingImage()
+}
 
-
-/**
- * ********************* AddMovingImage *********************
- */
 
 template< typename TFixedImage, typename TMovingImage >
 void
@@ -763,4 +726,4 @@ ElastixFilter< TFixedImage, TMovingImage >
 
 } // namespace itk
 
-#endif // itkElastixFilter_hxx
+#endif
