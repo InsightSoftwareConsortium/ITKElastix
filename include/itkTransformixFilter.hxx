@@ -36,17 +36,14 @@
 #define itkTransformixFilter_hxx
 
 #include "itkTransformixFilter.h"
+#include "elxPixelType.h"
 
 namespace itk
 {
 
-/**
- * ********************* Constructor *********************
- */
-
 template< typename TMovingImage >
 TransformixFilter< TMovingImage >
-::TransformixFilter( void )
+::TransformixFilter()
 {
   this->SetPrimaryInputName( "TransformParameterObject" );
   this->SetPrimaryOutputName( "ResultImage" );
@@ -63,17 +60,13 @@ TransformixFilter< TMovingImage >
   this->m_LogToConsole = false;
   this->m_LogToFile    = false;
 
-} // end Constructor
+}
 
-
-/**
- * ********************* GenerateData *********************
- */
 
 template< typename TMovingImage >
 void
 TransformixFilter< TMovingImage >
-::GenerateData( void )
+::GenerateData()
 {
   // Force compiler to instantiate the image dimension, otherwise we may get
   //   Undefined symbols for architecture x86_64:
@@ -245,12 +238,8 @@ TransformixFilter< TMovingImage >
   {
     this->GraftOutput( "ResultDeformationField", resultDeformationFieldContainer->ElementAt( 0 ) );
   }
-} // end GenerateData()
+}
 
-
-/**
- * ********************* MakeOutput *********************
- */
 
 template< typename TMovingImage >
 typename TransformixFilter< TMovingImage >::DataObjectPointer
@@ -270,17 +259,13 @@ TransformixFilter< TMovingImage >
     // Primary and all other outputs default to ResultImage.
     return TMovingImage::New().GetPointer();
   }
-} // end MakeOutput()
+}
 
-
-/**
- * ********************* GenerateOutputInformation *********************
- */
 
 template< typename TMovingImage >
 void
 TransformixFilter< TMovingImage >
-::GenerateOutputInformation( void )
+::GenerateOutputInformation()
 {
 
   // Get pointers to the input and output
@@ -372,12 +357,8 @@ TransformixFilter< TMovingImage >
 
   outputPtr->SetNumberOfComponentsPerPixel( 1 );
   outputOutputDeformationFieldPtr->SetNumberOfComponentsPerPixel( TMovingImage::ImageDimension );
-} // end GenerateOutputInformation()
+}
 
-
-/**
- * ********************* SetMovingImage *********************
- */
 
 template< typename TMovingImage >
 void
@@ -385,38 +366,26 @@ TransformixFilter< TMovingImage >
 ::SetMovingImage( TMovingImage * inputImage )
 {
   this->SetInput( "InputImage", inputImage );
-} // end SetMovingImage()
+}
 
-
-/**
- * ********************* GetMovingImage *********************
- */
 
 template< typename TMovingImage >
-typename TransformixFilter< TMovingImage >::InputImageConstPointer
+const typename TransformixFilter< TMovingImage >::InputImageType *
 TransformixFilter< TMovingImage >
-::GetMovingImage( void )
+::GetMovingImage()
 {
   return itkDynamicCastInDebugMode< TMovingImage * >( this->GetInput( "InputImage" ) );
-} // end GetMovingImage()
+}
 
-
-/**
- * ********************* RemoveMovingImage *********************
- */
 
 template< typename TMovingImage >
 void
 TransformixFilter< TMovingImage >
-::RemoveMovingImage( void )
+::RemoveMovingImage()
 {
   this->RemoveInput( "InputImage" );
-} // end RemoveMovingImage
+}
 
-
-/**
- * ********************* SetTransformParameterObject *********************
- */
 
 template< typename TMovingImage >
 void
@@ -424,12 +393,8 @@ TransformixFilter< TMovingImage >
 ::SetTransformParameterObject( ParameterObjectPointer parameterObject )
 {
   this->SetInput( "TransformParameterObject", parameterObject );
-} // end SetTransformParameterObject()
+}
 
-
-/**
- * ********************* GetTransformParameterObject *********************
- */
 
 template< typename TMovingImage >
 typename TransformixFilter< TMovingImage >::ParameterObjectType *
@@ -437,12 +402,8 @@ TransformixFilter< TMovingImage >
 ::GetTransformParameterObject( void )
 {
   return dynamic_cast< ParameterObjectType * >( this->GetInput( "TransformParameterObject" ) );
-} // end GetTransformParameterObject()
+}
 
-
-/**
- * ********************* GetTransformParameterObject *********************
- */
 
 template< typename TMovingImage >
 const typename TransformixFilter< TMovingImage >::ParameterObjectType *
@@ -450,12 +411,9 @@ TransformixFilter< TMovingImage >
 ::GetTransformParameterObject( void ) const
 {
   return dynamic_cast< const ParameterObjectType * >( this->GetInput( "TransformParameterObject" ) );
-} // end GetTransformParameterObject()
+}
 
 
-/**
-*  ********************* GetOutputDeformationField *********************
-*/
 template< typename TMovingImage >
 typename TransformixFilter< TMovingImage >::OutputDeformationFieldType *
 TransformixFilter< TMovingImage >
@@ -464,30 +422,23 @@ TransformixFilter< TMovingImage >
 
   return itkDynamicCastInDebugMode< OutputDeformationFieldType * >(
     this->itk::ProcessObject::GetOutput( "ResultDeformationField" ) );
-} // end GetOutputDeformationField
+}
 
-/**
-*  ********************* GetOutputDeformationField *********************
-*/
+
 template< typename TMovingImage >
 const typename TransformixFilter< TMovingImage >::OutputDeformationFieldType *
 TransformixFilter< TMovingImage >
 ::GetOutputDeformationField() const
 {
-
   return itkDynamicCastInDebugMode< const OutputDeformationFieldType * >(
     this->itk::ProcessObject::GetOutput( "ResultDeformationField" ) );
-} // end GetOutputDeformationField
+}
 
-
-/**
-* ********************* IsEmpty ****************************
-*/
 
 template< typename TMovingImage >
 bool
 TransformixFilter< TMovingImage >
-::IsEmpty( const InputImagePointer inputImage )
+::IsEmpty( const InputImageType * inputImage )
 {
   if(!inputImage) {
     return true;
@@ -495,12 +446,8 @@ TransformixFilter< TMovingImage >
 
   typename TMovingImage::RegionType region = inputImage->GetLargestPossibleRegion();
   return region.GetNumberOfPixels() == 0;
-} // end IsEmpty()
+}
 
-
-/**
- * ********************* SetLogFileName ****************************
- */
 
 template< typename TMovingImage >
 void
@@ -509,12 +456,8 @@ TransformixFilter< TMovingImage >
 {
   this->m_LogFileName = logFileName;
   this->LogToFileOn();
-} // end SetLogFileName()
+}
 
-
-/**
- * ********************* RemoveLogFileName ****************************
- */
 
 template< typename TMovingImage >
 void
@@ -523,9 +466,9 @@ TransformixFilter< TMovingImage >
 {
   this->m_LogFileName = "";
   this->LogToFileOff();
-} // end RemoveLogFileName()
+}
 
 
 } // namespace itk
 
-#endif // itkTransformixFilter_hxx
+#endif

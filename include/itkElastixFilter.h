@@ -39,7 +39,6 @@
 
 #include "elxElastixMain.h"
 #include "elxParameterObject.h"
-#include "elxPixelType.h"
 
 /**
  * \class ElastixFilter

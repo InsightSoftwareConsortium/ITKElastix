@@ -39,7 +39,6 @@
 
 #include "elxTransformixMain.h"
 #include "elxParameterObject.h"
-#include "elxPixelType.h"
 
 /**
  * \class TransformixFilter
@@ -56,16 +55,16 @@ class ITK_TEMPLATE_EXPORT TransformixFilter : public ImageSource<TMovingImage>
 {
 public:
   /** Standard ITK typedefs. */
-  typedef TransformixFilter              Self;
-  typedef itk::ImageSource<TMovingImage> Superclass;
-  typedef itk::SmartPointer<Self>        Pointer;
-  typedef itk::SmartPointer<const Self>  ConstPointer;
+  typedef TransformixFilter         Self;
+  typedef ImageSource<TMovingImage> Superclass;
+  typedef SmartPointer<Self>        Pointer;
+  typedef SmartPointer<const Self>  ConstPointer;
 
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(Self, itk::ImageSource);
+  itkTypeMacro(TransformixFilter, ImageSource);
 
   /** Typedefs. */
   typedef elastix::TransformixMain             TransformixMainType;
@@ -89,15 +88,13 @@ public:
   typedef typename itk::Image<itk::Vector<float, TMovingImage::ImageDimension>, TMovingImage::ImageDimension>
     OutputDeformationFieldType;
 
-  typedef typename TMovingImage::Pointer      InputImagePointer;
-  typedef typename TMovingImage::ConstPointer InputImageConstPointer;
-
+  using InputImageType = TMovingImage;
   itkStaticConstMacro(MovingImageDimension, unsigned int, TMovingImage::ImageDimension);
 
   /** Set/Get/Add moving image. */
   virtual void
   SetMovingImage(TMovingImage * inputImage);
-  InputImageConstPointer
+  const InputImageType *
   GetMovingImage(void);
   virtual void
   RemoveMovingImage(void);
@@ -131,16 +128,16 @@ public:
   SetTransformParameterObject(ParameterObjectPointer transformParameterObject);
 
   ParameterObjectType *
-  GetTransformParameterObject(void);
+  GetTransformParameterObject();
 
   const ParameterObjectType *
-  GetTransformParameterObject(void) const;
+  GetTransformParameterObject() const;
 
   OutputDeformationFieldType *
-  GetOutputDeformationField(void);
+  GetOutputDeformationField();
 
   const OutputDeformationFieldType *
-  GetOutputDeformationField(void) const;
+  GetOutputDeformationField() const;
 
   /** Set/Get/Remove output directory. */
   itkSetMacro(OutputDirectory, std::string);
@@ -169,20 +166,20 @@ public:
   itkGetConstMacro(LogToFile, bool);
   itkBooleanMacro(LogToFile);
 
-  /** To support outputs of different types (i.e. ResultImage and ResultDeformationField)
-   * MakeOutput from itk::ImageSource< TOutputImage > needs to be overridden.
-   */
-  virtual DataObjectPointer
-  MakeOutput(const DataObjectIdentifierType & key) override;
-
-  /** The ResultImage and ResultDeformationField get their image properties from the TransformParameterObject. */
-  virtual void
-  GenerateOutputInformation(void) override;
-
 protected:
   TransformixFilter(void);
 
-  virtual void
+  /** To support outputs of different types (i.e. ResultImage and ResultDeformationField)
+   * MakeOutput from itk::ImageSource< TOutputImage > needs to be overridden.
+   */
+  DataObjectPointer
+  MakeOutput(const DataObjectIdentifierType & key) override;
+
+  /** The ResultImage and ResultDeformationField get their image properties from the TransformParameterObject. */
+  void
+  GenerateOutputInformation(void) override;
+
+  void
   GenerateData(void) override;
 
 private:
@@ -192,14 +189,14 @@ private:
 
   /** IsEmpty. */
   static bool
-  IsEmpty(const InputImagePointer inputImage);
+  IsEmpty(const InputImageType * inputImage);
 
   /** Tell the compiler we want all definitions of Get/Set/Remove
    *  from ProcessObject and TransformixFilter.
    */
-  using itk::ProcessObject::SetInput;
-  using itk::ProcessObject::GetInput;
-  using itk::ProcessObject::RemoveInput;
+  using ProcessObject::SetInput;
+  using ProcessObject::GetInput;
+  using ProcessObject::RemoveInput;
 
   std::string m_FixedPointSetFileName;
   bool        m_ComputeSpatialJacobian;
@@ -219,4 +216,4 @@ private:
 #  include "itkTransformixFilter.hxx"
 #endif
 
-#endif // elxTransformixFilter_h
+#endif

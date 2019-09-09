@@ -35,6 +35,7 @@
 #ifndef itkElastixFilter_hxx
 #define itkElastixFilter_hxx
 
+#include "elxPixelType.h"
 #include "itkElastixFilter.h"
 
 namespace itk
