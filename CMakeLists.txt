@@ -18,6 +18,8 @@ endif()
 
 include(FetchContent)
 
+set(_itk_build_testing ${BUILD_TESTING})
+set(BUILD_TESTING OFF)
 set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
 set(elastix_GIT_TAG "e642fdc515859b88bdbae17bd80d9166f1b95493")
 FetchContent_Declare(
@@ -45,6 +47,7 @@ if(ELASTIX_USE_OPENMP)
     add_definitions(-DELASTIX_USE_OPENMP)
   endif()
 endif()
+set(BUILD_TESTING ${_itk_build_testing})
 
 if(NOT ITK_SOURCE_DIR)
   find_package(ITK REQUIRED)
