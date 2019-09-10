@@ -21,7 +21,7 @@ include(FetchContent)
 set(_itk_build_testing ${BUILD_TESTING})
 set(BUILD_TESTING OFF)
 set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-set(elastix_GIT_TAG "e642fdc515859b88bdbae17bd80d9166f1b95493")
+set(elastix_GIT_TAG "e4486d83d53c2836a1d442eb3fa83c3be8de293f")
 FetchContent_Declare(
   elastix_fetch
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
