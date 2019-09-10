@@ -12,7 +12,7 @@ endif()
 include(FetchContent)
 
 set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-set(elastix_GIT_TAG "79a3d99c1a7fc9c715f4c5930150f31233bbe340")
+set(elastix_GIT_TAG "e642fdc515859b88bdbae17bd80d9166f1b95493")
 FetchContent_Declare(
   elastix_fetch
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
