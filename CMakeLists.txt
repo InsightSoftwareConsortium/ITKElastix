@@ -11,8 +11,8 @@ endif()
 
 include(FetchContent)
 
-set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_TAG "87758acc566e050973c4a92a062ba4e8feaf128d")
+set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
+set(elastix_GIT_TAG "b72c606937b4d61ac9384ca57951ec379bd7db91")
 FetchContent_Declare(
   elastix_fetch
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
