@@ -413,7 +413,7 @@ ElastixRegistrationMethod< TFixedImage, TMovingImage >
     {
       if( index == n )
       {
-        return itkDynamicCastInDebugMode< const TFixedImage * >( this->GetInput( inputNames[ i ] ) );
+        return itkDynamicCastInDebugMode< const TFixedImage * >( this->ProcessObject::GetInput( inputNames[ i ] ) );
       }
 
       n++;
@@ -488,7 +488,7 @@ ElastixRegistrationMethod< TFixedImage, TMovingImage >
     {
       if( index == n )
       {
-        return itkDynamicCastInDebugMode< const TMovingImage * >( this->GetInput( inputNames[ i ] ) );
+        return itkDynamicCastInDebugMode< const TMovingImage * >( this->ProcessObject::GetInput( inputNames[ i ] ) );
       }
 
       n++;
@@ -534,7 +534,7 @@ const typename ElastixRegistrationMethod< TFixedImage, TMovingImage >::FixedMask
 ElastixRegistrationMethod< TFixedImage, TMovingImage >
 ::GetFixedMask() const
 {
-  return itkDynamicCastInDebugMode< const FixedMaskType * >( this->GetInput( "FixedMask" ) );
+  return itkDynamicCastInDebugMode< const FixedMaskType * >( this->ProcessObject::GetInput( "FixedMask" ) );
 }
 
 
@@ -551,7 +551,7 @@ ElastixRegistrationMethod< TFixedImage, TMovingImage >
     {
       if( index == n )
       {
-        return itkDynamicCastInDebugMode< const FixedMaskType * >( this->GetInput( inputNames[ i ] ) );
+        return itkDynamicCastInDebugMode< const FixedMaskType * >( this->ProcessObject::GetInput( inputNames[ i ] ) );
       }
 
       n++;
@@ -606,7 +606,7 @@ const typename ElastixRegistrationMethod< TFixedImage, TMovingImage >::MovingMas
 ElastixRegistrationMethod< TFixedImage, TMovingImage >
 ::GetMovingMask() const
 {
-  return itkDynamicCastInDebugMode< const MovingMaskType * >( this->GetInput( "MovingMask" ) );
+  return itkDynamicCastInDebugMode< const MovingMaskType * >( this->ProcessObject::GetInput( "MovingMask" ) );
 }
 
 
@@ -623,7 +623,7 @@ ElastixRegistrationMethod< TFixedImage, TMovingImage >
     {
       if( index == n )
       {
-        return itkDynamicCastInDebugMode< const MovingMaskType * >( this->GetInput( inputNames[ i ] ) );
+        return itkDynamicCastInDebugMode< const MovingMaskType * >( this->ProcessObject::GetInput( inputNames[ i ] ) );
       }
 
       n++;
