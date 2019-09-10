@@ -72,8 +72,8 @@ public:
   typedef TransformixMainType::ArgumentMapType ArgumentMapType;
   typedef ArgumentMapType::value_type          ArgumentMapEntryType;
 
-  typedef itk::ProcessObject::DataObjectPointer           DataObjectPointer;
-  typedef itk::ProcessObject::DataObjectIdentifierType    DataObjectIdentifierType;
+  typedef ProcessObject::DataObjectPointer                DataObjectPointer;
+  typedef ProcessObject::DataObjectIdentifierType         DataObjectIdentifierType;
   typedef TransformixMainType::DataObjectContainerType    DataObjectContainerType;
   typedef TransformixMainType::DataObjectContainerPointer DataObjectContainerPointer;
 
@@ -167,7 +167,7 @@ public:
   itkBooleanMacro(LogToFile);
 
 protected:
-  TransformixFilter(void);
+  TransformixFilter();
 
   /** To support outputs of different types (i.e. ResultImage and ResultDeformationField)
    * MakeOutput from itk::ImageSource< TOutputImage > needs to be overridden.
@@ -177,10 +177,10 @@ protected:
 
   /** The ResultImage and ResultDeformationField get their image properties from the TransformParameterObject. */
   void
-  GenerateOutputInformation(void) override;
+  GenerateOutputInformation() override;
 
   void
-  GenerateData(void) override;
+  GenerateData() override;
 
 private:
   TransformixFilter(const Self &); // purposely not implemented

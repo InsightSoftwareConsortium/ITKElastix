@@ -16,7 +16,7 @@
  *
  *=========================================================================*/
 
-#include "itkElastixFilter.h"
+#include "itkElastixRegistrationMethod.h"
 #include "itkTransformixFilter.h"
 
 #include "itkCommand.h"
@@ -53,7 +53,7 @@ public:
 };
 }
 
-int itkElastixFilterTest( int argc, char * argv[] )
+int itkElastixRegistrationMethodTest( int argc, char * argv[] )
 {
   if( argc < 4 )
     {
@@ -71,7 +71,7 @@ int itkElastixFilterTest( int argc, char * argv[] )
   using PixelType = float;
   using ImageType = itk::Image< PixelType, Dimension >;
 
-  using FilterType = itk::ElastixFilter< ImageType, ImageType >;
+  using FilterType = itk::ElastixRegistrationMethod< ImageType, ImageType >;
   FilterType::Pointer filter = FilterType::New();
 
   using ReaderType = itk::ImageFileReader< ImageType >;
@@ -88,18 +88,18 @@ int itkElastixFilterTest( int argc, char * argv[] )
   filter->SetMovingImage( movingImageReader->GetOutput() );
 
   TEST_EXPECT_EQUAL( filter->GetInput(), filter->GetInput(0) );
-  std::cout << "FixedImage: ";
+  std::cout << "\nFixedImage: ";
   filter->GetInput(0)->Print(std::cout);
-  std::cout << "MovingImage: ";
+  std::cout << "\nMovingImage: ";
   filter->GetInput(1)->Print(std::cout);
-  std::cout << "ParameterObject: ";
+  std::cout << "\nParameterObject: ";
   filter->GetInput(2)->Print(std::cout);
   TEST_EXPECT_EQUAL( filter->GetNumberOfIndexedInputs(), 3 );
 
   filter->Update();
 
 
-  EXERCISE_BASIC_OBJECT_METHODS( filter, ElastixFilter, ImageSource );
+  EXERCISE_BASIC_OBJECT_METHODS( filter, ElastixRegistrationMethod, ImageSource );
 
   using TransformixFilterType = itk::TransformixFilter< ImageType >;
   TransformixFilterType::Pointer transformixFilter = TransformixFilterType::New();

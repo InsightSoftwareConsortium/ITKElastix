@@ -32,8 +32,8 @@
  *  limitations under the License.
  *
  *=========================================================================*/
-#ifndef itkElastixFilter_h
-#define itkElastixFilter_h
+#ifndef itkElastixRegistrationMethod_h
+#define itkElastixRegistrationMethod_h
 
 #include "itkImageSource.h"
 
@@ -41,7 +41,7 @@
 #include "elxParameterObject.h"
 
 /**
- * \class ElastixFilter
+ * \class ElastixRegistrationMethod
  * \brief ITK Filter interface to the Elastix registration library.
  *
  * \ingroup Elastix
@@ -51,20 +51,20 @@ namespace itk
 {
 
 template <typename TFixedImage, typename TMovingImage>
-class ITK_TEMPLATE_EXPORT ElastixFilter : public itk::ImageSource<TFixedImage>
+class ITK_TEMPLATE_EXPORT ElastixRegistrationMethod : public itk::ImageSource<TFixedImage>
 {
 public:
   /** Standard ITK typedefs. */
-  typedef ElastixFilter            Self;
-  typedef ImageSource<TFixedImage> Superclass;
-  typedef SmartPointer<Self>       Pointer;
-  typedef SmartPointer<const Self> ConstPointer;
+  typedef ElastixRegistrationMethod Self;
+  typedef ImageSource<TFixedImage>  Superclass;
+  typedef SmartPointer<Self>        Pointer;
+  typedef SmartPointer<const Self>  ConstPointer;
 
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(ElastixFilter, ImageSource);
+  itkTypeMacro(ElastixRegistrationMethod, ImageSource);
 
   /** Typedefs. */
   typedef elastix::ElastixMain                      ElastixMainType;
@@ -233,13 +233,13 @@ public:
   itkGetMacro(NumberOfThreads, int);
 
 protected:
-  ElastixFilter();
+  ElastixRegistrationMethod();
 
   void
   GenerateData() override;
 
 private:
-  ElastixFilter(const Self &); // purposely not implemented
+  ElastixRegistrationMethod(const Self &); // purposely not implemented
   void
   operator=(const Self &); // purposely not implemented
 
@@ -277,7 +277,7 @@ private:
 } // namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkElastixFilter.hxx"
+#include "itkElastixRegistrationMethod.hxx"
 #endif
 
-#endif // itkElastixFilter_h
+#endif // itkElastixRegistrationMethod_h
