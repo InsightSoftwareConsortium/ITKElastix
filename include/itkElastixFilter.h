@@ -165,12 +165,15 @@ public:
   GetTransformParameterObject() const;
 
   /* Standard filter indexed input / output methods */
-
-  /** Get the fixed image */
+  void
+  SetInput(FixedImageType * fixedImage);
   const FixedImageType *
   GetInput() const;
+  void
+  SetInput(DataObjectPointerArraySizeType index, DataObject * input);
   const DataObject *
   GetInput(DataObjectPointerArraySizeType index) const;
+
 
   /** Set/Get/Remove initial transform parameter filename. */
   itkSetMacro(InitialTransformParameterFileName, std::string);

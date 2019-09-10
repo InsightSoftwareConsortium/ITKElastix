@@ -48,9 +48,11 @@ ElastixFilter< TFixedImage, TMovingImage >
   this->SetPrimaryInputName( "FixedImage" );
   this->SetPrimaryOutputName( "ResultImage" );
 
-  this->AddRequiredInputName( "FixedImage" );
-  this->AddRequiredInputName( "MovingImage" );
-  this->AddRequiredInputName( "ParameterObject" );
+  this->AddRequiredInputName( "FixedImage", 0 );
+  this->AddRequiredInputName( "MovingImage", 1 );
+  this->AddRequiredInputName( "ParameterObject", 2 );
+  this->SetNumberOfRequiredInputs( 3 );
+
 
   this->m_InitialTransformParameterFileName = "";
   this->m_FixedPointSetFileName             = "";
@@ -308,7 +310,7 @@ void
 ElastixFilter< TFixedImage, TMovingImage >
 ::SetParameterObject( ParameterObjectType * parameterObject )
 {
-  this->SetInput( "ParameterObject", parameterObject );
+  this->ProcessObject::SetInput( "ParameterObject", parameterObject );
 }
 
 
@@ -364,7 +366,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 ::SetFixedImage( TFixedImage * fixedImage )
 {
   this->RemoveInputsOfType( "FixedImage" );
-  this->SetInput( "FixedImage", fixedImage );
+  this->ProcessObject::SetInput( "FixedImage", fixedImage );
 }
 
 
@@ -379,7 +381,7 @@ ElastixFilter< TFixedImage, TMovingImage >
   }
   else
   {
-    this->SetInput( this->MakeUniqueName( "FixedImage" ), fixedImage );
+    this->ProcessObject::SetInput( this->MakeUniqueName( "FixedImage" ), fixedImage );
   }
 }
 
@@ -439,7 +441,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 ::SetMovingImage( TMovingImage * movingImage )
 {
   this->RemoveInputsOfType( "MovingImage" );
-  this->SetInput( "MovingImage", movingImage );
+  this->ProcessObject::SetInput( "MovingImage", movingImage );
 }
 
 
@@ -454,7 +456,7 @@ ElastixFilter< TFixedImage, TMovingImage >
   }
   else
   {
-    this->SetInput( this->MakeUniqueName( "MovingImage" ), movingImage );
+    this->ProcessObject::SetInput( this->MakeUniqueName( "MovingImage" ), movingImage );
   }
 }
 
@@ -514,7 +516,7 @@ ElastixFilter< TFixedImage, TMovingImage >
 ::SetFixedMask( FixedMaskType * fixedMask )
 {
   this->RemoveInputsOfType( "FixedMask" );
-  this->SetInput( "FixedMask", fixedMask );
+  this->ProcessObject::SetInput( "FixedMask", fixedMask );
 }
 
 
@@ -523,7 +525,7 @@ void
 ElastixFilter< TFixedImage, TMovingImage >
 ::AddFixedMask( FixedMaskType * fixedMask )
 {
-  this->SetInput( this->MakeUniqueName( "FixedMask" ), fixedMask );
+  this->ProcessObject::SetInput( this->MakeUniqueName( "FixedMask" ), fixedMask );
 }
 
 
@@ -595,7 +597,7 @@ void
 ElastixFilter< TFixedImage, TMovingImage >
 ::AddMovingMask( MovingMaskType * movingMask )
 {
-  this->SetInput( this->MakeUniqueName( "MovingMask" ), movingMask );
+  this->ProcessObject::SetInput( this->MakeUniqueName( "MovingMask" ), movingMask );
 }
 
 
@@ -653,6 +655,15 @@ ElastixFilter< TFixedImage, TMovingImage >
 
 
 template< typename TFixedImage, typename TMovingImage >
+void
+ElastixFilter< TFixedImage, TMovingImage >
+::SetInput(FixedImageType * fixedImage)
+{
+  this->SetFixedImage(fixedImage);
+}
+
+
+template< typename TFixedImage, typename TMovingImage >
 const typename ElastixFilter< TFixedImage, TMovingImage >::FixedImageType *
 ElastixFilter< TFixedImage, TMovingImage >
 ::GetInput() const
@@ -678,6 +689,29 @@ ElastixFilter< TFixedImage, TMovingImage >
     return this->ProcessObject::GetInput(index);
   }
 }
+
+
+template< typename TFixedImage, typename TMovingImage >
+void
+ElastixFilter< TFixedImage, TMovingImage >
+::SetInput(DataObjectPointerArraySizeType index, DataObject * input)
+{
+  switch(index)
+  {
+  case 0:
+    this->SetFixedImage( itkDynamicCastInDebugMode< TFixedImage * >( input ) );
+    break;
+  case 1:
+    this->SetMovingImage( itkDynamicCastInDebugMode< TMovingImage * >( input ) );
+    break;
+  case 2:
+    this->SetParameterObject( itkDynamicCastInDebugMode< ParameterObjectType * >( input ) );
+    break;
+  default:
+    this->ProcessObject::SetNthInput( index, input );
+  }
+}
+
 
 template< typename TFixedImage, typename TMovingImage >
 void
