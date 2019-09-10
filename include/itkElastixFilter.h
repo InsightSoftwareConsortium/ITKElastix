@@ -97,6 +97,7 @@ public:
 
   using FixedImageType = TFixedImage;
   using MovingImageType = TMovingImage;
+  using ResultImageType = FixedImageType;
 
   /** Set/Add/Get/NumberOf fixed images. */
   virtual void
@@ -173,7 +174,6 @@ public:
   SetInput(DataObjectPointerArraySizeType index, DataObject * input);
   const DataObject *
   GetInput(DataObjectPointerArraySizeType index) const;
-
 
   /** Set/Get/Remove initial transform parameter filename. */
   itkSetMacro(InitialTransformParameterFileName, std::string);

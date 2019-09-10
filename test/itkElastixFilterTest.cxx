@@ -87,7 +87,17 @@ int itkElastixFilterTest( int argc, char * argv[] )
   filter->SetFixedImage( fixedImageReader->GetOutput() );
   filter->SetMovingImage( movingImageReader->GetOutput() );
 
+  TEST_EXPECT_EQUAL( filter->GetInput(), filter->GetInput(0) );
+  std::cout << "FixedImage: ";
+  filter->GetInput(0)->Print(std::cout);
+  std::cout << "MovingImage: ";
+  filter->GetInput(1)->Print(std::cout);
+  std::cout << "ParameterObject: ";
+  filter->GetInput(2)->Print(std::cout);
+  TEST_EXPECT_EQUAL( filter->GetNumberOfIndexedInputs(), 3 );
+
   filter->Update();
+
 
   EXERCISE_BASIC_OBJECT_METHODS( filter, ElastixFilter, ImageSource );
 
