@@ -48,11 +48,8 @@ ElastixRegistrationMethod< TFixedImage, TMovingImage >
   this->SetPrimaryInputName( "FixedImage" );
   this->SetPrimaryOutputName( "ResultImage" );
 
-  this->AddRequiredInputName( "FixedImage", 0 );
   this->AddRequiredInputName( "MovingImage", 1 );
   this->AddRequiredInputName( "ParameterObject", 2 );
-  this->SetNumberOfRequiredInputs( 3 );
-
 
   this->m_InitialTransformParameterFileName = "";
   this->m_FixedPointSetFileName             = "";
