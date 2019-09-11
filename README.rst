@@ -24,26 +24,7 @@ used to solve (medical) image registration problems. The modular design of
 elastix allows the user to quickly configure, test, and compare different
 registration methods for a specific application.
 
-Installation
-------------
-
-Install cross-platform binary Python packages with::
-
-  pip install itk-elastix
-
-Usage
------
-
-To register two images, traditionally called the fixed image and the moving
-image::
-
-  import itk
-
-  fixed_image = itk.imread('path/to/fixed_image.mha')
-  moving_image = itk.imread('path/to/moving_image.mha')
-
-  registered_image = itk.elastix_registration_method(fixed_image, moving_image)
-
+.. note:: This package is a work in progress.
 
 Acknowledgements
 ----------------
