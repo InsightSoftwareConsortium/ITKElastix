@@ -39,6 +39,7 @@ image::
 
   import itk
 
+  # The fixed and moving image can be an itk.Image or a numpy.ndarray
   fixed_image = itk.imread('path/to/fixed_image.mha')
   moving_image = itk.imread('path/to/moving_image.mha')
 
