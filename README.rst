@@ -1,8 +1,8 @@
 ITKElastix
 =================================
 
-.. image:: https://dev.azure.com/InsightSoftwareConsortium/ITKModules/_apis/build/status/itkelastix?branchName=master
-    :target: https://dev.azure.com/InsightSoftwareConsortium/ITKModules/_build/latest?definitionId=8&branchName=master
+.. image:: https://dev.azure.com/ITKElastix/ITKElastix/_apis/build/status/InsightSoftwareConsortium.ITKElastix?branchName=master
+    :target: https://dev.azure.com/ITKElastix/ITKElastix/_build/latest?definitionId=1&branchName=master
     :alt:    Build Status
 
 .. image:: https://img.shields.io/pypi/v/itk-elastix.svg
