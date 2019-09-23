@@ -22,6 +22,8 @@ include(FetchContent)
 
 set(_itk_build_testing ${BUILD_TESTING})
 set(BUILD_TESTING OFF)
+set(_itk_build_shared ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS OFF)
 set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
 set(elastix_GIT_TAG "e4486d83d53c2836a1d442eb3fa83c3be8de293f")
 FetchContent_Declare(
@@ -50,6 +52,7 @@ if(ELASTIX_USE_OPENMP)
   endif()
 endif()
 set(BUILD_TESTING ${_itk_build_testing})
+set(BUILD_SHARED_LIBS ${_itk_build_shared})
 
 if(NOT ITK_SOURCE_DIR)
   find_package(ITK REQUIRED)
