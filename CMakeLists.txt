@@ -5,6 +5,7 @@ set(Elastix_LIBRARIES elastix transformix)
 set(ELASTIX_BUILD_EXECUTABLE OFF CACHE BOOL "Generate executable or library")
 # Avoid LGPL code
 set(USE_KNNGraphAlphaMutualInformationMetric OFF)
+set(USE_KNNGraphAlphaMutualInformationMetric OFF CACHE BOOL "Use KNN metric.  Requires ANN library.")
 
 if(CMAKE_COMPILER_IS_GNUCXX AND
   ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_EQUAL "4.8") OR
@@ -22,8 +23,10 @@ include(FetchContent)
 
 set(_itk_build_testing ${BUILD_TESTING})
 set(BUILD_TESTING OFF)
+set(_itk_build_shared ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS OFF)
 set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-set(elastix_GIT_TAG "e4486d83d53c2836a1d442eb3fa83c3be8de293f")
+set(elastix_GIT_TAG "b5de133fa1e787a1d6b1e0aa3de418952ea74011")
 FetchContent_Declare(
   elastix_fetch
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
@@ -50,6 +53,7 @@ if(ELASTIX_USE_OPENMP)
   endif()
 endif()
 set(BUILD_TESTING ${_itk_build_testing})
+set(BUILD_SHARED_LIBS ${_itk_build_shared})
 
 if(NOT ITK_SOURCE_DIR)
   find_package(ITK REQUIRED)
