@@ -5,6 +5,7 @@ set(Elastix_LIBRARIES elastix transformix)
 set(ELASTIX_BUILD_EXECUTABLE OFF CACHE BOOL "Generate executable or library")
 # Avoid LGPL code
 set(USE_KNNGraphAlphaMutualInformationMetric OFF)
+set(USE_KNNGraphAlphaMutualInformationMetric OFF CACHE BOOL "Use KNN metric.  Requires ANN library.")
 
 if(CMAKE_COMPILER_IS_GNUCXX AND
   ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_EQUAL "4.8") OR
