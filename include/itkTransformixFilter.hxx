@@ -390,7 +390,7 @@ TransformixFilter< TMovingImage >
 template< typename TMovingImage >
 void
 TransformixFilter< TMovingImage >
-::SetTransformParameterObject( ParameterObjectPointer parameterObject )
+::SetTransformParameterObject( ParameterObjectType * parameterObject )
 {
   this->SetInput( "TransformParameterObject", parameterObject );
 }
