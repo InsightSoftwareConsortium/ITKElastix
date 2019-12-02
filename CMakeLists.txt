@@ -3,9 +3,11 @@ project(Elastix)
 
 set(Elastix_LIBRARIES elastix transformix)
 set(ELASTIX_BUILD_EXECUTABLE OFF CACHE BOOL "Generate executable or library")
-# Avoid LGPL code
-set(USE_KNNGraphAlphaMutualInformationMetric OFF)
-set(USE_KNNGraphAlphaMutualInformationMetric OFF CACHE BOOL "Use KNN metric.  Requires ANN library.")
+# Avoid LGPL code and ANN shared library
+if(NOT DEFINED USE_KNNGraphAlphaMutualInformationMetric)
+  set(USE_KNNGraphAlphaMutualInformationMetric OFF)
+  set(USE_KNNGraphAlphaMutualInformationMetric OFF CACHE BOOL "Use KNN metric.  Requires ANN library.")
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX AND
   ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_EQUAL "4.8") OR
