@@ -89,14 +89,6 @@ int itkElastixRegistrationMethodTest( int argc, char * argv[] )
   filter->SetFixedImage( fixedImageReader->GetOutput() );
   filter->SetMovingImage( movingImageReader->GetOutput() );
 
-  //typename FilterType::ParameterObjectPointer parameterObject = filter->GetParameterObject();
-  //parameterObject->SetParameter(  "Resampler", "OpenCLResampler" );
-  //parameterObject->SetParameter(  "OpenCLResamplerUseOpenCL", "true" );
-  //parameterObject->SetParameter( "FixedImagePyramid", "OpenCLFixedGenericImagePyramid" );
-  //parameterObject->SetParameter( "OpenCLFixedGenericImagePyramidUseOpenCL", "true" );
-  //parameterObject->SetParameter( "MovingImagePyramid", "OpenCLMovingGenericImagePyramid" );
-  //parameterObject->SetParameter( "OpenCLMovingGenericImagePyramidUseOpenCL", "true" );
-
   TEST_EXPECT_EQUAL( filter->GetInput(), filter->GetInput(0) );
   std::cout << "\nFixedImage: ";
   filter->GetInput(0)->Print(std::cout);

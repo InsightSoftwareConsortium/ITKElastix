@@ -10,13 +10,10 @@
 
 # Pull dockcross manylinux images
 docker pull dockcross/manylinux-x64
-#docker pull dockcross/manylinux-x86
 
 # Generate dockcross scripts
 docker run dockcross/manylinux-x64 > /tmp/dockcross-manylinux-x64
 chmod u+x /tmp/dockcross-manylinux-x64
-#docker run dockcross/manylinux-x86 > /tmp/dockcross-manylinux-x86
-#chmod u+x /tmp/dockcross-manylinux-x86
 
 script_dir=$(cd $(dirname $0) || exit 1; pwd)
 
@@ -45,6 +42,3 @@ DOCKER_ARGS="-e ELASTIX_USE_OPENCL=1 -v $(pwd)/dist:/work/dist/ -v $(pwd)/ITKPyt
 /tmp/dockcross-manylinux-x64 \
   -a "$DOCKER_ARGS" \
   "/ITKPythonPackage/scripts/internal/manylinux-build-module-wheels.sh" "$@"
-#/tmp/dockcross-manylinux-x86 \
-#  -a "$DOCKER_ARGS" \
-# "/ITKPythonPackage/scripts/internal/manylinux-build-module-wheels.sh" "$@"
