@@ -125,7 +125,7 @@ public:
 
   /** Get/Set transform parameter object. */
   virtual void
-  SetTransformParameterObject(ParameterObjectPointer transformParameterObject);
+  SetTransformParameterObject(ParameterObjectType * transformParameterObject);
 
   ParameterObjectType *
   GetTransformParameterObject();

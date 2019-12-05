@@ -67,6 +67,15 @@ ElastixRegistrationMethod< TFixedImage, TMovingImage >
   defaultParameterObject->AddParameterMap( elastix::ParameterObject::GetDefaultParameterMap( "translation" ) );
   defaultParameterObject->AddParameterMap( elastix::ParameterObject::GetDefaultParameterMap( "affine" ) );
   defaultParameterObject->AddParameterMap( elastix::ParameterObject::GetDefaultParameterMap( "bspline" ) );
+#ifdef ELASTIX_USE_OPENCL
+  defaultParameterObject->SetParameter(  "Resampler", "OpenCLResampler" );
+  defaultParameterObject->SetParameter(  "OpenCLResamplerUseOpenCL", "true" );
+  // Requires copius amounts of GPU memory
+  //defaultParameterObject->SetParameter( "FixedImagePyramid", "OpenCLFixedGenericImagePyramid" );
+  //defaultParameterObject->SetParameter( "OpenCLFixedGenericImagePyramidUseOpenCL", "true" );
+  //defaultParameterObject->SetParameter( "MovingImagePyramid", "OpenCLMovingGenericImagePyramid" );
+  //defaultParameterObject->SetParameter( "OpenCLMovingGenericImagePyramidUseOpenCL", "true" );
+#endif
   this->SetParameterObject( defaultParameterObject );
 
   this->m_InputUID = 0;

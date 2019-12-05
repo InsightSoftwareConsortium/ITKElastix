@@ -77,10 +77,12 @@ int itkElastixRegistrationMethodTest( int argc, char * argv[] )
   using ReaderType = itk::ImageFileReader< ImageType >;
   ReaderType::Pointer fixedImageReader = ReaderType::New();
   fixedImageReader->SetFileName( fixedImageFileName );
+  fixedImageReader->Update();
 
   using ReaderType = itk::ImageFileReader< ImageType >;
   ReaderType::Pointer movingImageReader = ReaderType::New();
   movingImageReader->SetFileName( movingImageFileName );
+  movingImageReader->Update();
 
   ShowProgress::Pointer showProgress = ShowProgress::New();
   filter->AddObserver( itk::ProgressEvent(), showProgress );

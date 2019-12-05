@@ -1,0 +1,17 @@
+ITK-cp27-cp27m-manylinux1_x64
+ITK-cp27-cp27mu-manylinux1_x64
+ITK-cp35-cp35m-manylinux1_x64
+ITK-cp36-cp36m-manylinux1_x64
+ITK-cp37-cp37m-manylinux1_x64
+ITKPythonBuilds-linux.tar
+ITKPythonBuilds-linux.tar.zst
+ITKPythonPackage/
+OpenCL-ICD-Loader-build/
+OpenCL-ICD-Loader/
+dist/
+doxygen-1.8.11.linux.bin.tar.gz
+itk_elastix_opencl.egg-info/
+standalone-x64-build
+tools/
+zstd-1.2.0-linux.tar
+zstd-1.2.0-linux/

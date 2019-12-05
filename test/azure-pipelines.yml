@@ -217,3 +217,23 @@ jobs:
     inputs:
       artifactName: 'WindowsWheels'
       targetPath: './dist'
+
+
+- job: 'PackageLinuxOpenCL'
+  timeoutInMinutes: 0
+  cancelTimeoutInMinutes: 300
+  displayName: "Build Linux Python OpenCL packages"
+  pool:
+    vmImage: 'Ubuntu-16.04'
+
+  steps:
+  - script: |
+      export ITK_PACKAGE_VERSION=$(ITKPythonGitTag)
+      ./wrapping/dockcross-manylinux-download-cache.sh
+      ./wrapping/dockcross-manylinux-build-module-wheels-opencl.sh
+    displayName: 'Build Python packages'
+
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: 'LinuxWheelsOpenCL'
+      targetPath: './dist'

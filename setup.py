@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 from os import sys
+import os
 
 try:
     from skbuild import setup
@@ -11,9 +12,13 @@ except ImportError:
     print('  python -m pip install scikit-build')
     sys.exit(1)
 
+package_name = 'itk-elastix'
+if 'ELASTIX_USE_OPENCL' in os.environ:
+    package_name = 'itk-elastix-opencl'
+
 setup(
-    name='itk-elastix',
-    version='0.3.0',
+    name=package_name,
+    version='0.4.0',
     author='Insight Software Consortium',
     author_email='itk+community@discourse.itk.org',
     packages=['itk'],
