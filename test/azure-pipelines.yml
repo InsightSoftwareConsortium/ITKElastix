@@ -237,3 +237,27 @@ jobs:
     inputs:
       artifactName: 'LinuxWheelsOpenCL'
       targetPath: './dist'
+
+- job: 'PackageMacOSOpenCL'
+  timeoutInMinutes: 0
+  cancelTimeoutInMinutes: 300
+  displayName: "Build macOS Python OpenCL packages"
+  pool:
+    vmImage: 'macos-10.14'
+
+  steps:
+  - script: |
+      curl -L https://raw.githubusercontent.com/InsightSoftwareConsortium/ITKPythonPackage/master/scripts/macpython-download-cache-and-build-module-wheels.sh -O
+      chmod u+x macpython-download-cache-and-build-module-wheels.sh
+    displayName: 'Fetch build script'
+
+  - script: |
+      export ITK_PACKAGE_VERSION=$(ITKPythonGitTag)
+      export ELASTIX_USE_OPENCL=1
+      ./macpython-download-cache-and-build-module-wheels.sh
+    displayName: 'Build Python packages'
+
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: 'MacOSWheelsOpenCL'
+      targetPath: './dist'
