@@ -277,7 +277,7 @@ private:
 } // namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkElastixRegistrationMethod.hxx"
+#  include "itkElastixRegistrationMethod.hxx"
 #endif
 
 #endif // itkElastixRegistrationMethod_h
