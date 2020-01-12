@@ -36,7 +36,7 @@ set(BUILD_TESTING OFF)
 set(_itk_build_shared ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
 set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-set(elastix_GIT_TAG "f09d77a4739a4841a8efcff1273d736f999de072")
+set(elastix_GIT_TAG "c01a62e4296bdb95ce4be36dae0b098706b13cad")
 FetchContent_Declare(
   elastix_fetch
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
