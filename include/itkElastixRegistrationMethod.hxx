@@ -45,7 +45,7 @@ template <typename TFixedImage, typename TMovingImage>
 ElastixRegistrationMethod<TFixedImage, TMovingImage>::ElastixRegistrationMethod()
 {
   this->SetPrimaryInputName("FixedImage");
-  this->SetPrimaryOutputName("ResultImage");
+  this->SetNumberOfIndexedOutputs(1);
 
   this->AddRequiredInputName("MovingImage", 1);
   this->AddRequiredInputName("ParameterObject", 2);
@@ -296,7 +296,7 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GenerateData()
   if (resultImageContainer.IsNotNull() && resultImageContainer->Size() > 0 &&
       resultImageContainer->ElementAt(0).IsNotNull())
   {
-    this->GraftOutput("ResultImage", resultImageContainer->ElementAt(0));
+    this->GraftOutput(resultImageContainer->ElementAt(0));
   }
   else
   {
