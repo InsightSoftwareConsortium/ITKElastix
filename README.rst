@@ -13,6 +13,10 @@ ITKElastix
     :target: https://github.com/InsightSoftwareConsortium/ITKElastix/blob/master/LICENSE)
     :alt: License
 
+.. image:: https://zenodo.org/badge/207451937.svg
+    :target: https://zenodo.org/badge/latestdoi/207451937
+    :alt: Versioned software citation
+
 Overview
 --------
 
