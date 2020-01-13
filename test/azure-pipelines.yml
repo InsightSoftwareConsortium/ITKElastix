@@ -1,6 +1,6 @@
 variables:
-  ITKGitTag: v5.0.1
-  ITKPythonGitTag: v5.0.1
+  ITKGitTag: v5.1rc01
+  ITKPythonGitTag: v5.1rc01
   CMakeBuildType: Release
 
 trigger:
@@ -126,7 +126,7 @@ jobs:
 
   - script: |
       $(compilerInitialization)
-      ctest -j 2 -E KWStyle -V -S dashboard.cmake
+      ctest -j 2 -V -S dashboard.cmake
     displayName: 'Build and test'
 
   - script: |

@@ -18,7 +18,7 @@ if 'ELASTIX_USE_OPENCL' in os.environ:
 
 setup(
     name=package_name,
-    version='0.4.0',
+    version='0.5.0',
     author='Insight Software Consortium',
     author_email='itk+community@discourse.itk.org',
     packages=['itk'],
