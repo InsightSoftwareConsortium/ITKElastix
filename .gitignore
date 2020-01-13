@@ -15,3 +15,4 @@ standalone-x64-build
 tools/
 zstd-1.2.0-linux.tar
 zstd-1.2.0-linux/
+.ipynb_checkpoints/
