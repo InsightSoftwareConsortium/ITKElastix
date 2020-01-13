@@ -1,4 +1,5 @@
 itk-elastix
 itkwidgets
-jupyterlab
+jupyterlab==1.2.3
 imageio
+ipywidgets>=7.5.1
