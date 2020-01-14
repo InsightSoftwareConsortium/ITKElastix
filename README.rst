@@ -9,6 +9,9 @@ ITKElastix
     :target: https://pypi.python.org/pypi/itk-elastix
     :alt: PyPI Version
 
+.. image:: https://mybinder.org/badge_logo.svg
+   :target: https://mybinder.org/v2/gh/InsightSoftwareConsortium/ITKElastix/master?urlpath=lab/tree/examples%2F0_HelloRegistrationWorld.ipynb
+
 .. image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
     :target: https://github.com/InsightSoftwareConsortium/ITKElastix/blob/master/LICENSE)
     :alt: License
