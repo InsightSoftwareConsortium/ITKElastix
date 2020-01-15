@@ -9,3 +9,4 @@ itkwidgets>=0.24.2
 jupyterlab==1.2.3
 imageio
 ipywidgets>=7.5.1
+ipympl==0.4.0
