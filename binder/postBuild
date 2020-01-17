@@ -1,3 +1,6 @@
 #!/bin/bash
 
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@1.1 jupyter-matplotlib@0.4.1 jupyterlab-datawidgets itkwidgets
+# Workaround https://github.com/matplotlib/jupyter-matplotlib/issues/163
+rm /srv/conda/envs/notebook/share/jupyter/lab/extensions/jupyter-matplotlib-*
+
+jupyter labextension install @jupyter-widgets/jupyterlab-manager@1.1 jupyter-matplotlib@0.5.0 jupyterlab-datawidgets itkwidgets
