@@ -7,4 +7,5 @@ itk_python_add_test(NAME itkElastixRegistrationMethodPythonTest
     DATA{../../test/Input/CT_3D_lung_fixed.mha}
     DATA{../../test/Input/CT_3D_lung_moving.mha}
     ${ITK_TEST_OUTPUT_DIR}/itkElastixRegistrationMethodPythonTestOutput.mha
+    ${ITK_TEST_OUTPUT_DIR}/itkElastixRegistrationMethodPythonTestParameters.
     )
