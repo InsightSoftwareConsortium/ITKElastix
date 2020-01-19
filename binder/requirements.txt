@@ -6,7 +6,7 @@ itk-filtering>=5.1rc1.post1
 itk-registration>=5.1rc1.post1
 itk-segmentation>=5.1rc1.post1
 itkwidgets>=0.24.2
-jupyterlab==1.2.3
+jupyterlab==1.2.5
 imageio
 ipywidgets>=7.5.1
-ipympl==0.4.0
+ipympl>=0.4.1
