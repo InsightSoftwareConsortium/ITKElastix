@@ -20,16 +20,44 @@ import itk
 import sys
 
 if len(sys.argv) < 4:
-    print('Usage: ' + sys.argv[0] + ' <FixedImage> <MovingImage> <ResultImage>')
+    print('Usage: ' + sys.argv[0] + ' <FixedImage> <MovingImage> <ResultImage> [OutputParameterFilePrefix]')
     sys.exit(1)
 
 fixed_filename = sys.argv[1]
 moving_filename = sys.argv[2]
 result_filename = sys.argv[3]
+output_parameter_files = False
+if len(sys.argv) > 4:
+    output_parameter_files = True
+
+    prefix = sys.argv[4]
+
+    parameters = itk.ParameterObject.New()
+
+    parameter_map = parameters.GetDefaultParameterMap('translation', 2)
+    parameters.WriteParameterFile(parameter_map, prefix + "translation.default.txt")
+    parameters.AddParameterMap(parameter_map)
+    parameters.SetParameter("ResultImageFormat", "mha")
+
+    parameter_map = parameters.GetDefaultParameterMap('affine', 1)
+    parameters.WriteParameterFile(parameter_map, prefix + "affine.default.txt")
+    parameters.AddParameterMap(parameter_map)
+    parameters.RemoveParameter("WriteResultImage")
+
+    assert(parameters.GetNumberOfParameterMaps() is 2)
+
+    parameter_map = parameters.GetParameterMap(0)
+    parameters.WriteParameterFile(parameter_map, prefix + "translation.set.txt")
+    parameter_map = parameters.GetParameterMap(1)
+    parameters.WriteParameterFile(parameter_map, prefix + "affine.set.txt")
 
 fixed = itk.imread(fixed_filename, itk.F)
 moving = itk.imread(moving_filename, itk.F)
 
-result = itk.elastix_registration_method(fixed, moving)
+if output_parameter_files:
+    result = itk.elastix_registration_method(fixed, moving,
+                                             parameter_object=parameters)
+else:
+    result = itk.elastix_registration_method(fixed, moving)
 
 itk.imwrite(result, result_filename)
