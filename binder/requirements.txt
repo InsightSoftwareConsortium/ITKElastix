@@ -1,4 +1,4 @@
-itk-elastix>=0.5.0
+itk-elastix>=0.5.1
 itk>=5.1rc1.post1
 itk-core>=5.1rc1.post1
 itk-numerics>=5.1rc1.post1
