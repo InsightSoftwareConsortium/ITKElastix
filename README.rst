@@ -38,6 +38,10 @@ Install cross-platform binary Python packages with::
 
   pip install itk-elastix
 
+*Experimental* GPU-accelerated packages can be installed on Linux with::
+
+  pip install itk-elastix-opencl
+
 Usage
 -----
 
@@ -50,6 +54,10 @@ image::
   moving_image = itk.imread('path/to/moving_image.mha')
 
   registered_image = itk.elastix_registration_method(fixed_image, moving_image)
+
+Interactive examples and tutorial material can be found in the
+`examples <https://github.com/InsightSoftwareConsortium/ITKElastix/tree/master/examples>`_ directory.
+Run the examples in free cloud compute containers `on MyBinder <https://mybinder.org/v2/gh/InsightSoftwareConsortium/ITKElastix/master?urlpath=lab/tree/examples%2F0_HelloRegistrationWorld.ipynb>`_. Try out the *experimental* GPU packages `on Paperspace Gradient <https://www.paperspace.com/temmx3m64/notebook/prdfn7bsz>`_.
 
 Acknowledgements
 ----------------
