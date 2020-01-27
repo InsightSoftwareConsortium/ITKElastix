@@ -1,0 +1,55 @@
+(FixedInternalImagePixelType "float")
+(MovingInternalImagePixelType "float")
+
+// (UseDirectionCosines "true")
+
+(Registration "MultiResolutionRegistration")
+(Interpolator "BSplineInterpolator")
+(ResampleInterpolator "FinalBSplineInterpolator")
+(Resampler "DefaultResampler")
+
+(FixedImagePyramid "FixedSmoothingImagePyramid")
+(MovingImagePyramid "MovingSmoothingImagePyramid")
+
+(Optimizer "AdaptiveStochasticGradientDescent")
+// (Optimizer "RegularStepGradientDescent")
+
+(Transform "EulerTransform")
+// (Metric "AdvancedMattesMutualInformation")
+// (Metric "AdvancedNormalizedCorrelation")
+(Metric "AdvancedMeanSquares")
+
+(AutomaticScalesEstimation "true")
+
+(AutomaticTransformInitialization "true")
+// (AutomaticTransformInitializationMethod "GeometricalCenter")
+(AutomaticTransformInitializationMethod "CenterOfGravity")
+// (AutomaticTransformInitializationMethod "Origins")
+
+
+(NumberOfResolutions 4)
+(ImagePyramidSchedule  64 64  32 32  16 16  8 8 )
+
+
+(MaximumNumberOfIterations 1000 500 300 200)
+(MaximumStepLength 100 5 3 2)
+(MinimumStepLength 0.1 0.005 0.001 0.0001)
+(MinimumGradientMagnitude 0.00001 0.00001 0.0001)
+(RelaxationFactor 0.99)
+
+(NumberOfSpatialSamples 4000)
+// (NewSamplesEveryIteration "true")
+(ImageSampler "Random")
+// (ImageSampler "RandomSparseMask")
+// (ImageSampler "RandomCoordinate")
+// (UseRandomSampleRegion "true")
+// (SampleRegionSize 50 50)
+// (ImageSampler "Full")
+// (ImageSampler "Grid")
+// (SampleGridSpacing 16 16  8 8  4 4  2 2)
+
+(BSplineInterpolationOrder 1)
+(FinalBSplineInterpolationOrder 3)
+
+(DefaultPixelValue 0)
+(ErodeMask "false")
