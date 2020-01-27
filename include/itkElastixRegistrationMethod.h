@@ -164,6 +164,11 @@ public:
   GetTransformParameterObject();
   const ParameterObjectType *
   GetTransformParameterObject() const;
+  using Superclass::GetOutput;
+  DataObject *
+  GetOutput(unsigned int idx);
+  const DataObject *
+  GetOutput(unsigned int idx) const;
 
   /* Standard filter indexed input / output methods */
   void
@@ -237,6 +242,11 @@ protected:
 
   void
   GenerateData() override;
+
+  using DataObjectPointer = ProcessObject::DataObjectPointer;
+  using Superclass::MakeOutput;
+  DataObjectPointer
+  MakeOutput(DataObjectPointerArraySizeType idx) override;
 
 private:
   ElastixRegistrationMethod(const Self &); // purposely not implemented

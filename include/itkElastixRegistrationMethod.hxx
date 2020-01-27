@@ -45,7 +45,7 @@ template <typename TFixedImage, typename TMovingImage>
 ElastixRegistrationMethod<TFixedImage, TMovingImage>::ElastixRegistrationMethod()
 {
   this->SetPrimaryInputName("FixedImage");
-  this->SetNumberOfIndexedOutputs(1);
+  this->SetNumberOfIndexedOutputs(2);
 
   this->AddRequiredInputName("MovingImage", 1);
   this->AddRequiredInputName("ParameterObject", 2);
@@ -306,7 +306,7 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GenerateData()
   // Save parameter map
   elastix::ParameterObject::Pointer transformParameterObject = elastix::ParameterObject::New();
   transformParameterObject->SetParameterMap(transformParameterMapVector);
-  this->SetOutput("TransformParameterObject", transformParameterObject);
+  this->SetNthOutput(1, transformParameterObject);
 }
 
 
@@ -322,7 +322,7 @@ template <typename TFixedImage, typename TMovingImage>
 typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::ParameterObjectType *
 ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetParameterObject()
 {
-  return itkDynamicCastInDebugMode<ParameterObjectType *>(itk::ProcessObject::GetInput("ParameterObject"));
+  return itkDynamicCastInDebugMode<ParameterObjectType *>(this->ProcessObject::GetInput("ParameterObject"));
 }
 
 
@@ -330,7 +330,7 @@ template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::ParameterObjectType *
 ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetParameterObject() const
 {
-  return itkDynamicCastInDebugMode<const ParameterObjectType *>(itk::ProcessObject::GetInput("ParameterObject"));
+  return itkDynamicCastInDebugMode<const ParameterObjectType *>(this->ProcessObject::GetInput("ParameterObject"));
 }
 
 
@@ -338,13 +338,7 @@ template <typename TFixedImage, typename TMovingImage>
 typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::ParameterObjectType *
 ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetTransformParameterObject()
 {
-  if (this->HasOutput("TransformParameterObject"))
-  {
-    return itkDynamicCastInDebugMode<ParameterObjectType *>(itk::ProcessObject::GetOutput("TransformParameterObject"));
-  }
-
-  itkExceptionMacro("TransformParameterObject has not been generated. Update() ElastixRegistrationMethod before "
-                    "requesting this output.")
+  return static_cast<ParameterObjectType *>(this->ProcessObject::GetOutput(1));
 }
 
 
@@ -352,14 +346,36 @@ template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::ParameterObjectType *
 ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetTransformParameterObject() const
 {
-  if (this->HasOutput("TransformParameterObject"))
-  {
-    return itkDynamicCastInDebugMode<const ParameterObjectType *>(
-      itk::ProcessObject::GetOutput("TransformParameterObject"));
-  }
+  return static_cast<const ParameterObjectType *>(this->ProcessObject::GetOutput(1));
+}
 
-  itkExceptionMacro("TransformParameterObject has not been generated. Update() ElastixRegistrationMethod before "
-                    "requesting this output.")
+
+template <typename TFixedImage, typename TMovingImage>
+DataObject *
+ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetOutput(unsigned int idx)
+{
+  return this->ProcessObject::GetOutput(idx);
+}
+
+
+template <typename TFixedImage, typename TMovingImage>
+const DataObject *
+ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetOutput(unsigned int idx) const
+{
+  return this->ProcessObject::GetOutput(idx);
+}
+
+
+template <typename TFixedImage, typename TMovingImage>
+ProcessObject::DataObjectPointer
+ElastixRegistrationMethod<TFixedImage, TMovingImage>::MakeOutput(DataObjectPointerArraySizeType idx)
+{
+  if (idx == 1)
+  {
+    elastix::ParameterObject::Pointer transformParameterObject = elastix::ParameterObject::New();
+    return transformParameterObject.GetPointer();
+  }
+  return Superclass::MakeOutput(idx);
 }
 
 
