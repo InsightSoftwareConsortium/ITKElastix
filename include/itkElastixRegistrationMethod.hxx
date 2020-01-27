@@ -45,7 +45,7 @@ template <typename TFixedImage, typename TMovingImage>
 ElastixRegistrationMethod<TFixedImage, TMovingImage>::ElastixRegistrationMethod()
 {
   this->SetPrimaryInputName("FixedImage");
-  this->SetNumberOfIndexedOutputs(1);
+  this->SetNumberOfIndexedOutputs(2);
 
   this->AddRequiredInputName("MovingImage", 1);
   this->AddRequiredInputName("ParameterObject", 2);
@@ -304,15 +304,16 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GenerateData()
   }
 
   // Save parameter map
-  elastix::ParameterObject::Pointer transformParameterObject = elastix::ParameterObject::New();
+  elastix::ParameterObject::Pointer transformParameterObject = this->GetTransformParameterObject();
   transformParameterObject->SetParameterMap(transformParameterMapVector);
-  this->SetOutput("TransformParameterObject", transformParameterObject);
+  //this->SetNthOutput(1, transformParameterObject);
 }
 
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetParameterObject(ParameterObjectType * parameterObject)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::SetParameterObject(ParameterObjectType * parameterObject)
 {
   this->ProcessObject::SetInput("ParameterObject", parameterObject);
 }
@@ -320,52 +321,76 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetParameterObject(Paramet
 
 template <typename TFixedImage, typename TMovingImage>
 typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::ParameterObjectType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetParameterObject()
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetParameterObject()
 {
-  return itkDynamicCastInDebugMode<ParameterObjectType *>(itk::ProcessObject::GetInput("ParameterObject"));
+  return itkDynamicCastInDebugMode<ParameterObjectType *>(this->ProcessObject::GetInput("ParameterObject"));
 }
 
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::ParameterObjectType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetParameterObject() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetParameterObject() const
 {
-  return itkDynamicCastInDebugMode<const ParameterObjectType *>(itk::ProcessObject::GetInput("ParameterObject"));
+  return itkDynamicCastInDebugMode<const ParameterObjectType *>(this->ProcessObject::GetInput("ParameterObject"));
 }
 
 
 template <typename TFixedImage, typename TMovingImage>
 typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::ParameterObjectType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetTransformParameterObject()
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetTransformParameterObject()
 {
-  if (this->HasOutput("TransformParameterObject"))
-  {
-    return itkDynamicCastInDebugMode<ParameterObjectType *>(itk::ProcessObject::GetOutput("TransformParameterObject"));
-  }
-
-  itkExceptionMacro("TransformParameterObject has not been generated. Update() ElastixRegistrationMethod before "
-                    "requesting this output.")
+  return itkDynamicCastInDebugMode<ParameterObjectType *>(this->ProcessObject::GetOutput(1));
 }
 
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::ParameterObjectType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetTransformParameterObject() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetTransformParameterObject() const
 {
-  if (this->HasOutput("TransformParameterObject"))
-  {
-    return itkDynamicCastInDebugMode<const ParameterObjectType *>(
-      itk::ProcessObject::GetOutput("TransformParameterObject"));
-  }
+  return itkDynamicCastInDebugMode<const ParameterObjectType *>(this->ProcessObject::GetOutput(1));
+}
 
-  itkExceptionMacro("TransformParameterObject has not been generated. Update() ElastixRegistrationMethod before "
-                    "requesting this output.")
+
+template <typename TFixedImage, typename TMovingImage>
+DataObject *
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetOutput(unsigned int idx)
+{
+  return this->ProcessObject::GetOutput(idx);
+}
+
+
+template <typename TFixedImage, typename TMovingImage>
+const DataObject *
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetOutput(unsigned int idx) const
+{
+  return this->ProcessObject::GetOutput(idx);
+}
+
+
+template <typename TFixedImage, typename TMovingImage>
+ProcessObject::DataObjectPointer
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::MakeOutput(DataObjectPointerArraySizeType idx)
+{
+  if (idx == 1)
+    {
+    elastix::ParameterObject::Pointer transformParameterObject = elastix::ParameterObject::New();
+    return transformParameterObject.GetPointer();
+    }
+  return Superclass::MakeOutput(idx);
 }
 
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetFixedImage(TFixedImage * fixedImage)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::SetFixedImage(TFixedImage * fixedImage)
 {
   this->RemoveInputsOfType("FixedImage");
   this->ProcessObject::SetInput("FixedImage", fixedImage);
@@ -374,7 +399,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetFixedImage(TFixedImage 
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::AddFixedImage(TFixedImage * fixedImage)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::AddFixedImage(TFixedImage * fixedImage)
 {
   if (this->ProcessObject::GetInput("FixedImage") == ITK_NULLPTR)
   {
@@ -389,7 +415,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::AddFixedImage(TFixedImage 
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::FixedImageType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetFixedImage() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetFixedImage() const
 {
   if (this->GetNumberOfInputsOfType("FixedImage") > 1)
   {
@@ -402,7 +429,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetFixedImage() const
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::FixedImageType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetFixedImage(const unsigned int index) const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetFixedImage(const unsigned int index) const
 {
   unsigned int  n = 0;
   NameArrayType inputNames = this->GetInputNames();
@@ -426,7 +454,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetFixedImage(const unsign
 
 template <typename TFixedImage, typename TMovingImage>
 unsigned int
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetNumberOfFixedImages() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetNumberOfFixedImages() const
 {
   return this->GetNumberOfInputsOfType("FixedImage");
 }
@@ -434,7 +463,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetNumberOfFixedImages() c
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetMovingImage(TMovingImage * movingImage)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::SetMovingImage(TMovingImage * movingImage)
 {
   this->RemoveInputsOfType("MovingImage");
   this->ProcessObject::SetInput("MovingImage", movingImage);
@@ -443,7 +473,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetMovingImage(TMovingImag
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::AddMovingImage(TMovingImage * movingImage)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::AddMovingImage(TMovingImage * movingImage)
 {
   if (this->ProcessObject::GetInput("MovingImage") == ITK_NULLPTR)
   {
@@ -458,7 +489,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::AddMovingImage(TMovingImag
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::MovingImageType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetMovingImage() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetMovingImage() const
 {
   if (this->GetNumberOfInputsOfType("MovingImage") > 1)
   {
@@ -471,7 +503,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetMovingImage() const
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::MovingImageType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetMovingImage(const unsigned int index) const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetMovingImage(const unsigned int index) const
 {
   unsigned int  n = 0;
   NameArrayType inputNames = this->GetInputNames();
@@ -495,7 +528,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetMovingImage(const unsig
 
 template <typename TFixedImage, typename TMovingImage>
 unsigned int
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetNumberOfMovingImages() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetNumberOfMovingImages() const
 {
   return this->GetNumberOfInputsOfType("MovingImage");
 }
@@ -503,7 +537,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetNumberOfMovingImages() 
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetFixedMask(FixedMaskType * fixedMask)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::SetFixedMask(FixedMaskType * fixedMask)
 {
   this->RemoveInputsOfType("FixedMask");
   this->ProcessObject::SetInput("FixedMask", fixedMask);
@@ -512,7 +547,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetFixedMask(FixedMaskType
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::AddFixedMask(FixedMaskType * fixedMask)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::AddFixedMask(FixedMaskType * fixedMask)
 {
   this->ProcessObject::SetInput(this->MakeUniqueName("FixedMask"), fixedMask);
 }
@@ -520,7 +556,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::AddFixedMask(FixedMaskType
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::FixedMaskType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetFixedMask() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetFixedMask() const
 {
   return itkDynamicCastInDebugMode<const FixedMaskType *>(this->ProcessObject::GetInput("FixedMask"));
 }
@@ -528,7 +565,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetFixedMask() const
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::FixedMaskType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetFixedMask(const unsigned int index) const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetFixedMask(const unsigned int index) const
 {
   unsigned int  n = 0;
   NameArrayType inputNames = this->GetInputNames();
@@ -552,7 +590,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetFixedMask(const unsigne
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::RemoveFixedMask()
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::RemoveFixedMask()
 {
   this->RemoveInputsOfType("FixedMask");
 }
@@ -560,7 +599,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::RemoveFixedMask()
 
 template <typename TFixedImage, typename TMovingImage>
 unsigned int
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetNumberOfFixedMasks() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetNumberOfFixedMasks() const
 {
   return this->GetNumberOfInputsOfType("FixedMask");
 }
@@ -568,7 +608,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetNumberOfFixedMasks() co
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetMovingMask(MovingMaskType * movingMask)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::SetMovingMask(MovingMaskType * movingMask)
 {
   this->RemoveInputsOfType("MovingMask");
   this->AddMovingMask(movingMask);
@@ -577,7 +618,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetMovingMask(MovingMaskTy
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::AddMovingMask(MovingMaskType * movingMask)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::AddMovingMask(MovingMaskType * movingMask)
 {
   this->ProcessObject::SetInput(this->MakeUniqueName("MovingMask"), movingMask);
 }
@@ -585,7 +627,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::AddMovingMask(MovingMaskTy
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::MovingMaskType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetMovingMask() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetMovingMask() const
 {
   return itkDynamicCastInDebugMode<const MovingMaskType *>(this->ProcessObject::GetInput("MovingMask"));
 }
@@ -593,7 +636,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetMovingMask() const
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::MovingMaskType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetMovingMask(const unsigned int index) const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetMovingMask(const unsigned int index) const
 {
   unsigned int  n = 0;
   NameArrayType inputNames = this->GetInputNames();
@@ -617,7 +661,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetMovingMask(const unsign
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::RemoveMovingMask()
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::RemoveMovingMask()
 {
   this->RemoveInputsOfType("MovingMask");
 }
@@ -625,7 +670,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::RemoveMovingMask()
 
 template <typename TFixedImage, typename TMovingImage>
 unsigned int
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetNumberOfMovingMasks() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetNumberOfMovingMasks() const
 {
   return this->GetNumberOfInputsOfType("MovingMask");
 }
@@ -633,7 +679,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetNumberOfMovingMasks() c
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetInput(FixedImageType * fixedImage)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::SetInput(FixedImageType * fixedImage)
 {
   this->SetFixedImage(fixedImage);
 }
@@ -641,7 +688,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetInput(FixedImageType * 
 
 template <typename TFixedImage, typename TMovingImage>
 const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::FixedImageType *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetInput() const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetInput() const
 {
   return this->GetFixedImage();
 }
@@ -649,7 +697,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetInput() const
 
 template <typename TFixedImage, typename TMovingImage>
 const DataObject *
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetInput(DataObjectPointerArraySizeType index) const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetInput(DataObjectPointerArraySizeType index) const
 {
   switch (index)
   {
@@ -667,7 +716,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetInput(DataObjectPointer
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetInput(DataObjectPointerArraySizeType index, DataObject * input)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::SetInput(DataObjectPointerArraySizeType index, DataObject * input)
 {
   switch (index)
   {
@@ -688,7 +738,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetInput(DataObjectPointer
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetLogFileName(const std::string logFileName)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::SetLogFileName(const std::string logFileName)
 {
   this->m_LogFileName = logFileName;
   this->LogToFileOn();
@@ -697,7 +748,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::SetLogFileName(const std::
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::RemoveLogFileName()
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::RemoveLogFileName()
 {
   this->m_LogFileName = "";
   this->LogToFileOff();
@@ -706,7 +758,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::RemoveLogFileName()
 
 template <typename TFixedImage, typename TMovingImage>
 std::string
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::MakeUniqueName(const DataObjectIdentifierType & inputName)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::MakeUniqueName(const DataObjectIdentifierType & inputName)
 {
   return inputName + std::to_string(this->m_InputUID++);
 }
@@ -714,8 +767,9 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::MakeUniqueName(const DataO
 
 template <typename TFixedImage, typename TMovingImage>
 bool
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::IsInputOfType(const DataObjectIdentifierType & inputType,
-                                                                    DataObjectIdentifierType         inputName) const
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::IsInputOfType(const DataObjectIdentifierType & inputType,
+                DataObjectIdentifierType         inputName) const
 {
   return std::strncmp(inputType.c_str(), inputName.c_str(), std::min(inputType.size(), inputName.size())) == 0;
 }
@@ -723,7 +777,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::IsInputOfType(const DataOb
 
 template <typename TFixedImage, typename TMovingImage>
 unsigned int
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetNumberOfInputsOfType(
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::GetNumberOfInputsOfType(
   const DataObjectIdentifierType & inputType) const
 {
   unsigned int  n = 0;
@@ -742,7 +797,8 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetNumberOfInputsOfType(
 
 template <typename TFixedImage, typename TMovingImage>
 void
-ElastixRegistrationMethod<TFixedImage, TMovingImage>::RemoveInputsOfType(const DataObjectIdentifierType & inputType)
+ElastixRegistrationMethod<TFixedImage, TMovingImage>
+::RemoveInputsOfType(const DataObjectIdentifierType & inputType)
 {
   NameArrayType inputNames = this->GetInputNames();
   for (unsigned int i = 0; i < inputNames.size(); ++i)
