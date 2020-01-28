@@ -55,9 +55,9 @@ fixed = itk.imread(fixed_filename, itk.F)
 moving = itk.imread(moving_filename, itk.F)
 
 if output_parameter_files:
-    result = itk.elastix_registration_method(fixed, moving,
+    registered_image, transform = itk.elastix_registration_method(fixed, moving,
                                              parameter_object=parameters)
 else:
-    result = itk.elastix_registration_method(fixed, moving)
+    registered_image, transform = itk.elastix_registration_method(fixed, moving)
 
-itk.imwrite(result, result_filename)
+itk.imwrite(registered_image, result_filename)
