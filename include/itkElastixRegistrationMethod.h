@@ -169,6 +169,10 @@ public:
   GetOutput(unsigned int idx);
   const DataObject *
   GetOutput(unsigned int idx) const;
+  ResultImageType *
+  GetOutput();
+  ResultImageType *
+  GetOutput() const;
 
   /* Standard filter indexed input / output methods */
   void
