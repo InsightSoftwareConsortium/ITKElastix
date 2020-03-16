@@ -351,6 +351,22 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetTransformParameterObjec
 
 
 template <typename TFixedImage, typename TMovingImage>
+typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::ResultImageType *
+ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetOutput()
+{
+  return static_cast<ResultImageType *>(this->ProcessObject::GetOutput(0));
+}
+
+
+template <typename TFixedImage, typename TMovingImage>
+const typename ElastixRegistrationMethod<TFixedImage, TMovingImage>::ResultImageType *
+ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetOutput() const
+{
+  return static_cast<const ResultImageType *>(this->ProcessObject::GetOutput(0));
+}
+
+
+template <typename TFixedImage, typename TMovingImage>
 DataObject *
 ElastixRegistrationMethod<TFixedImage, TMovingImage>::GetOutput(unsigned int idx)
 {
