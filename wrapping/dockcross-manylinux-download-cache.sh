@@ -7,7 +7,7 @@ curl https://data.kitware.com/api/v1/file/592dd8068d777f16d01e1a92/download -o z
 gunzip -d zstd-1.2.0-linux.tar.gz
 tar xf zstd-1.2.0-linux.tar
 
-curl -L https://github.com/InsightSoftwareConsortium/ITKPythonBuilds/releases/download/${ITK_PACKAGE_VERSION:=v5.0.1}/ITKPythonBuilds-linux.tar.zst -O
+curl -L https://github.com/InsightSoftwareConsortium/ITKPythonBuilds/releases/download/${ITK_PACKAGE_VERSION:=v5.1.0}/ITKPythonBuilds-linux.tar.zst -O
 ./zstd-1.2.0-linux/bin/unzstd ITKPythonBuilds-linux.tar.zst -o ITKPythonBuilds-linux.tar
 tar xf ITKPythonBuilds-linux.tar
 
