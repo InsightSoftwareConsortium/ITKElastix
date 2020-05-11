@@ -32,7 +32,7 @@ endif()
 include(FetchContent)
 
 set(_itk_build_testing ${BUILD_TESTING})
-set(BUILD_TESTING OFF)
+#set(BUILD_TESTING OFF)
 set(_itk_build_shared ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
 set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
