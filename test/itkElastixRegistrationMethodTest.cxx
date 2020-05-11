@@ -99,6 +99,7 @@ itkElastixRegistrationMethodTest(int argc, char * argv[])
   std::cout << "\nParameterObject: ";
   filter->GetInput(2)->Print(std::cout);
   TEST_EXPECT_EQUAL(filter->GetNumberOfIndexedInputs(), 3);
+  filter->SetLogToConsole(true);
 
   filter->Update();
 

@@ -44,6 +44,8 @@ namespace itk
 template <typename TMovingImage>
 TransformixFilter<TMovingImage>::TransformixFilter()
 {
+  elastix::BaseComponent::InitializeElastixLibrary();
+
   this->SetPrimaryInputName("TransformParameterObject");
   this->SetPrimaryOutputName("ResultImage");
   this->SetOutput("ResultDeformationField", this->MakeOutput("ResultDeformationField"));

@@ -44,6 +44,7 @@ namespace itk
 template <typename TFixedImage, typename TMovingImage>
 ElastixRegistrationMethod<TFixedImage, TMovingImage>::ElastixRegistrationMethod()
 {
+  elastix::BaseComponent::InitializeElastixLibrary();
   this->SetPrimaryInputName("FixedImage");
   this->SetNumberOfIndexedOutputs(2);
 
