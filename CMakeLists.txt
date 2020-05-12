@@ -10,6 +10,7 @@ set(Elastix_LIBRARIES elastix transformix)
 if(ELASTIX_USE_OPENCL)
   list(APPEND Elastix_LIBRARIES elxOpenCL)
 endif()
+set(ELASTIX_BUILD_EXECUTABLE OFF)
 set(ELASTIX_BUILD_EXECUTABLE OFF CACHE BOOL "Generate executable or library")
 # Avoid LGPL code and ANN shared library
 if(NOT DEFINED USE_KNNGraphAlphaMutualInformationMetric)
