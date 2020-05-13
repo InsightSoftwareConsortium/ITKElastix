@@ -199,6 +199,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        path: "im"
 
     - name: 'Install Python'
       run: |
@@ -209,6 +211,8 @@ jobs:
     - name: 'Fetch build dependencies'
       shell: bash
       run: |
+        mv im ../../
+        cd ../../
         curl -L "https://github.com/InsightSoftwareConsortium/ITKPythonBuilds/releases/download/${{ matrix.itk-python-git-tag }}/ITKPythonBuilds-windows.zip" -o "ITKPythonBuilds-windows.zip"
         7z x ITKPythonBuilds-windows.zip -o/c/P -aoa -r
         curl -L "https://data.kitware.com/api/v1/file/5c0ad59d8d777f2179dd3e9c/download" -o "doxygen-1.8.11.windows.bin.zip"
@@ -219,6 +223,7 @@ jobs:
     - name: 'Build 🐍 Python 📦 package'
       shell: cmd
       run: |
+        cd ../../im
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         set PATH="C:\P\grep;%PATH%"
         set CC=cl.exe
@@ -229,7 +234,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: WindowWheel3.${{ matrix.python-version-minor }}
-        path: dist
+        path: ../../im/dist
 
   publish-python-packages-to-pypi:
     needs:
