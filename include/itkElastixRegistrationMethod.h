@@ -171,7 +171,7 @@ public:
   GetOutput(unsigned int idx) const;
   ResultImageType *
   GetOutput();
-  ResultImageType *
+  const ResultImageType *
   GetOutput() const;
 
   /* Standard filter indexed input / output methods */

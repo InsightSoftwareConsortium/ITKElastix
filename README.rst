@@ -1,6 +1,8 @@
 ITKElastix
 =================================
 
+.. image:: https://github.com/InsightSoftwareConsortium/ITKElastix/workflows/Build,%20test,%20package/badge.svg
+
 .. image:: https://dev.azure.com/ITKElastix/ITKElastix/_apis/build/status/InsightSoftwareConsortium.ITKElastix?branchName=master
     :target: https://dev.azure.com/ITKElastix/ITKElastix/_build/latest?definitionId=1&branchName=master
     :alt:    Build Status

@@ -44,6 +44,7 @@ namespace itk
 template <typename TFixedImage, typename TMovingImage>
 ElastixRegistrationMethod<TFixedImage, TMovingImage>::ElastixRegistrationMethod()
 {
+  elastix::BaseComponent::InitializeElastixLibrary();
   this->SetPrimaryInputName("FixedImage");
   this->SetNumberOfIndexedOutputs(2);
 
@@ -66,6 +67,7 @@ ElastixRegistrationMethod<TFixedImage, TMovingImage>::ElastixRegistrationMethod(
   defaultParameterObject->AddParameterMap(elastix::ParameterObject::GetDefaultParameterMap("translation"));
   defaultParameterObject->AddParameterMap(elastix::ParameterObject::GetDefaultParameterMap("affine"));
   defaultParameterObject->AddParameterMap(elastix::ParameterObject::GetDefaultParameterMap("bspline"));
+  defaultParameterObject->SetParameter("FixedInternalImagePixelType", "float");
 #ifdef ELASTIX_USE_OPENCL
   defaultParameterObject->SetParameter("Resampler", "OpenCLResampler");
   defaultParameterObject->SetParameter("OpenCLResamplerUseOpenCL", "true");
