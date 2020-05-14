@@ -94,6 +94,7 @@ jobs:
         set(CTEST_CMAKE_GENERATOR "Ninja")
         set(CTEST_CUSTOM_WARNING_EXCEPTION
           \${CTEST_CUSTOM_WARNING_EXCEPTION}
+          "invokes undefined behavior"
           # macOS Azure VM Warning
           "ld: warning: text-based stub file"
           )
