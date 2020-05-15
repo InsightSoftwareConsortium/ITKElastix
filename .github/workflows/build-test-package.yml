@@ -303,8 +303,6 @@ jobs:
     needs:
       - build-linux-python-packages
       - build-macos-python-packages
-      - build-linux-opencl-python-packages
-      - build-macos-opencl-python-packages
       - build-windows-python-packages
     runs-on: ubuntu-18.04
 
@@ -319,7 +317,7 @@ jobs:
           mv ${d}/*.whl .
         done
         mkdir dist
-        mv *.whl dist/
+        mv itk_elastix-*.whl dist/
         ls dist
 
     - name: Publish 🐍 Python 📦 package to PyPI
@@ -328,3 +326,30 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.pypi_password }}
+
+  publish-opencl-python-packages-to-pypi:
+    needs:
+      - build-linux-opencl-python-packages
+      - build-macos-opencl-python-packages
+    runs-on: ubuntu-18.04
+
+    steps:
+    - name: Download Python Packages
+      uses: actions/download-artifact@v2
+
+    - name: Prepare packages for upload
+      run: |
+        ls -R
+        for d in */; do
+          mv ${d}/*.whl .
+        done
+        mkdir dist
+        mv itk_elastix_opencl-*.whl dist/
+        ls dist
+
+    - name: Publish 🐍 Python 📦 package to PyPI
+      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        user: __token__
+        password: ${{ secrets.opencl_pypi_password }}
