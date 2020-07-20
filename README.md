@@ -39,7 +39,7 @@ To register two images, traditionally called the fixed image and the moving imag
     fixed_image = itk.imread('path/to/fixed_image.mha')
     moving_image = itk.imread('path/to/moving_image.mha')
 
-    registered_image = itk.elastix_registration_method(fixed_image, moving_image)
+    registered_image, params = itk.elastix_registration_method(fixed_image, moving_image)
 
 Interactive examples and tutorial material can be found in the [examples](https://github.com/InsightSoftwareConsortium/ITKElastix/tree/master/examples) directory. Run the examples in free cloud compute containers [on MyBinder](https://mybinder.org/v2/gh/InsightSoftwareConsortium/ITKElastix/master?urlpath=lab/tree/examples%2F0_HelloRegistrationWorld.ipynb).  Try out the *experimental* GPU packages [on Paperspace Gradient](https://www.paperspace.com/temmx3m64/notebook/prdfn7bsz).
 
