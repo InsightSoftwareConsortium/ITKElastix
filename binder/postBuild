@@ -1,3 +1,4 @@
 #!/bin/bash
 
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@1.1 jupyter-matplotlib@0.5.0 jupyterlab-datawidgets itkwidgets
+jupyter labextension install @jupyter-widgets/jupyterlab-manager@2.0.0
+jupyter labextension install jupyter-matplotlib jupyterlab-datawidgets itkwidgets
