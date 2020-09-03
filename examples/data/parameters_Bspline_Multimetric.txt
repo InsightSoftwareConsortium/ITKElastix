@@ -31,7 +31,7 @@
 (FixedImagePyramid "FixedSmoothingImagePyramid" "FixedSmoothingImagePyramid")
 (MovingImagePyramid "MovingSmoothingImagePyramid" "MovingSmoothingImagePyramid")
 (Interpolator "BSplineInterpolator" "BSplineInterpolator")
-(Metric "AdvancedMattesMutualInformation" "AdvancedMeanSquareDifference")
+(Metric "AdvancedMattesMutualInformation" "AdvancedMeanSquares")
 (ImageSampler "RandomCoordinate" "RandomCoordinate")
 
 (Metric0Weight 0.125)
