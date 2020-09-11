@@ -91,20 +91,20 @@ itkElastixRegistrationMethodTest(int argc, char * argv[])
   filter->SetFixedImage(fixedImageReader->GetOutput());
   filter->SetMovingImage(movingImageReader->GetOutput());
 
-  TEST_EXPECT_EQUAL(filter->GetInput(), filter->GetInput(0));
+  ITK_TEST_EXPECT_EQUAL(filter->GetInput(), filter->GetInput(0));
   std::cout << "\nFixedImage: ";
   filter->GetInput(0)->Print(std::cout);
   std::cout << "\nMovingImage: ";
   filter->GetInput(1)->Print(std::cout);
   std::cout << "\nParameterObject: ";
   filter->GetInput(2)->Print(std::cout);
-  TEST_EXPECT_EQUAL(filter->GetNumberOfIndexedInputs(), 3);
+  ITK_TEST_EXPECT_EQUAL(filter->GetNumberOfIndexedInputs(), 3);
   filter->SetLogToConsole(true);
 
   filter->Update();
 
 
-  EXERCISE_BASIC_OBJECT_METHODS(filter, ElastixRegistrationMethod, ImageSource);
+  ITK_EXERCISE_BASIC_OBJECT_METHODS(filter, ElastixRegistrationMethod, ImageSource);
 
   using TransformixFilterType = itk::TransformixFilter<ImageType>;
   TransformixFilterType::Pointer transformixFilter = TransformixFilterType::New();
@@ -117,7 +117,7 @@ itkElastixRegistrationMethodTest(int argc, char * argv[])
 
   writer->SetInput(transformixFilter->GetOutput());
 
-  TRY_EXPECT_NO_EXCEPTION(writer->Update());
+  ITK_TRY_EXPECT_NO_EXCEPTION(writer->Update());
 
 
   std::cout << "Test finished." << std::endl;
