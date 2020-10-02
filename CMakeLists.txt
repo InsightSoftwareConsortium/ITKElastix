@@ -40,8 +40,8 @@ set(_itk_build_testing ${BUILD_TESTING})
 set(_itk_build_shared ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-# Tag of commit "COMP: Fix implicit conversion warnings itkAdvancedImageMomentsCalculator"
-set(elastix_GIT_TAG "a7e4fb99954f18eb34a65d60acc8ea1f1a5eeb12")
+# Tag of commit "COMP: Quick-fix ITKElastix error: 'itkCostFunction.h' file not found"
+set(elastix_GIT_TAG "14649fe068c1294d734efc740cc8dda867b7d283")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
