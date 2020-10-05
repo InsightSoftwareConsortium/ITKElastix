@@ -59,7 +59,7 @@ If you use this software anywhere we would appreciate if you cite the following 
     for Diagnostic Classification of Alzheimer's Disease\", Frontiers in
     Neuroinformatics, vol. 7, no. 50, pp. 1-15, January 2014.
 
-This ITK module is based on [SimpleElastix](http://simpleelastix.github.io/), created by Kasper Marstal. For more information, see:
+This ITK module is based on [SimpleElastix](http://simpleelastix.github.io/), created by [Kasper Marstal](https://github.com/kaspermarstal). For more information, see:
 
 -   Kasper Marstal, Floris Berendsen, Marius Staring and Stefan Klein,
     \"SimpleElastix: A user-friendly, multi-lingual library for medical
