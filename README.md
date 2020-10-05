@@ -17,7 +17,7 @@ elastix is open source software, based on the well-known [Insight Toolkit (ITK)]
 Installation
 ------------
 
-Install cross-platform binary Python packages with:
+Install cross-platform binary Python packages with [pip](https://pypi.org/project/pip/):
 
     pip install itk-elastix
 
@@ -37,9 +37,9 @@ To register two images, traditionally called the fixed image and the moving imag
 
     registered_image, params = itk.elastix_registration_method(fixed_image, moving_image)
 
-Interactive examples and tutorial material can be found in the [examples](https://github.com/InsightSoftwareConsortium/ITKElastix/tree/master/examples) directory. Run the examples in free cloud compute containers [on MyBinder](https://mybinder.org/v2/gh/InsightSoftwareConsortium/ITKElastix/master?urlpath=lab/tree/examples%2F0_HelloRegistrationWorld.ipynb) or clone the repository and run the notebooks locally in Jupyter Notebook. Try out the *experimental* GPU packages [on Paperspace Gradient](https://www.paperspace.com/temmx3m64/notebook/prdfn7bsz).
+Interactive examples and tutorial material can be found in the [examples](https://github.com/InsightSoftwareConsortium/ITKElastix/tree/master/examples) directory. Run the examples in free cloud compute containers [on MyBinder](https://mybinder.org/v2/gh/InsightSoftwareConsortium/ITKElastix/master?urlpath=lab/tree/examples%2F0_HelloRegistrationWorld.ipynb) or clone the repository and run the notebooks locally in [Jupyter Notebook or Jupyter Lab](https://jupyter.org/). Try out the *experimental* GPU packages [on Paperspace Gradient](https://www.paperspace.com/temmx3m64/notebook/prdfn7bsz).
 
-ITKElastix can be used with both the procedural and the object oriented method, as shown in the example notebooks. The procedural method is shorter, less explicit and currently slightly less functional than the object oriented method, however the execution time and output do not differ apart from possible differences due to the stochastic nature of the Elastix algorithm.
+ITKElastix can be used with both the [procedural](https://docs.python.org/3/howto/functional.html) and the [object oriented method](https://docs.python.org/3/howto/functional.html), as shown in the example notebooks. The procedural method is shorter, less explicit and currently slightly less functional than the object oriented method, however the execution time and output do not differ apart from possible differences due to the stochastic nature of the Elastix algorithm.
 
 Acknowledgements
 ----------------
