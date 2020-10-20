@@ -40,8 +40,7 @@ set(_itk_build_testing ${BUILD_TESTING})
 set(_itk_build_shared ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-# Tag of commit "COMP: Quick-fix ITKElastix error: 'itkCostFunction.h' file not found"
-set(elastix_GIT_TAG "14649fe068c1294d734efc740cc8dda867b7d283")
+set(elastix_GIT_TAG "1f973ae9bc2ef551f984ad7df35167e266e55ee0")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
