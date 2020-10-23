@@ -11,6 +11,7 @@ if(ELASTIX_USE_OPENCL)
   list(APPEND Elastix_LIBRARIES elxOpenCL)
 endif()
 set(ELASTIX_BUILD_EXECUTABLE OFF)
+set(USE_ALL_COMPONENTS ON CACHE BOOL "Build all elastix components")
 set(ELASTIX_BUILD_EXECUTABLE OFF CACHE BOOL "Generate executable or library")
 # Avoid LGPL code and ANN shared library
 if(NOT DEFINED USE_KNNGraphAlphaMutualInformationMetric)
