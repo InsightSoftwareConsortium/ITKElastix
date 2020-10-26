@@ -101,6 +101,9 @@ jobs:
         set(dashboard_no_clean 1)
         set(ENV{CC} ${{ matrix.c-compiler }})
         set(ENV{CXX} ${{ matrix.cxx-compiler }})
+        if(WIN32)
+          set(ENV{PATH} "\${CTEST_DASHBOARD_ROOT}/ITK-build/bin;\$ENV{PATH}")
+        endif()
         set(dashboard_cache "
         ITK_DIR:PATH=\${CTEST_DASHBOARD_ROOT}/ITK-build
         BUILD_TESTING:BOOL=ON
@@ -129,9 +132,9 @@ jobs:
     strategy:
       max-parallel: 2
       matrix:
-        python-version: [35, 36, 37, 38]
+        python-version: [36, 37, 38, 39]
         include:
-          - itk-python-git-tag: "v5.1.1"
+          - itk-python-git-tag: "v5.1.1.post1"
 
     steps:
     - uses: actions/checkout@v2
@@ -167,7 +170,7 @@ jobs:
       max-parallel: 2
       matrix:
         include:
-          - itk-python-git-tag: "v5.1.1"
+          - itk-python-git-tag: "v5.1.1.post1"
 
     steps:
     - uses: actions/checkout@v2
@@ -194,9 +197,9 @@ jobs:
     strategy:
       max-parallel: 2
       matrix:
-        python-version-minor: [5, 6, 7, 8]
+        python-version-minor: [6, 7, 8, 9]
         include:
-          - itk-python-git-tag: "v5.1.1"
+          - itk-python-git-tag: "v5.1.1.post1"
 
     steps:
     - uses: actions/checkout@v2
@@ -276,7 +279,7 @@ jobs:
       max-parallel: 2
       matrix:
         include:
-          - itk-python-git-tag: "v5.1.1"
+          - itk-python-git-tag: "v5.1.1.post1"
 
     steps:
     - uses: actions/checkout@v2
