@@ -6,7 +6,7 @@ if(DEFINED ENV{ELASTIX_USE_OPENCL})
   set(ELASTIX_USE_OPENCL ON CACHE BOOL "Enable OpenCL support in Elastix")
 endif()
 
-set(Elastix_LIBRARIES elastix transformix)
+set(Elastix_LIBRARIES elastix_lib transformix_lib)
 if(ELASTIX_USE_OPENCL)
   list(APPEND Elastix_LIBRARIES elxOpenCL)
 endif()
@@ -39,8 +39,8 @@ set(_itk_build_testing ${BUILD_TESTING})
 #set(BUILD_TESTING OFF)
 set(_itk_build_shared ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
-set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-set(elastix_GIT_TAG "a13be5c2daa1d2b8454609366aef3cba194be8c2")
+set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
+set(elastix_GIT_TAG "1f973ae9bc2ef551f984ad7df35167e266e55ee0")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
