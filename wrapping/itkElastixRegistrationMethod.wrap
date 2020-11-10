@@ -1,4 +1,10 @@
 itk_wrap_class("itk::ElastixRegistrationMethod" POINTER)
-  itk_wrap_image_filter("${WRAP_ITK_REAL}" 2)
+  UNIQUE(dims "${ITK_WRAP_IMAGE_DIMS};4")
+  foreach(d ${dims})
+    foreach(t1 ${WRAP_ITK_SCALAR})
+      foreach(t2 ${WRAP_ITK_USIGN_INT} ${WRAP_ITK_SIGN_INT})
+        itk_wrap_template("${ITKM_I${t1}${d}}${ITKM_I${t2}${d}}"  "${ITKT_I${t1}${d}},${ITKT_I${t2}${d}}")
+      endforeach()
+    endforeach()
+  endforeach()
 itk_end_wrap_class()
-
