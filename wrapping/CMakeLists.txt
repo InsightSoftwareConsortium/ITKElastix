@@ -1,4 +1,6 @@
 itk_wrap_module(Elastix)
 set(WRAPPER_SWIG_LIBRARY_FILES ${WRAPPER_SWIG_LIBRARY_FILES} "${CMAKE_CURRENT_SOURCE_DIR}/stdParameterMapFileNameVector.i")
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/transformix_extras.py transformix_extras)
+set(ITK_WRAP_PYTHON_LIBRARY_IMPORTS "${transformix_extras}\n${ITK_WRAP_PYTHON_LIBRARY_IMPORTS}")
 itk_auto_load_submodules()
 itk_end_wrap_module()
