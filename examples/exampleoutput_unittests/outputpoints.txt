@@ -1,0 +1,5 @@
+Point	0	; InputIndex = [ 25 25 ]	; InputPoint = [ 25.000000 25.000000 ]	; OutputIndexFixed = [ 1 10 ]	; OutputPoint = [ 0.991129 10.011471 ]	; Deformation = [ -24.008871 -14.988529 ]	; OutputIndexMoving = [ 1 10 ]
+Point	1	; InputIndex = [ 25 75 ]	; InputPoint = [ 25.000000 75.000000 ]	; OutputIndexFixed = [ 1 60 ]	; OutputPoint = [ 0.987600 60.011471 ]	; Deformation = [ -24.012400 -14.988529 ]	; OutputIndexMoving = [ 1 60 ]
+Point	2	; InputIndex = [ 75 75 ]	; InputPoint = [ 75.000000 75.000000 ]	; OutputIndexFixed = [ 51 60 ]	; OutputPoint = [ 50.987600 60.015000 ]	; Deformation = [ -24.012400 -14.985001 ]	; OutputIndexMoving = [ 51 60 ]
+Point	3	; InputIndex = [ 75 25 ]	; InputPoint = [ 75.000000 25.000000 ]	; OutputIndexFixed = [ 51 10 ]	; OutputPoint = [ 50.991129 10.015000 ]	; Deformation = [ -24.008871 -14.985001 ]	; OutputIndexMoving = [ 51 10 ]
+Point	4	; InputIndex = [ 50 50 ]	; InputPoint = [ 50.000000 50.000000 ]	; OutputIndexFixed = [ 26 35 ]	; OutputPoint = [ 25.989365 35.013235 ]	; Deformation = [ -24.010635 -14.986765 ]	; OutputIndexMoving = [ 26 35 ]
