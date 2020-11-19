@@ -3,7 +3,7 @@ itk_wrap_class("itk::ElastixRegistrationMethod" POINTER)
   foreach(d ${dims})
     foreach(t1 ${WRAP_ITK_REAL})
       foreach(t2 ${WRAP_ITK_REAL})
-        itk_wrap_template("${ITKM_${t1}${d}}I${ITKM_${t2}${d}}"  itk::Image< ${ITKT_${t1}}, ${d} >, itk::Image< ${ITKT_${t2}}, ${d} >
+        itk_wrap_template("${ITKM_${t1}${d}}I${ITKM_${t2}${d}}"  itk::Image< ${ITKT_${t1}}, ${d} >, itk::Image< ${ITKT_${t2}}, ${d} >)
       endforeach()
     endforeach()
   endforeach()
