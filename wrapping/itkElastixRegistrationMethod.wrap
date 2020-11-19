@@ -1,3 +1,11 @@
+itk_wrap_class("itk::ImageSource" POINTER)
+  UNIQUE(dims "${ITK_WRAP_IMAGE_DIMS};4")
+   foreach(t1 ${WRAP_ITK_REAL})
+     foreach(t2 ${WRAP_ITK_REAL})
+       itk_wrap_template("${ITKM_${t1}4}I${ITKM_${t2}4}"  itk::Image< ${ITKT_${t1}}, 4 >)
+     endforeach()
+   endforeach()
+itk_end_wrap_class()
 itk_wrap_class("itk::ElastixRegistrationMethod" POINTER)
   UNIQUE(dims "${ITK_WRAP_IMAGE_DIMS};4")
   foreach(d ${dims})
@@ -8,3 +16,5 @@ itk_wrap_class("itk::ElastixRegistrationMethod" POINTER)
     endforeach()
   endforeach()
 itk_end_wrap_class()
+
+
