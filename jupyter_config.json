@@ -3,6 +3,10 @@
     "theme": "dark"
   },
   "Voila": {
-    "tornado_settings": "{\"websocket_max_message_size\":838860800}"
+    "tornado_settings": "{\"websocket_max_message_size\": 838860800}"
+    }
+  },
+  "NotebookApp": {
+    "tornado_settings": "{\"websocket_max_message_size\": 838860800}"
   }
 }
