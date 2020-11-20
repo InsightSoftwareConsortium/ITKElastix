@@ -1,0 +1,8 @@
+{
+  "VoilaConfiguration": {
+    "theme": "dark"
+  },
+  "Voila": {
+    "tornado_settings": "{\"websocket_max_message_size\":838860800}"
+  }
+}
