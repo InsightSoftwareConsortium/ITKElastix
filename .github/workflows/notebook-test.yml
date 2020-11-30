@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [windows-latest]
         python-version: [3.6, 3.7, 3.8, 3.9]
     steps:
       - uses: actions/checkout@v2
@@ -15,11 +15,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Display Python version
-        run: python -c "import sys; print(sys.version)"
+      - run: |
+          cd examples
+          pip install -r requirements.txt
       - uses: treebeardtech/treebeard@v0.1.1
         with:
-          docker-username: thewtex
-          docker-password: "${{ secrets.DOCKER_PASSWORD }}"
-          docker-image-name: insighttoolkit/itk-elastix
+          use-docker: false
           notebooks: examples/*.ipynb
