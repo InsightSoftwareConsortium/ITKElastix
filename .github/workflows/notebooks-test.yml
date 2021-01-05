@@ -1,0 +1,25 @@
+name: Notebooks tests
+
+on: [push, pull_request]
+
+jobs:
+  test-elastix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set Up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - run: |
+          cd examples
+          pip install -r requirements.txt
+          pip install pytest-tornasync
+          python -m ipykernel install --user --name elastixenv
+          pip install pytest 'nbmake[html]'
+      - run: |
+          pytest --nbmake --path-output=.
+#       - if: failure()
+      - run: |
+          netlify deploy --dir=_build/html --auth=${{ secrets.NETLIFY_TOKEN }} --site=${{ secrets.NETLIFY_SITE_API_ID }}
+
