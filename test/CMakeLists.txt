@@ -8,6 +8,7 @@ CreateTestDriver(Elastix "${Elastix-Test_LIBRARIES}" "${ElastixTests}")
 
 itk_add_test(NAME itkElastixRegistrationMethodTest
   COMMAND ElastixTestDriver
+  --compareNumberOfPixelsTolerance 25
   --compare
     ${ITK_TEST_OUTPUT_DIR}/itkElastixRegistrationMethodTestOutput.mha
     DATA{Baseline/itkElastixRegistrationMethodTestOutput.mha}
