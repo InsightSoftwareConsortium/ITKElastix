@@ -6,10 +6,10 @@
 # Versions can be restricted by passing them in as arguments to the script
 # For example,
 #
-#   scripts/dockcross-manylinux-build-module-wheels.sh cp27mu cp35
+#   scripts/dockcross-manylinux-build-module-wheels.sh cp39
 
 # Generate dockcross scripts
-docker run --rm dockcross/manylinux1-x64:20200416-a6b6635 > /tmp/dockcross-manylinux-x64
+docker run --rm dockcross/manylinux2014-x64:20201015-96d8741 > /tmp/dockcross-manylinux-x64
 chmod u+x /tmp/dockcross-manylinux-x64
 
 script_dir=$(cd $(dirname $0) || exit 1; pwd)
@@ -35,7 +35,7 @@ fi
 
 # Build wheels
 mkdir -p dist
-DOCKER_ARGS="-e ELASTIX_USE_OPENCL=1 -v $(pwd)/dist:/work/dist/ -v $(pwd)/ITKPythonPackage:/ITKPythonPackage -v $(pwd)/tools:/tools -v $(pwd)/OpenCL-ICD-Loader/inc/CL:/usr/include/CL -v $(pwd)/OpenCL-ICD-Loader-build/libOpenCL.so.1.2:/usr/lib64/libOpenCL.so.1 -v $(pwd)/OpenCL-ICD-Loader-build/libOpenCL.so.1.2:/usr/lib64/libOpenCL.so"
+DOCKER_ARGS="-e ELASTIX_USE_OPENCL=1 -v $(pwd)/dist:/work/dist/ -v $script_dir/..:/ITKPythonPackage -v $(pwd)/tools:/tools -v $(pwd)/OpenCL-ICD-Loader/inc/CL:/usr/include/CL -v $(pwd)/OpenCL-ICD-Loader-build/libOpenCL.so.1.2:/usr/lib64/libOpenCL.so.1 -v $(pwd)/OpenCL-ICD-Loader-build/libOpenCL.so.1.2:/usr/lib64/libOpenCL.so"
 /tmp/dockcross-manylinux-x64 \
   -a "$DOCKER_ARGS" \
   "/ITKPythonPackage/scripts/internal/manylinux-build-module-wheels.sh" "$@"
