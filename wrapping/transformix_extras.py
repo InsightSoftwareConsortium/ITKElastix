@@ -1,4 +1,4 @@
-
+import numpy as np
 import itk
 import os
 
@@ -24,3 +24,18 @@ def transformix_jacobian(*args, **kwargs):
         os.remove('fullSpatialJacobian.nii')
 
     return (full_spatial_jacobian,det_spatial_jacobian)
+
+def transformix_pointset(*args, **kwargs):
+    transformix_object = itk.TransformixFilter.New(*args, **kwargs)
+    transformix_object.UpdateLargestPossibleRegion()
+    dir = kwargs.get('output_directory', None)
+    if dir:
+        moving_point_set = np.loadtxt(dir+'outputpoints.txt', dtype='str')
+        if reduce_output:
+            moving_point_set = moving_point_set[:,30:33].astype('float64')
+    else:
+        moving_point_set = np.loadtxt('outputpoints.txt', dtype='str')
+        if reduce_output:
+            moving_point_set = moving_point_set[:,30:33].astype('float64')
+        os.remove('outputpoints.txt')
+    return moving_point_set
