@@ -26,10 +26,15 @@ def transformix_jacobian(*args, **kwargs):
     return (full_spatial_jacobian,det_spatial_jacobian)
 
 def transformix_pointset(*args, **kwargs):
+    reduce_output = kwargs.get('reduce_output', False)
+    if reduce_output:
+        kwargs.pop('reduce_output')
     transformix_object = itk.TransformixFilter.New(*args, **kwargs)
     transformix_object.UpdateLargestPossibleRegion()
     dir = kwargs.get('output_directory', None)
     if dir:
+        if dir[-1] != '/':
+            dir += '/'
         moving_point_set = np.loadtxt(dir+'outputpoints.txt', dtype='str')
         if reduce_output:
             moving_point_set = moving_point_set[:,30:33].astype('float64')
