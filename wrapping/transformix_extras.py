@@ -8,6 +8,10 @@ def transformix_deformation_field(*args, **kwargs):
     transformix_object.UpdateLargestPossibleRegion()
     return transformix_object.GetOutputDeformationField()
 
+# Satify itk package lazy loading
+def transformix_deformation_field_init_docstring():
+    pass
+
 def transformix_jacobian(*args, **kwargs):
     transformix_object = itk.TransformixFilter.New(*args, **kwargs)
     transformix_object.SetComputeSpatialJacobian(True)
@@ -24,3 +28,7 @@ def transformix_jacobian(*args, **kwargs):
         os.remove('fullSpatialJacobian.nii')
 
     return (full_spatial_jacobian,det_spatial_jacobian)
+
+# Satify itk package lazy loading
+def transformix_jacobian_init_docstring():
+    pass
