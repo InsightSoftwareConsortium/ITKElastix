@@ -1,4 +1,4 @@
-itk-elastix>=0.10.0
+itk-elastix>=0.11.1
 itk>=5.2rc2
 itk-core>=5.2rc2
 itk-numerics>=5.2rc2
