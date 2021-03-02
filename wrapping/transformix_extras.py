@@ -8,6 +8,10 @@ def transformix_deformation_field(*args, **kwargs):
     transformix_object.UpdateLargestPossibleRegion()
     return transformix_object.GetOutputDeformationField()
 
+# Satify itk package lazy loading
+def transformix_deformation_field_init_docstring():
+    pass
+
 def transformix_jacobian(*args, **kwargs):
     transformix_object = itk.TransformixFilter.New(*args, **kwargs)
     transformix_object.SetComputeSpatialJacobian(True)
@@ -44,3 +48,8 @@ def transformix_pointset(*args, **kwargs):
             moving_point_set = moving_point_set[:,30:33].astype('float64')
         os.remove('outputpoints.txt')
     return moving_point_set
+
+# Satify itk package lazy loading
+def transformix_jacobian_init_docstring():
+    pass
+

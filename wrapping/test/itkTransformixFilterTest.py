@@ -46,3 +46,8 @@ itk.imwrite(result, result_filename)
 # Functional interface
 result = itk.transformix_filter(moving, parameters, log_to_console=True)
 itk.imwrite(result, result_filename)
+
+deformation_field = itk.transformix_deformation_field(moving, parameters, log_to_console=True)
+# Fails per:
+#  https://github.com/InsightSoftwareConsortium/ITKElastix/issues/108j
+# jacobian = itk.transformix_jacobian(moving, parameters, log_to_console=True)
