@@ -17,10 +17,10 @@ def transformix_jacobian(*args, **kwargs):
     transformix_object.SetComputeSpatialJacobian(True)
     transformix_object.SetComputeDeterminantOfSpatialJacobian(True)
     transformix_object.UpdateLargestPossibleRegion()
-    dir = kwargs.get('output_directory', None)
-    if dir:
-        det_spatial_jacobian = itk.imread(dir +'spatialJacobian.nii', itk.F)
-        full_spatial_jacobian = itk.imread(dir +'fullSpatialJacobian.nii', itk.F)
+    output_dir = kwargs.get('output_directory', None)
+    if output_dir:
+        det_spatial_jacobian = itk.imread(output_dir +'spatialJacobian.nii', itk.F)
+        full_spatial_jacobian = itk.imread(output_dir +'fullSpatialJacobian.nii', itk.F)
     else:
         det_spatial_jacobian = itk.imread('spatialJacobian.nii', itk.F)
         full_spatial_jacobian = itk.imread('fullSpatialJacobian.nii', itk.F)
@@ -29,17 +29,21 @@ def transformix_jacobian(*args, **kwargs):
 
     return (full_spatial_jacobian,det_spatial_jacobian)
 
+# Satify itk package lazy loading
+def transformix_jacobian_init_docstring():
+    pass
+
 def transformix_pointset(*args, **kwargs):
     reduce_output = kwargs.get('reduce_output', False)
     if reduce_output:
         kwargs.pop('reduce_output')
     transformix_object = itk.TransformixFilter.New(*args, **kwargs)
     transformix_object.UpdateLargestPossibleRegion()
-    dir = kwargs.get('output_directory', None)
-    if dir:
-        if dir[-1] != '/':
-            dir += '/'
-        moving_point_set = np.loadtxt(dir+'outputpoints.txt', dtype='str')
+    output_dir = kwargs.get('output_directory', None)
+    if output_dir:
+        if output_dir[-1] != '/':
+            output_dir += '/'
+        moving_point_set = np.loadtxt(output_dir+'outputpoints.txt', dtype='str')
         if reduce_output:
             moving_point_set = moving_point_set[:,30:33].astype('float64')
     else:
@@ -50,6 +54,6 @@ def transformix_pointset(*args, **kwargs):
     return moving_point_set
 
 # Satify itk package lazy loading
-def transformix_jacobian_init_docstring():
+def transformix_pointset_init_docstring():
     pass
 
