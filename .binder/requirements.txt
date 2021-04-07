@@ -1,10 +1,4 @@
-itk-elastix>=0.11.1
-itk>=5.2rc2
-itk-core>=5.2rc2
-itk-numerics>=5.2rc2
-itk-filtering>=5.2rc2
-itk-registration>=5.2rc2
-itk-segmentation>=5.2rc2
+itk-elastix>=0.12.0
 itkwidgets>=0.32.0
 jupyterlab>=2.2.0
 imageio
