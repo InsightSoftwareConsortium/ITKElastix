@@ -13,7 +13,7 @@ set(snake_case_config_file
     "${ITK_WRAP_PYTHON_SNAKE_CONFIG_DIR}/${WRAPPER_LIBRARY_NAME}_snake_case.py")
 set(snake_overwrite_script "${CMAKE_CURRENT_BINARY_DIR}/snake_overwrite.cmake")
 file(GENERATE OUTPUT "${snake_overwrite_script}"
-CONTENT "file(WRITE \"${snake_case_config_file}\" \"snake_case_functions = ('elastix_registration_method', 'transformix_filter', 'transformix_deformation_field', 'transformix_jacobian',)\")")
+CONTENT "file(WRITE \"${snake_case_config_file}\" \"snake_case_functions = ('elastix_registration_method', 'transformix_filter', 'transformix_deformation_field', 'transformix_jacobian','transformix_pointset',)\")")
 
 add_custom_command(TARGET "${WRAPPER_LIBRARY_NAME}Swig"
   POST_BUILD COMMAND ${CMAKE_COMMAND} -P "${snake_overwrite_script}")
