@@ -42,6 +42,10 @@ Interactive examples and tutorial material can be found in the [examples](https:
 
 ITKElastix can be used with both the [procedural](https://docs.python.org/3/howto/functional.html) and the [object oriented method](https://docs.python.org/3/howto/functional.html), as shown in the example notebooks. The procedural method is shorter, less explicit and currently slightly less functional than the object oriented method, however the execution time and output do not differ apart from possible differences due to the stochastic nature of the Elastix algorithm.
 
+To find parameters that work well with specific datasets, see the [elastix Model Zoo](https://elastix.lumc.nl/modelzoo/).
+
+For a graphical user interface in a desktop application, see the [napari plugin](https://github.com/SuperElastix/elastix_napari).
+
 Acknowledgements
 ----------------
 
