@@ -11,7 +11,7 @@ ITKElastix
 Overview
 --------
 
-Provides an [ITK](https://www.itk.org) Python interface to [elastix](http://elastix.isi.uu.nl/), a toolbox for rigid and nonrigid registration of images.
+Provides an [ITK](https://www.itk.org) Python interface to [elastix](https://elastix.lumc.nl/), a toolbox for rigid and nonrigid registration of images.
 
 elastix is open source software, based on the well-known [Insight Toolkit (ITK)](https://discourse.itk.org). The software consists of a collection of algorithms that are commonly used to solve (medical) image registration problems. The modular design of elastix allows the user to quickly configure, test, and compare different registration methods for a specific application.
 
