@@ -12,9 +12,9 @@ except ImportError:
     print('  python -m pip install scikit-build')
     sys.exit(1)
 
-package_name = 'itk-elastix'
+package_name = 'itk-elastix-wsi'
 if 'ELASTIX_USE_OPENCL' in os.environ:
-    package_name = 'itk-elastix-opencl'
+    package_name = 'itk-elastix-wsi-opencl'
 
 setup(
     name=package_name,
@@ -23,7 +23,7 @@ setup(
     author_email='itk+community@discourse.itk.org',
     packages=['itk'],
     package_dir={'itk': 'itk'},
-    download_url=r'https://github.com/InsightSoftwareConsortium/ITKElastix',
+    download_url=r'https://github.com/NHPatterson/ITKElastix',
     description=r'Provides an ITK Python interface to elastix, a toolbox for rigid and nonrigid registration of images',
     long_description='elastix is open source software, based on the well-known Insight Segmentation and Registration Toolkit (ITK). The software consists of a collection of algorithms that are commonly used to solve (medical) image registration problems. The modular design of elastix allows the user to quickly configure, test, and compare different registration methods for a specific application.',
     classifiers=[

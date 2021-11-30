@@ -12,6 +12,7 @@ if(ELASTIX_USE_OPENCL)
 endif()
 set(ELASTIX_BUILD_EXECUTABLE OFF)
 set(ELASTIX_BUILD_EXECUTABLE OFF CACHE BOOL "Generate executable or library")
+set( ELASTIX_IMAGE_2D_PIXELTYPES "unsigned char;float" CACHE STRING "Specify 2D pixel types" )
 # Avoid LGPL code and ANN shared library
 if(NOT DEFINED USE_KNNGraphAlphaMutualInformationMetric)
   set(USE_KNNGraphAlphaMutualInformationMetric OFF)

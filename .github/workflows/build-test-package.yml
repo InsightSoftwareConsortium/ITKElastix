@@ -343,7 +343,7 @@ jobs:
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
       with:
-        user: __token__
+        user: nhpatterson
         password: ${{ secrets.pypi_password }}
 
   publish-opencl-python-packages-to-pypi:
@@ -370,5 +370,5 @@ jobs:
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
       with:
-        user: __token__
+        user: nhpatterson
         password: ${{ secrets.opencl_pypi_password }}
