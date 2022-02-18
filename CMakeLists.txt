@@ -80,6 +80,19 @@ set(BUILD_TESTING ${_itk_build_testing})
 set(BUILD_SHARED_LIBS ${_itk_build_shared})
 
 
+if(ITK_WRAP_PYTHON) # Python wrapping is enabled
+  get_property(multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if(multi_config)
+    if(NOT (CMAKE_CONFIGURATION_TYPES STREQUAL "Release"))
+      message(WARNING "Python wrapping of ITKElastix is known not to work with RelWithDebInfo configuration. Release is recommended. Your CMAKE_CONFIGURATION_TYPES: ${CMAKE_CONFIGURATION_TYPES}")
+    endif()
+  else()
+    if(NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
+      message(WARNING "Python wrapping of ITKElastix is known not to work with RelWithDebInfo configuration. Release is recommended. Your CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+    endif()
+  endif()
+endif()
+
 if(NOT ITK_SOURCE_DIR)
   find_package(ITK REQUIRED)
   list(APPEND CMAKE_MODULE_PATH ${ITK_CMAKE_DIR})
