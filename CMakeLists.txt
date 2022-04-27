@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.16.3)
 project(Elastix)
 
 # To ease enablement with Python packaging
@@ -40,7 +40,7 @@ set(_itk_build_testing ${BUILD_TESTING})
 set(_itk_build_shared ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_TAG "3816950f157753ad3763cfe3988f49f788eb38c2")
+set(elastix_GIT_TAG "a0cf5235691ab0e7416600ed29db5abf2ff8ffe2")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
@@ -79,6 +79,19 @@ endif()
 set(BUILD_TESTING ${_itk_build_testing})
 set(BUILD_SHARED_LIBS ${_itk_build_shared})
 
+
+if(ITK_WRAP_PYTHON) # Python wrapping is enabled
+  get_property(multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+  if(multi_config)
+    if(NOT (CMAKE_CONFIGURATION_TYPES STREQUAL "Release"))
+      message(WARNING "Python wrapping of ITKElastix is known not to work with RelWithDebInfo configuration. Release is recommended. Your CMAKE_CONFIGURATION_TYPES: ${CMAKE_CONFIGURATION_TYPES}")
+    endif()
+  else()
+    if(NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
+      message(WARNING "Python wrapping of ITKElastix is known not to work with RelWithDebInfo configuration. Release is recommended. Your CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+    endif()
+  endif()
+endif()
 
 if(NOT ITK_SOURCE_DIR)
   find_package(ITK REQUIRED)
