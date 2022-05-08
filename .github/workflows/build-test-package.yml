@@ -3,7 +3,7 @@ name: Build, test, package
 on: [push,pull_request]
 
 env:
-  itk-git-tag: "801370c025c7d296783481779a41c6d559c992c5"
+  itk-git-tag: "6046668162b56a2836abf733c0626e61516b29cd"
   itk-wheel-tag: "v5.3rc04"
 
 jobs:
