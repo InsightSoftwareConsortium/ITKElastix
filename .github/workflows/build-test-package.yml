@@ -3,8 +3,8 @@ name: Build, test, package
 on: [push,pull_request]
 
 env:
-  itk-git-tag: "6046668162b56a2836abf733c0626e61516b29cd"
-  itk-wheel-tag: "v5.3rc04"
+  itk-git-tag: "835dc01388d22c4b4c9a46b01dbdfe394ec23511"
+  itk-wheel-tag: "v5.3rc04.post2"
 
 jobs:
   build-test-cxx:
@@ -108,10 +108,21 @@ jobs:
         if(WIN32)
           set(ENV{PATH} "\${CTEST_DASHBOARD_ROOT}/ITK-build/bin;\$ENV{PATH}")
         endif()
-        set(dashboard_cache "
-        ITK_DIR:PATH=\${CTEST_DASHBOARD_ROOT}/ITK-build
-        BUILD_TESTING:BOOL=ON
-        ")
+        if(APPLE)
+          # Switch off OpenMP, to work around macOS specific CI errors, saying:
+          # > fatal error: ‘omp.h’ file not found
+          # See https://github.com/SuperElastix/elastix/commit/72c8590cd563e3f72a2dfbbc69ad2d05a6a3b936
+          set(dashboard_cache "
+          ITK_DIR:PATH=\${CTEST_DASHBOARD_ROOT}/ITK-build
+          BUILD_TESTING:BOOL=ON
+          ELASTIX_USE_OPENMP:BOOL=OFF
+          ")
+        else()
+          set(dashboard_cache "
+          ITK_DIR:PATH=\${CTEST_DASHBOARD_ROOT}/ITK-build
+          BUILD_TESTING:BOOL=ON
+          ")
+        endif()
         string(TIMESTAMP build_date "%Y-%m-%d")
         message("CDash Build Identifier: \${build_date} \${CTEST_BUILD_NAME}")
         message("CTEST_SITE = \${CTEST_SITE}")
@@ -190,7 +201,8 @@ jobs:
       run: |
         export ITK_PACKAGE_VERSION=${{ env.itk-wheel-tag }}
         export MACOSX_DEPLOYMENT_TARGET=10.9
-        ./macpython-download-cache-and-build-module-wheels.sh
+        # See https://github.com/SuperElastix/elastix/commit/72c8590cd563e3f72a2dfbbc69ad2d05a6a3b936 for OpenMP workaround
+        ./macpython-download-cache-and-build-module-wheels.sh --cmake_options "-DELASTIX_USE_OPENMP:BOOL=OFF"
 
     - name: Publish Python package as GitHub Artifact
       uses: actions/upload-artifact@v1
