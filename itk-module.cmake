@@ -15,8 +15,12 @@ itk_module(Elastix
   DEPENDS
     ITKCommon
     ITKIOImageBase
+    ITKIOMeta
+    ITKIOMeshBase
     ITKImageGrid
     ITKSmoothing
+    ITKMesh
+    ITKRegistrationCommon
   COMPILE_DEPENDS
     ITKImageSources
   TEST_DEPENDS
