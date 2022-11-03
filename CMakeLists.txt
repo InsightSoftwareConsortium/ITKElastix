@@ -35,10 +35,13 @@ endif()
 
 include(FetchContent)
 
+# Set up Elastix build parameters for populate step
+option(ELASTIX_BUILD_TESTING OFF)
 set(_itk_build_testing ${BUILD_TESTING})
-#set(BUILD_TESTING OFF)
+set(BUILD_TESTING ${ELASTIX_BUILD_TESTING})
 set(_itk_build_shared ${BUILD_SHARED_LIBS})
-set(BUILD_SHARED_LIBS OFF)
+set(BUILD_SHARED_LIBS OFF) # Elastix does not support shared libs
+
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
 set(elastix_GIT_TAG "9e6efb6f9aa3b3545c7365a4b2c97aa2f88a17b5")
 FetchContent_Declare(
@@ -76,6 +79,8 @@ endif()
 if(ELASTIX_USE_OPENCL)
   add_definitions(-DELASTIX_USE_OPENCL)
 endif()
+
+# Reset parameters for ITK remote module build
 set(BUILD_TESTING ${_itk_build_testing})
 set(BUILD_SHARED_LIBS ${_itk_build_shared})
 

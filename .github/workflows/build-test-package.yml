@@ -5,8 +5,6 @@ on: [push,pull_request]
 jobs:
   cxx-build-workflow:
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-cxx.yml@1d6a1d8b1176b6e0dbccb3cd3c47b015460ae988
-    with:
-      ctest-options: "-E \"elastix_run_example_COMPARE_IM|elastix_run_3DCT_lung.MI.bspline.ASGD.001_COMPARE_TP|elastix_run_3DCT_lung.NMI.bspline.ASGD.001_COMPARE_TP|TransformixTest\""
 
   python-build-workflow:
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@1d6a1d8b1176b6e0dbccb3cd3c47b015460ae988
