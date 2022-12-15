@@ -43,7 +43,7 @@ set(_itk_build_shared ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF) # Elastix does not support shared libs
 
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_TAG "9e6efb6f9aa3b3545c7365a4b2c97aa2f88a17b5")
+set(elastix_GIT_TAG "6d90b8d0c5b5ccab8e3dde5107454829b47e2f4d")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
