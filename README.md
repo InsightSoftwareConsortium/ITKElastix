@@ -49,6 +49,12 @@ For a graphical user interface in a desktop application, see the [napari plugin]
 Acknowledgements
 ----------------
 
+ITKElastix was developed in part with support from:
+
+- [NIH NIMH BRAIN Initiative](https://braininitiative.nih.gov/) under award 1RF1MH126732.
+- Chan Zuckerberg Initiative (CZI) Essential Open Source Software for Science award for [Open Source Image Registration: The elastix
+  Toolbox](https://chanzuckerberg.com/eoss/proposals/open-source-image-registration-the-elastix-toolbox/).
+
 The lead developers of elastix are [Stefan Klein](https://github.com/stefanklein) and [Marius Staring](https://github.com/mstaring).
 
 This software was initially developed at the Image Sciences Institute, under supervision of Josien P.W. Pluim. Today, [many](https://github.com/SuperElastix/elastix/graphs/contributors) have
