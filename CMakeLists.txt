@@ -42,6 +42,14 @@ set(BUILD_TESTING ${ELASTIX_BUILD_TESTING})
 set(_itk_build_shared ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF) # Elastix does not support shared libs
 
+# Building Python wheels, disable installation of elastix artifacts
+if(SKBUILD)
+  option(ELASTIX_NO_INSTALL_RUNTIME_LIBRARIES "Do not install runtime libraries" ON)
+  option(ELASTIX_NO_INSTALL_EXECUTABLES "Do not install executables" ON)
+  option(ELASTIX_NO_INSTALL_DEVELOPMENT "Do not install development headers and static libraries" ON)
+  mark_as_advanced(ELASTIX_NO_INSTALL_EXECUTABLES ELASTIX_NO_INSTALL_RUNTIME_LIBRARIES ELASTIX_NO_INSTALL_DEVELOPMENT)
+endif()
+
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
 set(elastix_GIT_TAG "d652938573e5f193955908eba225a854b31ce36a")
 FetchContent_Declare(
