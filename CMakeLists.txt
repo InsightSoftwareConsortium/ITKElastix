@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(Elastix)
 
+if(NOT CMAKE_CXX_STANDARD)
+  # SuperElastix/elastix uses C++17 specific features in some of its header files.
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
 # To ease enablement with Python packaging
 if(DEFINED ENV{ELASTIX_USE_OPENCL})
   set(ELASTIX_USE_OPENCL ON CACHE BOOL "Enable OpenCL support in Elastix")
@@ -51,7 +56,7 @@ if(SKBUILD)
 endif()
 
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_TAG "d652938573e5f193955908eba225a854b31ce36a")
+set(elastix_GIT_TAG "b9ea3a8e65a3e015a5a0f06acfb5bd22fad8dacc")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
