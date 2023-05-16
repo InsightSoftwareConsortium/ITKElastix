@@ -6,3 +6,5 @@ ipywidgets>=7.5.1
 ipympl>=0.5.7
 voila>=0.3.4
 pyinstaller
+napari[all]
+itk-napari-conversion
