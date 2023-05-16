@@ -13,3 +13,5 @@ PyQt5-sip==12.8.0
 QtPy==1.9.0
 voila
 tqdm
+napari[all]
+itk-napari-conversion
