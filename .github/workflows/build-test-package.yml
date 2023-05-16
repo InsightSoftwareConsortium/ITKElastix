@@ -4,11 +4,22 @@ on: [push,pull_request]
 
 jobs:
   cxx-build-workflow:
-    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-cxx.yml@03626a23c22246e89e36c7e918a158c440f9b099
+    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-cxx.yml@85252b549b1e44aa7198fbea470f75732d092c8b
 
-  python-build-workflow:
-    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@03626a23c22246e89e36c7e918a158c440f9b099
+  python-build-workflow-dev:
+    if: github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main'
+    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@85252b549b1e44aa7198fbea470f75732d092c8b
     with:
+      python3-minor-versions: '["7","11"]'
+      manylinux-platforms: '["_2_28-x64","2014-x64"]'
+    secrets:
+      pypi_password: ${{ secrets.pypi_password }}
+      
+  python-build-workflow-main:
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@85252b549b1e44aa7198fbea470f75732d092c8b
+    with:
+      python3-minor-versions: '["7","8","9","10","11"]'
       manylinux-platforms: '["_2_28-x64","2014-x64"]'
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
