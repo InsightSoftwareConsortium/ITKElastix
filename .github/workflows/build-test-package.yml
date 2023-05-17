@@ -7,7 +7,7 @@ jobs:
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-cxx.yml@85252b549b1e44aa7198fbea470f75732d092c8b
 
   python-build-workflow-dev:
-    if: github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main'
+    if: github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags')
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@85252b549b1e44aa7198fbea470f75732d092c8b
     with:
       python3-minor-versions: '["7","11"]'
