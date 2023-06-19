@@ -26,6 +26,7 @@ itk_module(Elastix
   TEST_DEPENDS
     ITKTestKernel
     ITKMetaIO
+    ITKTransformIO
   DESCRIPTION
     "${DOCUMENTATION}"
   EXCLUDE_FROM_DEFAULT
