@@ -116,11 +116,13 @@ if(ITK_WRAP_PYTHON) # Python wrapping is enabled
   endif()
 endif()
 
+option(ITKELASTIX_BUILD_WASM_EXECUTABLES "Build WASM executables" OFF)
+
 if(NOT ITK_SOURCE_DIR)
   find_package(ITK REQUIRED)
   list(APPEND CMAKE_MODULE_PATH ${ITK_CMAKE_DIR})
   include(ITKModuleExternal)
-  if(WASI OR EMSCRIPTEN)
+  if(WASI OR EMSCRIPTEN OR ITKELASTIX_BUILD_WASM_EXECUTABLES)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     add_subdirectory(wasm)
   endif()

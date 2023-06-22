@@ -26,16 +26,10 @@ include(${ITK_USE_FILE})
 add_executable(elastix-wasm ElastixWasm.cxx)
 target_link_libraries(elastix-wasm PUBLIC ${ITK_LIBRARIES})
 
-# enable_testing()
-
-# itk_add_test(NAME itkElastixRegistrationMethodTest
-#   COMMAND ElastixTestDriver
-#   --compareNumberOfPixelsTolerance 25
-#   --compare
-#     ${ITK_TEST_OUTPUT_DIR}/itkElastixRegistrationMethodTestOutput.mha
-#     DATA{Baseline/itkElastixRegistrationMethodTestOutput.mha}
-#   itkElastixRegistrationMethodTest
-#     DATA{Input/CT_3D_lung_fixed.mha}
-#     DATA{Input/CT_3D_lung_moving.mha}
-#     ${ITK_TEST_OUTPUT_DIR}/itkElastixRegistrationMethodTestOutput.mha
-#   )
+enable_testing()
+add_test(NAME elastix-wasm-test
+  COMMAND elastix-wasm
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung_registered.iwi.cbor
+    -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_fixed.iwi.cbor
+    -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_moving.iwi.cbor
+  )
