@@ -8,8 +8,8 @@ numpy
 torch>=1.9
 monai>=1.0.1
 matplotlib==3.3.1
-PyQt5==5.15.0
-PyQt5-sip==12.8.0
+PyQt5==5.15.9
+PyQt5-sip==12.12.1
 QtPy==1.9.0
 voila
 tqdm
