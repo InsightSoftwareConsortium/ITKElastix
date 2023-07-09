@@ -4,7 +4,7 @@
   "description": "npm scripts to generate itk-wasm artifacts.",
   "type": "module",
   "scripts": {
-    "build": "npm run build:emscripten && npm run build:wasi && npm run bindgen:typescript",
+    "build": "npm run build:testData && npm run build:emscripten && npm run build:wasi && npm run bindgen:typescript",
     "build:emscripten": "itk-wasm -i itkwasm/emscripten:20230709-b133f6b9 build",
     "build:emscripten:debug": "itk-wasm -i itkwasm/emscripten:20230709-b133f6b9-debug build -- -DCMAKE_BUILD_TYPE:STRING=Debug",
     "build:wasi": "itk-wasm -i itkwasm/wasi:20230709-b133f6b9 build",
