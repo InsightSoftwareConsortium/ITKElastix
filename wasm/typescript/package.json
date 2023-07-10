@@ -14,7 +14,8 @@
   },
   "scripts": {
     "start": "vite -c build/vite.config.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run test:node",
+    "test:node": "ava --timeout 10m test/node/*.js",
     "build": "npm run build:tsc && npm run build:node && npm run build:browser && npm run build:demo",
     "build:node": "rollup -c ./build/rollup.node.config.js",
     "build:browser": "rollup -c ./build/rollup.browser.config.js",
@@ -30,7 +31,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "itk-wasm": "^1.0.0-b.112"
+    "itk-wasm": "^1.0.0-b.118"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.0",
@@ -39,7 +40,9 @@
     "@rollup/plugin-terser": "^0.4.0",
     "@rollup/plugin-typescript": "^11.1.1",
     "@types/node": "^20.2.5",
+    "ava": "^5.3.1",
     "debug": "^4.3.4",
+    "itk-image-io": "^1.0.0-b.118",
     "rollup": "^3.9.0",
     "rollup-plugin-copy": "^3.4.0",
     "rollup-plugin-ignore": "^1.0.10",
