@@ -10,7 +10,7 @@
     "build:wasi": "itk-wasm -i itkwasm/wasi:20230709-b133f6b9 build",
     "build:wasi:debug": "itk-wasm -i itkwasm/wasi:20230709-b133f6b9-debug build -- -DCMAKE_BUILD_TYPE:STRING=Debug",
     "build:testData": "dam download wasm/test/data wasm/test/data.tar.gz bafybeibpohvrksx7hcn676k46kxjl2veg6gbeei4ovdp3reagucfmdtuse https://data.kitware.com/api/v1/file/6493567cf04fb3685442975a/download/data.tar.gz https://w3s.link/ipfs/bafybeihp5btr3wzm5elcucqmwzrjqnvzz7euqz7fgteqdtb6j5ac22bwiy/data.tar.gz",
-    "bindgen:typescript": "itk-wasm -b emscripten-build bindgen --output-dir wasm/typescript --package-name @itk-wasm/elastix --package-description \"A toolbox for rigid and nonrigid registration of images.\" --repository 'https://github.com/InsightSoftwareConsortium/ITKElastix'",
+    "bindgen:typescript": "itk-wasm -b emscripten-build bindgen --output-dir wasm/typescript --package-name @itk-wasm/elastix --package-version 0.1.0 --package-description \"A toolbox for rigid and nonrigid registration of images.\" --repository 'https://github.com/InsightSoftwareConsortium/ITKElastix'",
     "test": "npm run test:wasi",
     "test:wasi": "itk-wasm test --test-dir wasm -- -V",
     "clean": "git clean -fdx -e node_modules"

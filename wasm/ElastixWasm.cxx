@@ -33,10 +33,10 @@ public:
 
     using InputImageType = itk::wasm::InputImage<ImageType>;
     InputImageType fixedImage;
-    pipeline.add_option("-f,--fixed", fixedImage, "Fixed image")->required()->type_name("INPUT_IMAGE");
+    pipeline.add_option("-f,--fixed", fixedImage, "Fixed image")->type_name("INPUT_IMAGE");
 
     InputImageType movingImage;
-    pipeline.add_option("-m,--moving", movingImage, "Moving image")->required()->type_name("INPUT_IMAGE");
+    pipeline.add_option("-m,--moving", movingImage, "Moving image")->type_name("INPUT_IMAGE");
 
     using OutputImageType = itk::wasm::OutputImage<ImageType>;
     OutputImageType resultImage;
