@@ -20,3 +20,5 @@ examples/Parameters.*.txt
 node_modules/
 wasi-build
 emscripten-build
+wasm/typescript/demo/
+wasm/test
