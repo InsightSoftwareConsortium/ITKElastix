@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(Elastix)
 
-if(NOT CMAKE_CXX_STANDARD)
+if(NOT CMAKE_CXX_STANDARD OR CMAKE_CXX_STANDARD LESS 17)
   # SuperElastix/elastix uses C++17 specific features in some of its header files.
   set(CMAKE_CXX_STANDARD 17)
 endif()
