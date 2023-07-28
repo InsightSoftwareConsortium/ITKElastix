@@ -1,8 +1,0 @@
-itk-elastix>=0.13.0
-itkwidgets>=0.32.0
-jupyterlab>=2.2.0
-imageio
-ipywidgets>=7.5.1
-ipympl>=0.5.7
-voila>=0.3.4
-pyinstaller
