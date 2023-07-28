@@ -17,7 +17,7 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r ./.binder/requirements.txt
+          python -m pip install -r ./examples/requirements.txt
           python -m pip install pytest nbmake
       - name: Test notebooks
         shell: bash
