@@ -16,6 +16,21 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+    - name: 'Free up disk space'
+      run: |
+        # Workaround for https://github.com/actions/virtual-environments/issues/709
+        df -h
+        sudo apt-get update
+        sudo apt-get remove -y '^dotnet-.*'
+        sudo apt-get remove -y '^llvm-.*'
+        sudo apt-get remove -y 'php.*'
+        sudo apt-get autoremove -y
+        sudo apt-get clean
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf /usr/share/dotnet/
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        df -h
+
     - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
     - uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
