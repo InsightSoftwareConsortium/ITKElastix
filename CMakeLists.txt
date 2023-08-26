@@ -56,7 +56,8 @@ if(SKBUILD)
 endif()
 
 if(WASI OR EMSCRIPTEN)
-  set(ELASTIX_USE_OPENMP 0 CACHE BOOL "OpenMP not supported on WASI or Emscripten")
+  option(ELASTIX_USE_OPENMP "OpenMP not supported on WASI or Emscripten" OFF)
+  option(ELASTIX_NO_INSTALL_EXECUTABLES "Do not install executables" ON)
 endif()
 
 # set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
