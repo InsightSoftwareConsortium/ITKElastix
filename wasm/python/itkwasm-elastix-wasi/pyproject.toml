@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "itkwasm-elastix-wasi"
+readme = "README.md"
+license = "Apache-2.0"
+dynamic = ["version", "description"]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python",
+  "Programming Language :: C++",
+  "Environment :: WebAssembly",
+  "Environment :: WebAssembly :: Emscripten",
+  "Environment :: WebAssembly :: WASI",
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+keywords = [
+  "itkwasm",
+  "webassembly",
+  "wasi",
+]
+
+requires-python = ">=3.7"
+dependencies = [
+    "itkwasm >= 1.0.b131",
+    "importlib_resources",
+
+]
+
+[tool.hatch.version]
+path = "itkwasm_elastix_wasi/_version.py"
+
+[tool.hatch.envs.default]
+dependencies = [
+  "pytest",
+]
+
+[project.urls]
+Home = "https://github.com/InsightSoftwareConsortium/ITKElastix"
+Source = "https://github.com/InsightSoftwareConsortium/ITKElastix"
+
+[tool.hatch.envs.default.scripts]
+test = "pytest"
+
+
+[tool.hatch.build]
+exclude = [
+  "/examples",
+]
