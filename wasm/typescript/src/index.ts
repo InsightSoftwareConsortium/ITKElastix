@@ -4,11 +4,11 @@ export * from './pipelines-base-url.js'
 export * from './pipeline-worker-url.js'
 
 
-import ElastixWasmResult from './elastix-wasm-result.js'
-export type { ElastixWasmResult }
+import ElastixResult from './elastix-result.js'
+export type { ElastixResult }
 
-import ElastixWasmOptions from './elastix-wasm-options.js'
-export type { ElastixWasmOptions }
+import ElastixOptions from './elastix-options.js'
+export type { ElastixOptions }
 
-import elastixWasm from './elastix-wasm.js'
-export { elastixWasm }
+import elastix from './elastix.js'
+export { elastix }

@@ -23,12 +23,12 @@ find_package(ITK REQUIRED
   )
 include(${ITK_USE_FILE})
 
-add_executable(elastix-wasm ElastixWasm.cxx)
-target_link_libraries(elastix-wasm PUBLIC ${ITK_LIBRARIES})
+add_executable(elastix ElastixWasm.cxx)
+target_link_libraries(elastix PUBLIC ${ITK_LIBRARIES})
 
 enable_testing()
 add_test(NAME elastix-wasm-test
-  COMMAND elastix-wasm
+  COMMAND elastix
     ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung_registered.iwi.cbor
     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_fixed.iwi.cbor
     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_moving.iwi.cbor

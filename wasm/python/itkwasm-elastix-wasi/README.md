@@ -16,7 +16,7 @@ pip install itkwasm-elastix-wasi
 ## Development
 
 ```sh
-pip install pytest
+pip install pytest itkwasm-compare-images itk-io
 pip install -e .
 pytest
 

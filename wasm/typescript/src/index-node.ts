@@ -2,11 +2,11 @@
 
 
 
-import ElastixWasmNodeResult from './elastix-wasm-node-result.js'
-export type { ElastixWasmNodeResult }
+import ElastixNodeResult from './elastix-node-result.js'
+export type { ElastixNodeResult }
 
-import ElastixWasmOptions from './elastix-wasm-options.js'
-export type { ElastixWasmOptions }
+import ElastixOptions from './elastix-options.js'
+export type { ElastixOptions }
 
-import elastixWasmNode from './elastix-wasm-node.js'
-export { elastixWasmNode }
+import elastixNode from './elastix-node.js'
+export { elastixNode }

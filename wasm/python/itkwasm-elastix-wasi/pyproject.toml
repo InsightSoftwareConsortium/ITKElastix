@@ -43,6 +43,8 @@ path = "itkwasm_elastix_wasi/_version.py"
 [tool.hatch.envs.default]
 dependencies = [
   "pytest",
+  "itkwasm-compare-images",
+  "itk-io",
 ]
 
 [project.urls]
