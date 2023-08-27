@@ -40,10 +40,18 @@ jobs:
     - name: Install
       run: |
         npm ci
+        npm run build:testData
 
-    - name: Build
+    - name: Build TypeScript
+      working-directory: ./wasm/typescript
       run: |
+        npm ci
         npm run build
+
+    - name: Test TypeScript
+      working-directory: ./wasm/typescript
+      run: |
+        npm test
 
     - name: Test
       run: |
