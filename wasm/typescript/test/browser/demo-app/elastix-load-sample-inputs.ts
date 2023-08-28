@@ -1,21 +1,31 @@
-// Generated file. To retain edits, remove this comment.
+import { readImageArrayBuffer } from "itk-wasm"
 
-export default null
-// export default async function elastixLoadSampleInputs (model) {
+export default async function elastixLoadSampleInputs (model) {
+  const fixedButton = document.querySelector('#elastixInputs sl-button[name=fixed-file-button]')
+  fixedButton.loading = true
+  const fixedFileName = 'CT_2D_head_fixed.mha'
+  const urlPrefix = 'https://bafybeiclckkwabcpcgh3yo5fun2omc6jiloe3x43p6cvj4ctsyxiuwo6c4.ipfs.w3s.link/ipfs/bafybeiclckkwabcpcgh3yo5fun2omc6jiloe3x43p6cvj4ctsyxiuwo6c4/data/input/'
+  const fixedReponse = await fetch(`${urlPrefix}${fixedFileName}`)
+  const fixedData = new Uint8Array(await fixedReponse.arrayBuffer())
+  const { webWorker, image: fixedImage } = await readImageArrayBuffer(null, fixedData.buffer, fixedFileName)
+  model.options.set('fixed', fixedImage)
+  const fixedElement = document.querySelector('#elastix-fixed-details')
+  fixedElement.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(fixedImage, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+  fixedElement.disabled = false
+  fixedButton.loading = false
 
-  // Load sample inputs for the elastix function.
-  //
-  // This function should load sample inputs:
-  //
-  //  1) In the provided model map.
-  //  2) Into the corresponding HTML input elements.
-  //
-  // Example for an input named `exampleInput`:
+  const movingButton = document.querySelector('#elastixInputs sl-button[name=moving-file-button]')
+  movingButton.loading = true
+  const movingFileName = 'CT_2D_head_moving.mha'
+  const movingReponse = await fetch(`${urlPrefix}${movingFileName}`)
+  const movingData = new Uint8Array(await movingReponse.arrayBuffer())
+  const { image: movingImage } = await readImageArrayBuffer(webWorker, movingData.buffer, movingFileName)
+  webWorker.terminate()
+  model.options.set('moving', movingImage)
+  const movingElement = document.querySelector('#elastix-moving-details')
+  movingElement.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(movingImage, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+  movingElement.disabled = false
+  movingButton.loading = false
 
-  // const exampleInput = 5
-  // model.inputs.set("exampleInput", exampleInput)
-  // const exampleElement = document.querySelector("#elastixInputs [name=example-input]")
-  // exampleElement.value = 5
-
-  // return model
-// }
+  return model
+}
