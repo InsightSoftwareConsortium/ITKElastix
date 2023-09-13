@@ -26,7 +26,7 @@ find_package(ITK REQUIRED
   )
 include(${ITK_USE_FILE})
 
-add_executable(elastix ElastixWasm.cxx)
+add_executable(elastix elastix-wasm.cxx)
 target_link_libraries(elastix PUBLIC ${ITK_LIBRARIES})
 
 enable_testing()
