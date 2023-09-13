@@ -9,3 +9,12 @@ const pipelineWorkerUrl: string | URL | null = new URL('/web-workers/pipeline.wo
 elastix.setPipelineWorkerUrl(pipelineWorkerUrl)
 
 import './elastix-controller.js'
+
+const tabGroup = document.querySelector('sl-tab-group')
+const params = new URLSearchParams(window.location.search)
+if (params.has('functionName')) {
+  const functionName = params.get('functionName')
+  tabGroup.show(functionName + '-panel')
+} else {
+  tabGroup.show('elastix-panel')
+}

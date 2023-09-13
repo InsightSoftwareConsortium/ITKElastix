@@ -12,3 +12,5 @@ export type { ElastixOptions }
 
 import elastix from './elastix.js'
 export { elastix }
+
+export type { Image } from 'itk-wasm'

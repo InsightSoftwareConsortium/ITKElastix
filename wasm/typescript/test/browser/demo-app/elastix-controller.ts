@@ -3,7 +3,7 @@
 import { readImageFile, copyImage } from 'itk-wasm'
 import { writeImageArrayBuffer, copyImage } from 'itk-wasm'
 import * as elastix from '../../../dist/bundles/elastix.js'
-import elastixLoadSampleInputs from "./elastix-load-sample-inputs.js"
+import elastixLoadSampleInputs, { usePreRun } from "./elastix-load-sample-inputs.js"
 
 class ElastixModel {
 
@@ -86,6 +86,23 @@ class ElastixController  {
         }
     })
 
+    const tabGroup = document.querySelector('sl-tab-group')
+    tabGroup.addEventListener('sl-tab-show', async (event) => {
+      if (event.detail.name === 'elastix-panel') {
+        const params = new URLSearchParams(window.location.search)
+        if (!params.has('functionName') || params.get('functionName') !== 'elastix') {
+          params.set('functionName', 'elastix')
+          const url = new URL(document.location)
+          url.search = params
+          window.history.replaceState({ functionName: 'elastix' }, '', url)
+        }
+        if (!this.webWorker && loadSampleInputs && usePreRun) {
+          await loadSampleInputs(model, true)
+          await this.run()
+        }
+      }
+    })
+
     const runButton = document.querySelector('#elastixInputs sl-button[name="run"]')
     runButton.addEventListener('click', async (event) => {
       event.preventDefault()
@@ -94,15 +111,11 @@ class ElastixController  {
 
       try {
         runButton.loading = true
+
         const t0 = performance.now()
-
-        const { webWorker, result, } = await elastix.elastix(this.webWorker,
-          Object.fromEntries(model.options.entries())
-        )
-
+        const { result, } = await this.run()
         const t1 = performance.now()
         globalThis.notify("elastix successfully completed", `in ${t1 - t0} milliseconds.`, "success", "rocket-fill")
-        this.webWorker = webWorker
 
         model.outputs.set("result", result)
         resultOutputDownload.variant = "success"
@@ -118,6 +131,15 @@ class ElastixController  {
         runButton.loading = false
       }
     })
+  }
+
+  async run() {
+    const { webWorker, result, } = await elastix.elastix(this.webWorker,
+      Object.fromEntries(this.model.options.entries())
+    )
+    this.webWorker = webWorker
+
+    return { result, }
   }
 }
 
