@@ -5,14 +5,17 @@ set(CMAKE_CXX_STANDARD 17)
 
 if(EMSCRIPTEN)
   set(io_components
+    ITKTransformIO
     )
 elseif(WASI)
   set(io_components
     ITKIOMeta
+    ITKTransformIO
     )
 else()
   set(io_components
     ITKImageIO
+    ITKTransformIO
     )
 endif()
 find_package(ITK REQUIRED
@@ -30,6 +33,7 @@ enable_testing()
 add_test(NAME elastix-wasm-test
   COMMAND elastix
     ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung_registered.iwi.cbor
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung.h5
     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_fixed.iwi.cbor
     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_moving.iwi.cbor
   )

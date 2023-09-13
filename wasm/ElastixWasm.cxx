@@ -20,7 +20,9 @@
 #include "itkInputImage.h"
 #include "itkOutputImage.h"
 #include "itkSupportInputImageTypes.h"
+
 #include "itkImage.h"
+#include "itkTransformFileWriter.h"
 
 template <typename TImage>
 class PipelineFunctor
@@ -40,7 +42,10 @@ public:
 
     using OutputImageType = itk::wasm::OutputImage<ImageType>;
     OutputImageType resultImage;
-    pipeline.add_option("result", resultImage, "The result image")->required()->type_name("OUTPUT_IMAGE");
+    pipeline.add_option("result", resultImage, "Resampled moving image")->required()->type_name("OUTPUT_IMAGE");
+
+    std::string outputTransform;
+    pipeline.add_option("transform", outputTransform, "Fixed-to-moving transform")->required()->type_name("OUTPUT_BINARY_FILE");
 
     ITK_WASM_PARSE(pipeline);
 
@@ -56,6 +61,13 @@ public:
 
     typename ImageType::Pointer outputImage = registration->GetOutput();
     resultImage.Set(outputImage);
+
+    const auto writer = itk::TransformFileWriter::New();
+    typename RegistrationType::TransformType::ConstPointer combinationTransform = registration->GetCombinationTransform();
+    typename RegistrationType::TransformType::ConstPointer compositeTransform = registration->ConvertToItkTransform(*combinationTransform);
+    writer->SetInput(compositeTransform);
+    writer->SetFileName(outputTransform);
+    ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
 
     return EXIT_SUCCESS;
   }
