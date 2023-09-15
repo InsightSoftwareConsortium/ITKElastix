@@ -56,7 +56,7 @@ if(SKBUILD)
 endif()
 
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_TAG "23937288318b4ff42b225fbbfbc4abb128e06384")
+set(elastix_GIT_TAG "798ecaebab9d264d0f3cb375a1bf74174c41343c")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
