@@ -62,7 +62,7 @@ endif()
 
 # set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
 set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-set(elastix_GIT_TAG "2a8937ecaa71c87eb381e7ae9d4ea83239c839fe")
+set(elastix_GIT_TAG "e5428a8b8347d869040fc5b3ecc58106368c8ce4")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
