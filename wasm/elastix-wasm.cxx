@@ -23,6 +23,7 @@
 
 #include "itkImage.h"
 #include "itkTransformFileWriter.h"
+#include "itkIdentityTransform.h"
 
 template <typename TImage>
 class PipelineFunctor
@@ -64,13 +65,25 @@ public:
 
     const auto writer = itk::TransformFileWriter::New();
 
-    typename RegistrationType::TransformType::ConstPointer combinationTransform =
-      registration->GetCombinationTransform();
-    typename RegistrationType::TransformType::ConstPointer compositeTransform =
-      registration->ConvertToItkTransform(*combinationTransform);
-    writer->SetInput(compositeTransform);
-    writer->SetFileName(outputTransform);
-    ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
+    if (registration->GetNumberOfTransforms() == 0)
+    {
+      using IdentityTransformType = itk::IdentityTransform<double, ImageType::ImageDimension>;
+      typename IdentityTransformType::ConstPointer identity = IdentityTransformType::New();
+      writer->SetInput(identity);
+      writer->SetFileName(outputTransform);
+      ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
+    }
+    else
+    {
+      typename RegistrationType::TransformType::ConstPointer combinationTransform =
+        registration->GetCombinationTransform();
+      combinationTransform->Print(std::cout);
+      typename RegistrationType::TransformType::ConstPointer compositeTransform =
+        registration->ConvertToItkTransform(*combinationTransform);
+      writer->SetInput(compositeTransform);
+      writer->SetFileName(outputTransform);
+      ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
+    }
 
     return EXIT_SUCCESS;
   }
