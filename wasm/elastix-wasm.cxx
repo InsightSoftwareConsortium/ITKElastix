@@ -63,8 +63,11 @@ public:
     resultImage.Set(outputImage);
 
     const auto writer = itk::TransformFileWriter::New();
-    typename RegistrationType::TransformType::ConstPointer combinationTransform = registration->GetCombinationTransform();
-    typename RegistrationType::TransformType::ConstPointer compositeTransform = registration->ConvertToItkTransform(*combinationTransform);
+
+    typename RegistrationType::TransformType::ConstPointer combinationTransform =
+      registration->GetCombinationTransform();
+    typename RegistrationType::TransformType::ConstPointer compositeTransform =
+      registration->ConvertToItkTransform(*combinationTransform);
     writer->SetInput(compositeTransform);
     writer->SetFileName(outputTransform);
     ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
