@@ -100,9 +100,10 @@ if(ELASTIX_USE_OPENCL)
 endif()
 
 # Reset parameters for ITK remote module build
-set(BUILD_TESTING ${_itk_build_testing})
-set(BUILD_SHARED_LIBS ${_itk_build_shared})
-
+if (NOT WASI AND NOT EMSCRIPTEN)
+  set(BUILD_TESTING ${_itk_build_testing})
+  set(BUILD_SHARED_LIBS ${_itk_build_shared})
+endif()
 
 if(ITK_WRAP_PYTHON) # Python wrapping is enabled
   get_property(multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
