@@ -23,15 +23,21 @@
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 
-int main( int argc, char * argv[] )
+int
+main(int argc, char * argv[])
 {
-  itk::wasm::Pipeline pipeline("read-parameter-file", "Read an elastix parameter text file into a parameter object.", argc, argv);
+  itk::wasm::Pipeline pipeline(
+    "read-parameter-file", "Read an elastix parameter text file into a parameter object.", argc, argv);
 
   std::vector<std::string> parameterFiles;
-  pipeline.add_option("-f,--parameter-files", parameterFiles, "Elastix parameter files")->required()->type_name("INPUT_TEXT_FILE");
+  pipeline.add_option("-f,--parameter-files", parameterFiles, "Elastix parameter files")
+    ->required()
+    ->type_name("INPUT_TEXT_FILE");
 
   itk::wasm::OutputTextStream parameterObjectJson;
-  pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation")->required()->type_name("OUTPUT_JSON");
+  pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation")
+    ->required()
+    ->type_name("OUTPUT_JSON");
 
   ITK_WASM_PARSE(pipeline);
 
@@ -46,12 +52,12 @@ int main( int argc, char * argv[] )
   const auto numParameterMaps = parameterObject->GetNumberOfParameterMaps();
   for (unsigned int i = 0; i < numParameterMaps; ++i)
   {
-    const auto & parameterMap = parameterObject->GetParameterMap(i);
+    const auto &     parameterMap = parameterObject->GetParameterMap(i);
     rapidjson::Value parameterMapJson(rapidjson::kObjectType);
     for (const auto & parameter : parameterMap)
     {
-      const auto & key = parameter.first;
-      const auto & value = parameter.second;
+      const auto &     key = parameter.first;
+      const auto &     value = parameter.second;
       rapidjson::Value valueJson(rapidjson::kArrayType);
       for (const auto & valueElement : value)
       {
@@ -62,7 +68,7 @@ int main( int argc, char * argv[] )
     document.PushBack(parameterMapJson, allocator);
   }
 
-  rapidjson::StringBuffer buffer;
+  rapidjson::StringBuffer                          buffer;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
   document.Accept(writer);
 

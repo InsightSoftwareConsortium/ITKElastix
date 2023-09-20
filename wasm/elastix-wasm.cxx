@@ -46,7 +46,9 @@ public:
     pipeline.add_option("result", resultImage, "Resampled moving image")->required()->type_name("OUTPUT_IMAGE");
 
     std::string outputTransform;
-    pipeline.add_option("transform", outputTransform, "Fixed-to-moving transform")->required()->type_name("OUTPUT_BINARY_FILE");
+    pipeline.add_option("transform", outputTransform, "Fixed-to-moving transform")
+      ->required()
+      ->type_name("OUTPUT_BINARY_FILE");
 
     ITK_WASM_PARSE(pipeline);
 
