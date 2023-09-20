@@ -29,7 +29,7 @@ int
 main(int argc, char * argv[])
 {
   itk::wasm::Pipeline pipeline(
-    "write-parameter-file", "Write an elastix parameter text file from a parameter object.", argc, argv);
+    "write-parameter-files", "Write an elastix parameter text file from a parameter object.", argc, argv);
 
   itk::wasm::InputTextStream parameterObjectJson;
   pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation")

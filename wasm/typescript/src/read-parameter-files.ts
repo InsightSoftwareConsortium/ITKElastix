@@ -9,8 +9,8 @@ import {
   runPipeline
 } from 'itk-wasm'
 
-import ReadParameterFileOptions from './read-parameter-file-options.js'
-import ReadParameterFileResult from './read-parameter-file-result.js'
+import ReadParameterFilesOptions from './read-parameter-files-options.js'
+import ReadParameterFilesResult from './read-parameter-files-result.js'
 
 
 import { getPipelinesBaseUrl } from './pipelines-base-url.js'
@@ -19,14 +19,14 @@ import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
 /**
  * Read an elastix parameter text file into a parameter object.
  *
- * @param {ReadParameterFileOptions} options - options object
+ * @param {ReadParameterFilesOptions} options - options object
  *
- * @returns {Promise<ReadParameterFileResult>} - result object
+ * @returns {Promise<ReadParameterFilesResult>} - result object
  */
-async function readParameterFile(
+async function readParameterFiles(
   webWorker: null | Worker,
-  options: ReadParameterFileOptions = { parameterFiles: [] as TextFile[] | File[] | string[], }
-) : Promise<ReadParameterFileResult> {
+  options: ReadParameterFilesOptions = { parameterFiles: [] as TextFile[] | File[] | string[], }
+) : Promise<ReadParameterFilesResult> {
 
   const desiredOutputs: Array<PipelineOutput> = [
     { type: InterfaceTypes.JsonCompatible },
@@ -61,7 +61,7 @@ async function readParameterFile(
     }))
   }
 
-  const pipelinePath = 'read-parameter-file'
+  const pipelinePath = 'read-parameter-files'
 
   const {
     webWorker: usedWebWorker,
@@ -80,4 +80,4 @@ async function readParameterFile(
   return result
 }
 
-export default readParameterFile
+export default readParameterFiles

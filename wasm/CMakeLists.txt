@@ -29,11 +29,11 @@ include(${ITK_USE_FILE})
 add_executable(elastix elastix-wasm.cxx)
 target_link_libraries(elastix PUBLIC ${ITK_LIBRARIES})
 
-add_executable(read-parameter-file read-parameter-file.cxx)
-target_link_libraries(read-parameter-file PUBLIC ${ITK_LIBRARIES})
+add_executable(read-parameter-files read-parameter-files.cxx)
+target_link_libraries(read-parameter-files PUBLIC ${ITK_LIBRARIES})
 
-add_executable(write-parameter-file write-parameter-file.cxx)
-target_link_libraries(write-parameter-file PUBLIC ${ITK_LIBRARIES})
+add_executable(write-parameter-files write-parameter-files.cxx)
+target_link_libraries(write-parameter-files PUBLIC ${ITK_LIBRARIES})
 
 add_executable(default-parameter-map default-parameter-map.cxx)
 target_link_libraries(default-parameter-map PUBLIC ${ITK_LIBRARIES})
@@ -47,27 +47,27 @@ add_test(NAME elastix-wasm-test
     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_moving.iwi.cbor
   )
 
-add_test(NAME read-parameter-file-test
-  COMMAND read-parameter-file
+add_test(NAME read-parameter-files-test
+  COMMAND read-parameter-files
     ${CMAKE_CURRENT_BINARY_DIR}/parameters_single.json
     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Affine.txt
   )
 
-add_test(NAME read-parameter-file-multiple-test
-  COMMAND read-parameter-file
+add_test(NAME read-parameter-files-multiple-test
+  COMMAND read-parameter-files
     ${CMAKE_CURRENT_BINARY_DIR}/parameters_multiple.json
     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Translation.txt
        ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Affine.txt
   )
 
-add_test(NAME write-parameter-file-test
-  COMMAND write-parameter-file
+add_test(NAME write-parameter-files-test
+  COMMAND write-parameter-files
     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_single.json
     ${CMAKE_CURRENT_BINARY_DIR}/parameters_Affine.txt
   )
 
-add_test(NAME write-parameter-file-multiple-test
-  COMMAND write-parameter-file
+add_test(NAME write-parameter-files-multiple-test
+  COMMAND write-parameter-files
     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_multiple.json
     ${CMAKE_CURRENT_BINARY_DIR}/parameters_Translation.txt
     ${CMAKE_CURRENT_BINARY_DIR}/parameters_Affine.txt

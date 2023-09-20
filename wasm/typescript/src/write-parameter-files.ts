@@ -9,8 +9,8 @@ import {
   runPipeline
 } from 'itk-wasm'
 
-import WriteParameterFileOptions from './write-parameter-file-options.js'
-import WriteParameterFileResult from './write-parameter-file-result.js'
+import WriteParameterFilesOptions from './write-parameter-files-options.js'
+import WriteParameterFilesResult from './write-parameter-files-result.js'
 
 
 import { getPipelinesBaseUrl } from './pipelines-base-url.js'
@@ -20,15 +20,15 @@ import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
  * Write an elastix parameter text file from a parameter object.
  *
  * @param {JsonCompatible} parameterObject - Elastix parameter object representation
- * @param {WriteParameterFileOptions} options - options object
+ * @param {WriteParameterFilesOptions} options - options object
  *
- * @returns {Promise<WriteParameterFileResult>} - result object
+ * @returns {Promise<WriteParameterFilesResult>} - result object
  */
-async function writeParameterFile(
+async function writeParameterFiles(
   webWorker: null | Worker,
   parameterObject: JsonCompatible,
-  options: WriteParameterFileOptions = {}
-) : Promise<WriteParameterFileResult> {
+  options: WriteParameterFilesOptions = {}
+) : Promise<WriteParameterFilesResult> {
 
   const parameterFilesPipelineOutputs = typeof options.parameterFilesPath !== 'undefined' ? options.parameterFilesPath.map((p) => { return { type: InterfaceTypes.TextFile, data: { path: p, data: '' }}}) : []
   const desiredOutputs: Array<PipelineOutput> = [
@@ -50,7 +50,7 @@ async function writeParameterFile(
   // Options
   args.push('--memory-io')
 
-  const pipelinePath = 'write-parameter-file'
+  const pipelinePath = 'write-parameter-files'
 
   const {
     webWorker: usedWebWorker,
@@ -69,4 +69,4 @@ async function writeParameterFile(
   return result
 }
 
-export default writeParameterFile
+export default writeParameterFiles

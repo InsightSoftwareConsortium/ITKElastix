@@ -24,24 +24,24 @@ import elastix from './elastix.js'
 export { elastix }
 
 
-import ReadParameterFileResult from './read-parameter-file-result.js'
-export type { ReadParameterFileResult }
+import ReadParameterFilesResult from './read-parameter-files-result.js'
+export type { ReadParameterFilesResult }
 
-import ReadParameterFileOptions from './read-parameter-file-options.js'
-export type { ReadParameterFileOptions }
+import ReadParameterFilesOptions from './read-parameter-files-options.js'
+export type { ReadParameterFilesOptions }
 
-import readParameterFile from './read-parameter-file.js'
-export { readParameterFile }
+import readParameterFiles from './read-parameter-files.js'
+export { readParameterFiles }
 
 
-import WriteParameterFileResult from './write-parameter-file-result.js'
-export type { WriteParameterFileResult }
+import WriteParameterFilesResult from './write-parameter-files-result.js'
+export type { WriteParameterFilesResult }
 
-import WriteParameterFileOptions from './write-parameter-file-options.js'
-export type { WriteParameterFileOptions }
+import WriteParameterFilesOptions from './write-parameter-files-options.js'
+export type { WriteParameterFilesOptions }
 
-import writeParameterFile from './write-parameter-file.js'
-export { writeParameterFile }
+import writeParameterFiles from './write-parameter-files.js'
+export { writeParameterFiles }
 
 export type { JsonCompatible } from 'itk-wasm'
 export type { Image } from 'itk-wasm'

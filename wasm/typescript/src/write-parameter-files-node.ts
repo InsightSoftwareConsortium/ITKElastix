@@ -8,8 +8,8 @@ import {
   runPipelineNode
 } from 'itk-wasm'
 
-import WriteParameterFileOptions from './write-parameter-file-options.js'
-import WriteParameterFileNodeResult from './write-parameter-file-node-result.js'
+import WriteParameterFilesOptions from './write-parameter-files-options.js'
+import WriteParameterFilesNodeResult from './write-parameter-files-node-result.js'
 
 
 import path from 'path'
@@ -18,14 +18,14 @@ import path from 'path'
  * Write an elastix parameter text file from a parameter object.
  *
  * @param {JsonCompatible} parameterObject - Elastix parameter object representation
- * @param {WriteParameterFileOptions} options - options object
+ * @param {WriteParameterFilesOptions} options - options object
  *
- * @returns {Promise<WriteParameterFileNodeResult>} - result object
+ * @returns {Promise<WriteParameterFilesNodeResult>} - result object
  */
-async function writeParameterFileNode(
+async function writeParameterFilesNode(
   parameterObject: JsonCompatible,
-  options: WriteParameterFileOptions = {}
-) : Promise<WriteParameterFileNodeResult> {
+  options: WriteParameterFilesOptions = {}
+) : Promise<WriteParameterFilesNodeResult> {
 
   const mountDirs: Set<string> = new Set()
 
@@ -49,7 +49,7 @@ async function writeParameterFileNode(
   // Options
   args.push('--memory-io')
 
-  const pipelinePath = path.join(path.dirname(import.meta.url.substring(7)), '..', 'pipelines', 'write-parameter-file')
+  const pipelinePath = path.join(path.dirname(import.meta.url.substring(7)), '..', 'pipelines', 'write-parameter-files')
 
   const {
     returnValue,
@@ -66,4 +66,4 @@ async function writeParameterFileNode(
   return result
 }
 
-export default writeParameterFileNode
+export default writeParameterFilesNode

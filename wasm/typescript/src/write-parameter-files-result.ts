@@ -2,7 +2,7 @@
 
 import { TextFile } from 'itk-wasm'
 
-interface WriteParameterFileResult {
+interface WriteParameterFilesResult {
   /** WebWorker used for computation */
   webWorker: Worker | null
 
@@ -11,4 +11,4 @@ interface WriteParameterFileResult {
 
 }
 
-export default WriteParameterFileResult
+export default WriteParameterFilesResult

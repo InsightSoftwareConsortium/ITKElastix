@@ -2,10 +2,10 @@
 
 import { TextFile } from 'itk-wasm'
 
-interface ReadParameterFileOptions {
+interface ReadParameterFilesOptions {
   /** Elastix parameter files */
   parameterFiles: string[] | File[] | TextFile[]
 
 }
 
-export default ReadParameterFileOptions
+export default ReadParameterFilesOptions

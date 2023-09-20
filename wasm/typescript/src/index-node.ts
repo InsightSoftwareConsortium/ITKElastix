@@ -22,24 +22,24 @@ import elastixNode from './elastix-node.js'
 export { elastixNode }
 
 
-import ReadParameterFileNodeResult from './read-parameter-file-node-result.js'
-export type { ReadParameterFileNodeResult }
+import ReadParameterFilesNodeResult from './read-parameter-files-node-result.js'
+export type { ReadParameterFilesNodeResult }
 
-import ReadParameterFileOptions from './read-parameter-file-options.js'
-export type { ReadParameterFileOptions }
+import ReadParameterFilesOptions from './read-parameter-files-options.js'
+export type { ReadParameterFilesOptions }
 
-import readParameterFileNode from './read-parameter-file-node.js'
-export { readParameterFileNode }
+import readParameterFilesNode from './read-parameter-files-node.js'
+export { readParameterFilesNode }
 
 
-import WriteParameterFileNodeResult from './write-parameter-file-node-result.js'
-export type { WriteParameterFileNodeResult }
+import WriteParameterFilesNodeResult from './write-parameter-files-node-result.js'
+export type { WriteParameterFilesNodeResult }
 
-import WriteParameterFileOptions from './write-parameter-file-options.js'
-export type { WriteParameterFileOptions }
+import WriteParameterFilesOptions from './write-parameter-files-options.js'
+export type { WriteParameterFilesOptions }
 
-import writeParameterFileNode from './write-parameter-file-node.js'
-export { writeParameterFileNode }
+import writeParameterFilesNode from './write-parameter-files-node.js'
+export { writeParameterFilesNode }
 
 export type { JsonCompatible } from 'itk-wasm'
 export type { Image } from 'itk-wasm'

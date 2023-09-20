@@ -1,9 +1,9 @@
 // Generated file. To retain edits, remove this comment.
 
-interface WriteParameterFileNodeResult {
+interface WriteParameterFilesNodeResult {
   /** Elastix parameter files */
   parameterFiles: string
 
 }
 
-export default WriteParameterFileNodeResult
+export default WriteParameterFilesNodeResult

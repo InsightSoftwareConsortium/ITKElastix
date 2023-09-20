@@ -60,8 +60,8 @@
   <sl-tab-group>
     <sl-tab slot="nav" panel="defaultParameterMap-panel">defaultParameterMap</sl-tab>
     <sl-tab slot="nav" panel="elastix-panel">elastix</sl-tab>
-    <sl-tab slot="nav" panel="readParameterFile-panel">readParameterFile</sl-tab>
-    <sl-tab slot="nav" panel="writeParameterFile-panel">writeParameterFile</sl-tab>
+    <sl-tab slot="nav" panel="readParameterFiles-panel">readParameterFiles</sl-tab>
+    <sl-tab slot="nav" panel="writeParameterFiles-panel">writeParameterFiles</sl-tab>
 
 
     <sl-tab-panel name="defaultParameterMap-panel">
@@ -143,12 +143,12 @@
     </sl-tab-panel>
 
 
-    <sl-tab-panel name="readParameterFile-panel">
+    <sl-tab-panel name="readParameterFiles-panel">
 
     <small><i>Read an elastix parameter text file into a parameter object.</i></small><br /><br />
 
-    <div id="readParameterFileInputs"><form action="">
-      <sl-tooltip content="Use the Upload button to provide the parameterFiles"><sl-details id="readParameterFile-parameter-files-details"  summary="parameterFiles: Elastix parameter files" disabled></sl-details></sl-tooltip>
+    <div id="readParameterFilesInputs"><form action="">
+      <sl-tooltip content="Use the Upload button to provide the parameterFiles"><sl-details id="readParameterFiles-parameter-files-details"  summary="parameterFiles: Elastix parameter files" disabled></sl-details></sl-tooltip>
       <label for="parameter-files-file"><sl-button name="parameter-files-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" multiple  name="parameter-files-file" style="display: none"/>
 <br /><br />
     <sl-divider></sl-divider>
@@ -158,8 +158,8 @@
     </form></div>
     <sl-divider></sl-divider>
 
-    <div id="readParameterFileOutputs">
-      <sl-details disabled id="readParameterFile-parameter-object-details" summary="parameterObject: Elastix parameter object representation"></sl-details>
+    <div id="readParameterFilesOutputs">
+      <sl-details disabled id="readParameterFiles-parameter-object-details" summary="parameterObject: Elastix parameter object representation"></sl-details>
       <sl-button variant="neutral" outline name="parameter-object-download" disabled>Download</sl-button>
 <br /><br />
     </div>
@@ -167,12 +167,12 @@
     </sl-tab-panel>
 
 
-    <sl-tab-panel name="writeParameterFile-panel">
+    <sl-tab-panel name="writeParameterFiles-panel">
 
     <small><i>Write an elastix parameter text file from a parameter object.</i></small><br /><br />
 
-    <div id="writeParameterFileInputs"><form action="">
-      <sl-tooltip content="Use the Upload button to provide the parameterObject"><sl-details id="writeParameterFile-parameter-object-details" summary="parameterObject: Elastix parameter object representation" disabled></sl-details></sl-tooltip>
+    <div id="writeParameterFilesInputs"><form action="">
+      <sl-tooltip content="Use the Upload button to provide the parameterObject"><sl-details id="writeParameterFiles-parameter-object-details" summary="parameterObject: Elastix parameter object representation" disabled></sl-details></sl-tooltip>
       <label for="parameter-object-file"><sl-button name="parameter-object-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" name="parameter-object-file" style="display: none"/>
 <br /><br />
     <sl-divider></sl-divider>
@@ -182,8 +182,8 @@
     </form></div>
     <sl-divider></sl-divider>
 
-    <div id="writeParameterFileOutputs">
-      <sl-details disabled id="writeParameterFile-parameter-files-details" summary="parameterFiles: Elastix parameter files"></sl-details>
+    <div id="writeParameterFilesOutputs">
+      <sl-details disabled id="writeParameterFiles-parameter-files-details" summary="parameterFiles: Elastix parameter files"></sl-details>
       <sl-button variant="neutral" outline name="parameter-files-download" disabled>Download</sl-button>
 <br /><br />
     </div>

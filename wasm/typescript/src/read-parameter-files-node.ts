@@ -8,8 +8,8 @@ import {
   runPipelineNode
 } from 'itk-wasm'
 
-import ReadParameterFileOptions from './read-parameter-file-options.js'
-import ReadParameterFileNodeResult from './read-parameter-file-node-result.js'
+import ReadParameterFilesOptions from './read-parameter-files-options.js'
+import ReadParameterFilesNodeResult from './read-parameter-files-node-result.js'
 
 
 import path from 'path'
@@ -17,13 +17,13 @@ import path from 'path'
 /**
  * Read an elastix parameter text file into a parameter object.
  *
- * @param {ReadParameterFileOptions} options - options object
+ * @param {ReadParameterFilesOptions} options - options object
  *
- * @returns {Promise<ReadParameterFileNodeResult>} - result object
+ * @returns {Promise<ReadParameterFilesNodeResult>} - result object
  */
-async function readParameterFileNode(
-  options: ReadParameterFileOptions = { parameterFiles: [] as string[], }
-) : Promise<ReadParameterFileNodeResult> {
+async function readParameterFilesNode(
+  options: ReadParameterFilesOptions = { parameterFiles: [] as string[], }
+) : Promise<ReadParameterFilesNodeResult> {
 
   const mountDirs: Set<string> = new Set()
 
@@ -54,7 +54,7 @@ async function readParameterFileNode(
     })
   }
 
-  const pipelinePath = path.join(path.dirname(import.meta.url.substring(7)), '..', 'pipelines', 'read-parameter-file')
+  const pipelinePath = path.join(path.dirname(import.meta.url.substring(7)), '..', 'pipelines', 'read-parameter-files')
 
   const {
     returnValue,
@@ -71,4 +71,4 @@ async function readParameterFileNode(
   return result
 }
 
-export default readParameterFileNode
+export default readParameterFilesNode

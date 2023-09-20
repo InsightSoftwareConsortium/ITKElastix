@@ -1,9 +1,9 @@
 // Generated file. To retain edits, remove this comment.
 
-interface WriteParameterFileOptions {
+interface WriteParameterFilesOptions {
   /** Elastix parameter files path */
   parameterFilesPath?: string[]
 
 }
 
-export default WriteParameterFileOptions
+export default WriteParameterFilesOptions

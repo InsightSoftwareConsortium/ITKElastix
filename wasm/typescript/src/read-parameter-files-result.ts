@@ -2,7 +2,7 @@
 
 import { JsonCompatible } from 'itk-wasm'
 
-interface ReadParameterFileResult {
+interface ReadParameterFilesResult {
   /** WebWorker used for computation */
   webWorker: Worker | null
 
@@ -11,4 +11,4 @@ interface ReadParameterFileResult {
 
 }
 
-export default ReadParameterFileResult
+export default ReadParameterFilesResult

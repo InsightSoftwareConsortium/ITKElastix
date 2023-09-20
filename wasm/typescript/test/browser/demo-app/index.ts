@@ -10,8 +10,8 @@ elastix.setPipelineWorkerUrl(pipelineWorkerUrl)
 
 import './default-parameter-map-controller.js'
 import './elastix-controller.js'
-import './read-parameter-file-controller.js'
-import './write-parameter-file-controller.js'
+import './read-parameter-files-controller.js'
+import './write-parameter-files-controller.js'
 
 const tabGroup = document.querySelector('sl-tab-group')
 const params = new URLSearchParams(window.location.search)

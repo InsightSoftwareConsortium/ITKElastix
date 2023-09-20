@@ -2,10 +2,10 @@
 
 import { JsonCompatible } from 'itk-wasm'
 
-interface ReadParameterFileNodeResult {
+interface ReadParameterFilesNodeResult {
   /** Elastix parameter object representation */
   parameterObject: JsonCompatible
 
 }
 
-export default ReadParameterFileNodeResult
+export default ReadParameterFilesNodeResult
