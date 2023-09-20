@@ -86,6 +86,15 @@ class ElastixController  {
         }
     })
 
+    const transformOutputDownload = document.querySelector('#elastixOutputs sl-button[name=transform-download]')
+    transformOutputDownload.addEventListener('click', (event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        if (model.outputs.has("transform")) {
+            globalThis.downloadFile(model.outputs.get("transform").data, model.outputs.get("transform").path)
+        }
+    })
+
     const tabGroup = document.querySelector('sl-tab-group')
     tabGroup.addEventListener('sl-tab-show', async (event) => {
       if (event.detail.name === 'elastix-panel') {
@@ -113,7 +122,7 @@ class ElastixController  {
         runButton.loading = true
 
         const t0 = performance.now()
-        const { result, } = await this.run()
+        const { result, transform, } = await this.run()
         const t1 = performance.now()
         globalThis.notify("elastix successfully completed", `in ${t1 - t0} milliseconds.`, "success", "rocket-fill")
 
@@ -124,6 +133,13 @@ class ElastixController  {
         resultDetails.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(result, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
         resultDetails.disabled = false
         const resultOutput = document.getElementById('elastix-result-details')
+
+        model.outputs.set("transform", transform)
+        transformOutputDownload.variant = "success"
+        transformOutputDownload.disabled = false
+        const transformOutput = document.getElementById("elastix-transform-details")
+        transformOutput.innerHTML = `<pre>${globalThis.escapeHtml(transform.data.subarray(0, 1024).toString() + ' ...')}</pre>`
+        transformOutput.disabled = false
       } catch (error) {
         globalThis.notify("Error while running pipeline", error.toString(), "danger", "exclamation-octagon")
         throw error
@@ -134,12 +150,12 @@ class ElastixController  {
   }
 
   async run() {
-    const { webWorker, result, } = await elastix.elastix(this.webWorker,
+    const { webWorker, result, transform, } = await elastix.elastix(this.webWorker,
       Object.fromEntries(this.model.options.entries())
     )
     this.webWorker = webWorker
 
-    return { result, }
+    return { result, transform, }
   }
 }
 

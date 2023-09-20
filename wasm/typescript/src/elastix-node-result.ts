@@ -3,8 +3,11 @@
 import { Image } from 'itk-wasm'
 
 interface ElastixNodeResult {
-  /** The result image */
+  /** Resampled moving image */
   result: Image
+
+  /** Fixed-to-moving transform */
+  transform: string
 
 }
 

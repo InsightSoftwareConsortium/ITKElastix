@@ -6,12 +6,13 @@ from typing import Dict, Tuple, Optional, List, Any
 from itkwasm import (
     environment_dispatch,
     Image,
+    BinaryFile,
 )
 
 async def elastix_async(
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
-) -> Image:
+) -> Tuple[Image, os.PathLike]:
     """Rigid and non-rigid registration of images.
 
     :param fixed: Fixed image
@@ -20,8 +21,11 @@ async def elastix_async(
     :param moving: Moving image
     :type  moving: Image
 
-    :return: The result image
+    :return: Resampled moving image
     :rtype:  Image
+
+    :return: Fixed-to-moving transform
+    :rtype:  os.PathLike
     """
     func = environment_dispatch("itkwasm_elastix", "elastix_async")
     output = await func(fixed=fixed, moving=moving)

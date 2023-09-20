@@ -8,7 +8,10 @@ elastix.setPipelinesBaseUrl(pipelinesBaseUrl)
 const pipelineWorkerUrl: string | URL | null = new URL('/web-workers/pipeline.worker.js', document.location.origin).href
 elastix.setPipelineWorkerUrl(pipelineWorkerUrl)
 
+import './default-parameter-map-controller.js'
 import './elastix-controller.js'
+import './read-parameter-file-controller.js'
+import './write-parameter-file-controller.js'
 
 const tabGroup = document.querySelector('sl-tab-group')
 const params = new URLSearchParams(window.location.search)
@@ -16,5 +19,5 @@ if (params.has('functionName')) {
   const functionName = params.get('functionName')
   tabGroup.show(functionName + '-panel')
 } else {
-  tabGroup.show('elastix-panel')
+  tabGroup.show('defaultParameterMap-panel')
 }

@@ -2,6 +2,7 @@
 
 import {
   Image,
+  BinaryFile,
   InterfaceTypes,
   PipelineOutput,
   PipelineInput,
@@ -27,8 +28,10 @@ async function elastix(
   options: ElastixOptions = {}
 ) : Promise<ElastixResult> {
 
+  const transformPath = typeof options.transformPath === 'undefined' ? 'transform' : options.transformPath
   const desiredOutputs: Array<PipelineOutput> = [
     { type: InterfaceTypes.Image },
+    { type: InterfaceTypes.BinaryFile, data: { path: transformPath, data: new Uint8Array() }},
   ]
 
   const inputs: Array<PipelineInput> = [
@@ -39,6 +42,9 @@ async function elastix(
   // Outputs
   const resultName = '0'
   args.push(resultName)
+
+  const transformName = transformPath
+  args.push(transformName)
 
   // Options
   args.push('--memory-io')
@@ -70,6 +76,7 @@ async function elastix(
   const result = {
     webWorker: usedWebWorker as Worker,
     result: outputs[0].data as Image,
+    transform: outputs[1].data as BinaryFile,
   }
   return result
 }

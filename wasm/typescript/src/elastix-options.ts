@@ -9,6 +9,9 @@ interface ElastixOptions {
   /** Moving image */
   moving?: Image
 
+  /** Fixed-to-moving transform path */
+  transformPath?: string
+
 }
 
 export default ElastixOptions

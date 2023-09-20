@@ -16,12 +16,13 @@ from itkwasm import (
     PipelineInput,
     Pipeline,
     Image,
+    BinaryFile,
 )
 
 def elastix(
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
-) -> Image:
+) -> Tuple[Image, os.PathLike]:
     """Rigid and non-rigid registration of images.
 
     :param fixed: Fixed image
@@ -30,8 +31,11 @@ def elastix(
     :param moving: Moving image
     :type  moving: Image
 
-    :return: The result image
+    :return: Resampled moving image
     :rtype:  Image
+
+    :return: Fixed-to-moving transform
+    :rtype:  os.PathLike
     """
     global _pipeline
     if _pipeline is None:
@@ -39,6 +43,7 @@ def elastix(
 
     pipeline_outputs: List[PipelineOutput] = [
         PipelineOutput(InterfaceTypes.Image),
+        PipelineOutput(InterfaceTypes.BinaryFile, BinaryFile(PurePosixPath(transform))),
     ]
 
     pipeline_inputs: List[PipelineInput] = [
@@ -48,6 +53,7 @@ def elastix(
     # Inputs
     # Outputs
     args.append('0')
+    args.append(str(PurePosixPath(transform)))
     # Options
     if fixed is not None:
         input_count_string = str(len(pipeline_inputs))
@@ -64,6 +70,9 @@ def elastix(
 
     outputs = _pipeline.run(args, pipeline_outputs, pipeline_inputs)
 
-    result = outputs[0].data
+    result = (
+        outputs[0].data,
+        Path(outputs[1].data.path),
+    )
     return result
 

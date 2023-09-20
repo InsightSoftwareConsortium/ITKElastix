@@ -1,13 +1,16 @@
 // Generated file. To retain edits, remove this comment.
 
-import { Image } from 'itk-wasm'
+import { Image, BinaryFile } from 'itk-wasm'
 
 interface ElastixResult {
   /** WebWorker used for computation */
   webWorker: Worker | null
 
-  /** The result image */
+  /** Resampled moving image */
   result: Image
+
+  /** Fixed-to-moving transform */
+  transform: BinaryFile
 
 }
 

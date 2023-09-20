@@ -16,12 +16,13 @@ from itkwasm.pyodide import (
 from itkwasm import (
     InterfaceTypes,
     Image,
+    BinaryFile,
 )
 
 async def elastix_async(
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
-) -> Image:
+) -> Tuple[Image, os.PathLike]:
     """Rigid and non-rigid registration of images.
 
     :param fixed: Fixed image
@@ -30,8 +31,11 @@ async def elastix_async(
     :param moving: Moving image
     :type  moving: Image
 
-    :return: The result image
+    :return: Resampled moving image
     :rtype:  Image
+
+    :return: Fixed-to-moving transform
+    :rtype:  os.PathLike
     """
     js_module = await js_package.js_module
     web_worker = js_resources.web_worker

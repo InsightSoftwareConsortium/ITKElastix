@@ -58,7 +58,36 @@
   <br /><br />
 
   <sl-tab-group>
+    <sl-tab slot="nav" panel="defaultParameterMap-panel">defaultParameterMap</sl-tab>
     <sl-tab slot="nav" panel="elastix-panel">elastix</sl-tab>
+    <sl-tab slot="nav" panel="readParameterFile-panel">readParameterFile</sl-tab>
+    <sl-tab slot="nav" panel="writeParameterFile-panel">writeParameterFile</sl-tab>
+
+
+    <sl-tab-panel name="defaultParameterMap-panel">
+
+    <small><i>Returns the default elastix parameter map for a given transform type.</i></small><br /><br />
+
+    <div id="defaultParameterMapInputs"><form action="">
+      <sl-input required name="transform-name" type="text" label="transformName" help-text="Transform name. One of: translation, rigid, affine, bspline, spline, groupwise"></sl-input>
+      <sl-input name="number-of-resolutions" type="number" value="4" min="0" step="1" label="numberOfResolutions" help-text="Number of multiscale registration resolutions."></sl-input>
+<br />
+      <sl-input name="final-grid-spacing" type="number" value="10" step="any" label="finalGridSpacing" help-text="Final grid spacing in physical units for bspline transforms."></sl-input>
+<br />
+    <sl-divider></sl-divider>
+      <br /><sl-tooltip content="Load example input data. This will overwrite data any existing input data."><sl-button name="loadSampleInputs" variant="default" style="display: none;">Load sample inputs</sl-button></sl-tooltip>
+      <sl-button type="button" variant="success" name="run">Run</sl-button><br /><br />
+
+    </form></div>
+    <sl-divider></sl-divider>
+
+    <div id="defaultParameterMapOutputs">
+      <sl-details disabled id="defaultParameterMap-parameter-object-details" summary="parameterObject: Elastix parameter map representation"></sl-details>
+      <sl-button variant="neutral" outline name="parameter-object-download" disabled>Download</sl-button>
+<br /><br />
+    </div>
+
+    </sl-tab-panel>
 
 
     <sl-tab-panel name="elastix-panel">
@@ -80,7 +109,7 @@
     <sl-divider></sl-divider>
 
     <div id="elastixOutputs">
-      <sl-details disabled id="elastix-result-details" summary="result: The result image"></sl-details>
+      <sl-details disabled id="elastix-result-details" summary="result: Resampled moving image"></sl-details>
       <sl-select id="result-output-format" placeholder="Format">
         <sl-option value="bmp">bmp</sl-option>
         <sl-option value="dcm">dcm</sl-option>
@@ -105,6 +134,57 @@
         <sl-option value="vtk">vtk</sl-option>
       </sl-select>
       <sl-button variant="neutral" outline name="result-download" disabled>Download</sl-button>
+<br /><br />
+      <sl-details disabled id="elastix-transform-details" summary="transform: Fixed-to-moving transform"></sl-details>
+      <sl-button variant="neutral" outline name="transform-download" disabled>Download</sl-button>
+<br /><br />
+    </div>
+
+    </sl-tab-panel>
+
+
+    <sl-tab-panel name="readParameterFile-panel">
+
+    <small><i>Read an elastix parameter text file into a parameter object.</i></small><br /><br />
+
+    <div id="readParameterFileInputs"><form action="">
+      <sl-tooltip content="Use the Upload button to provide the parameterFile"><sl-details id="readParameterFile-parameter-file-details"  summary="parameterFile: Elastix parameter file" disabled></sl-details></sl-tooltip>
+      <label for="parameter-file-file"><sl-button name="parameter-file-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file"  name="parameter-file-file" style="display: none"/>
+<br /><br />
+    <sl-divider></sl-divider>
+      <br /><sl-tooltip content="Load example input data. This will overwrite data any existing input data."><sl-button name="loadSampleInputs" variant="default" style="display: none;">Load sample inputs</sl-button></sl-tooltip>
+      <sl-button type="button" variant="success" name="run">Run</sl-button><br /><br />
+
+    </form></div>
+    <sl-divider></sl-divider>
+
+    <div id="readParameterFileOutputs">
+      <sl-details disabled id="readParameterFile-parameter-object-details" summary="parameterObject: Elastix parameter object representation"></sl-details>
+      <sl-button variant="neutral" outline name="parameter-object-download" disabled>Download</sl-button>
+<br /><br />
+    </div>
+
+    </sl-tab-panel>
+
+
+    <sl-tab-panel name="writeParameterFile-panel">
+
+    <small><i>Write an elastix parameter text file from a parameter object.</i></small><br /><br />
+
+    <div id="writeParameterFileInputs"><form action="">
+      <sl-tooltip content="Use the Upload button to provide the parameterObject"><sl-details id="writeParameterFile-parameter-object-details" summary="parameterObject: Elastix parameter object representation" disabled></sl-details></sl-tooltip>
+      <label for="parameter-object-file"><sl-button name="parameter-object-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" name="parameter-object-file" style="display: none"/>
+<br /><br />
+    <sl-divider></sl-divider>
+      <br /><sl-tooltip content="Load example input data. This will overwrite data any existing input data."><sl-button name="loadSampleInputs" variant="default" style="display: none;">Load sample inputs</sl-button></sl-tooltip>
+      <sl-button type="button" variant="success" name="run">Run</sl-button><br /><br />
+
+    </form></div>
+    <sl-divider></sl-divider>
+
+    <div id="writeParameterFileOutputs">
+      <sl-details disabled id="writeParameterFile-parameter-files-details" summary="parameterFiles: Elastix parameter file"></sl-details>
+      <sl-button variant="neutral" outline name="parameter-files-download" disabled>Download</sl-button>
 <br /><br />
     </div>
 

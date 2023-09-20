@@ -25,8 +25,11 @@ async function elastixNode(
   options: ElastixOptions = {}
 ) : Promise<ElastixNodeResult> {
 
+  const mountDirs: Set<string> = new Set()
+
   const desiredOutputs: Array<PipelineOutput> = [
     { type: InterfaceTypes.Image },
+    { type: InterfaceTypes.BinaryFile },
   ]
 
   const inputs: Array<PipelineInput> = [
@@ -37,6 +40,10 @@ async function elastixNode(
   // Outputs
   const resultName = '0'
   args.push(resultName)
+
+  const transformName = typeof options.transformPath === 'undefined' ? 'transform' : options.transformPath
+  args.push(transformName)
+  mountDirs.add(path.dirname(transformName))
 
   // Options
   args.push('--memory-io')
@@ -59,13 +66,14 @@ async function elastixNode(
     returnValue,
     stderr,
     outputs
-  } = await runPipelineNode(pipelinePath, args, desiredOutputs, inputs)
+  } = await runPipelineNode(pipelinePath, args, desiredOutputs, inputs, mountDirs)
   if (returnValue !== 0) {
     throw new Error(stderr)
   }
 
   const result = {
     result: outputs[0].data as Image,
+    transform: outputs[1].data as string,
   }
   return result
 }
