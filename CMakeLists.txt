@@ -6,6 +6,10 @@ if(NOT CMAKE_CXX_STANDARD OR CMAKE_CXX_STANDARD LESS 17)
   set(CMAKE_CXX_STANDARD 17)
 endif()
 
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)
+endif()
+
 # To ease enablement with Python packaging
 if(DEFINED ENV{ELASTIX_USE_OPENCL})
   set(ELASTIX_USE_OPENCL ON CACHE BOOL "Enable OpenCL support in Elastix")
