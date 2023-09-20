@@ -32,6 +32,9 @@ target_link_libraries(elastix PUBLIC ${ITK_LIBRARIES})
 add_executable(read-parameter-file read-parameter-file.cxx)
 target_link_libraries(read-parameter-file PUBLIC ${ITK_LIBRARIES})
 
+add_executable(write-parameter-file write-parameter-file.cxx)
+target_link_libraries(write-parameter-file PUBLIC ${ITK_LIBRARIES})
+
 enable_testing()
 add_test(NAME elastix-wasm-test
   COMMAND elastix
@@ -43,6 +46,26 @@ add_test(NAME elastix-wasm-test
 
 add_test(NAME read-parameter-file-test
   COMMAND read-parameter-file
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Affine.txt
-    ${CMAKE_CURRENT_BINARY_DIR}/parameters_Affine.json
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_single.json
+    -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Affine.txt
+  )
+
+add_test(NAME read-parameter-file-multiple-test
+  COMMAND read-parameter-file
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_multiple.json
+    -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Translation.txt
+       ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Affine.txt
+  )
+
+add_test(NAME write-parameter-file-test
+  COMMAND write-parameter-file
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_single.json
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_Affine.txt
+  )
+
+add_test(NAME write-parameter-file-multiple-test
+  COMMAND write-parameter-file
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_multiple.json
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_Translation.txt
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_Affine.txt
   )
