@@ -35,6 +35,9 @@ target_link_libraries(read-parameter-file PUBLIC ${ITK_LIBRARIES})
 add_executable(write-parameter-file write-parameter-file.cxx)
 target_link_libraries(write-parameter-file PUBLIC ${ITK_LIBRARIES})
 
+add_executable(default-parameter-map default-parameter-map.cxx)
+target_link_libraries(default-parameter-map PUBLIC ${ITK_LIBRARIES})
+
 enable_testing()
 add_test(NAME elastix-wasm-test
   COMMAND elastix
@@ -68,4 +71,10 @@ add_test(NAME write-parameter-file-multiple-test
     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_multiple.json
     ${CMAKE_CURRENT_BINARY_DIR}/parameters_Translation.txt
     ${CMAKE_CURRENT_BINARY_DIR}/parameters_Affine.txt
+  )
+
+add_test(NAME default-parameter-map-test
+  COMMAND default-parameter-map
+    affine
+    ${CMAKE_CURRENT_BINARY_DIR}/affine_default_parameters.json
   )
