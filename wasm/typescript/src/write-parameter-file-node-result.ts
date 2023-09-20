@@ -1,7 +1,7 @@
 // Generated file. To retain edits, remove this comment.
 
 interface WriteParameterFileNodeResult {
-  /** Elastix parameter file */
+  /** Elastix parameter files */
   parameterFiles: string
 
 }

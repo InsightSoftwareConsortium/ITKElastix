@@ -19,12 +19,12 @@ from itkwasm import (
 )
 
 def read_parameter_file(
-    parameter_file: os.PathLike,
+    parameter_files: List[os.PathLike] = [],
 ) -> Any:
     """Read an elastix parameter text file into a parameter object.
 
-    :param parameter_file: Elastix parameter file
-    :type  parameter_file: os.PathLike
+    :param parameter_files: Elastix parameter files
+    :type  parameter_files: os.PathLike
 
     :return: Elastix parameter object representation
     :rtype:  Any
@@ -38,17 +38,22 @@ def read_parameter_file(
     ]
 
     pipeline_inputs: List[PipelineInput] = [
-        PipelineInput(InterfaceTypes.TextFile, TextFile(PurePosixPath(parameter_file))),
     ]
 
     args: List[str] = ['--memory-io',]
     # Inputs
-    if not Path(parameter_file).exists():
-        raise FileNotFoundError("parameter_file does not exist")
-    args.append(str(PurePosixPath(parameter_file)))
     # Outputs
     args.append('0')
     # Options
+    if len(parameter_files) < 1:
+       raise ValueError('"parameter-files" kwarg must have a length > 1')
+    if len(parameter_files) > 0:
+        args.append('--parameter-files')
+        for value in parameter_files:
+            input_file = str(PurePosixPath(parameter_files))
+            pipeline_inputs.append(PipelineInput(InterfaceTypes.TextFile, TextFile(value)))
+            args.append(input_file)
+
 
     outputs = _pipeline.run(args, pipeline_outputs, pipeline_inputs)
 

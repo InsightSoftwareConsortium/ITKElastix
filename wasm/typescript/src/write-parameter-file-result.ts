@@ -6,7 +6,7 @@ interface WriteParameterFileResult {
   /** WebWorker used for computation */
   webWorker: Worker | null
 
-  /** Elastix parameter file */
+  /** Elastix parameter files */
   parameterFiles: TextFile
 
 }

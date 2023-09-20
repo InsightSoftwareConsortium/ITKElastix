@@ -27,6 +27,9 @@ export { elastix }
 import ReadParameterFileResult from './read-parameter-file-result.js'
 export type { ReadParameterFileResult }
 
+import ReadParameterFileOptions from './read-parameter-file-options.js'
+export type { ReadParameterFileOptions }
+
 import readParameterFile from './read-parameter-file.js'
 export { readParameterFile }
 

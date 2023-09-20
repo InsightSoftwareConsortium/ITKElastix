@@ -30,9 +30,9 @@ async function writeParameterFile(
   options: WriteParameterFileOptions = {}
 ) : Promise<WriteParameterFileResult> {
 
-  const parameterFilesPath = typeof options.parameterFilesPath === 'undefined' ? 'parameterFiles' : options.parameterFilesPath
+  const parameterFilesPipelineOutputs = typeof options.parameterFilesPath !== 'undefined' ? options.parameterFilesPath.map((p) => { return { type: InterfaceTypes.TextFile, data: { path: p, data: '' }}}) : []
   const desiredOutputs: Array<PipelineOutput> = [
-    { type: InterfaceTypes.TextFile, data: { path: parameterFilesPath, data: '' }},
+    ...parameterFilesPipelineOutputs,
   ]
 
   const inputs: Array<PipelineInput> = [
@@ -45,8 +45,7 @@ async function writeParameterFile(
   args.push(parameterObjectName as string)
 
   // Outputs
-  const parameterFilesName = parameterFilesPath
-  args.push(parameterFilesName)
+  options.parameterFilesPath?.forEach((p) => args.push(p))
 
   // Options
   args.push('--memory-io')

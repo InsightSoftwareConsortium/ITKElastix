@@ -28,7 +28,7 @@ async function elastix(
   options: ElastixOptions = {}
 ) : Promise<ElastixResult> {
 
-  const transformPath = typeof options.transformPath === 'undefined' ? 'transform' : options.transformPath
+  const transformPath = options.transformPath ?? 'transform'
   const desiredOutputs: Array<PipelineOutput> = [
     { type: InterfaceTypes.Image },
     { type: InterfaceTypes.BinaryFile, data: { path: transformPath, data: new Uint8Array() }},

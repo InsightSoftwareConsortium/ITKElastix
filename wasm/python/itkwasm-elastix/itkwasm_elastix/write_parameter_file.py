@@ -16,7 +16,7 @@ def write_parameter_file(
     :param parameter_object: Elastix parameter object representation
     :type  parameter_object: Any
 
-    :return: Elastix parameter file
+    :return: Elastix parameter files
     :rtype:  os.PathLike
     """
     func = environment_dispatch("itkwasm_elastix", "write_parameter_file")

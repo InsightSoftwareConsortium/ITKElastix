@@ -26,7 +26,7 @@ async def write_parameter_file_async(
     :param parameter_object: Elastix parameter object representation
     :type  parameter_object: Any
 
-    :return: Elastix parameter file
+    :return: Elastix parameter files
     :rtype:  os.PathLike
     """
     js_module = await js_package.js_module

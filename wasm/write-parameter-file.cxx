@@ -37,7 +37,7 @@ main(int argc, char * argv[])
     ->type_name("INPUT_JSON");
 
   std::vector<std::string> parameterFiles;
-  pipeline.add_option("parameter-files", parameterFiles, "Elastix parameter file")
+  pipeline.add_option("parameter-files", parameterFiles, "Elastix parameter files")
     ->required()
     ->type_name("OUTPUT_TEXT_FILE");
 

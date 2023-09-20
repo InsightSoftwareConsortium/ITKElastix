@@ -43,9 +43,8 @@ async function writeParameterFileNode(
   args.push(parameterObjectName as string)
 
   // Outputs
-  const parameterFilesName = typeof options.parameterFilesPath === 'undefined' ? 'parameterFiles' : options.parameterFilesPath
-  args.push(parameterFilesName)
-  mountDirs.add(path.dirname(parameterFilesName))
+  options.parameterFilesPath?.forEach((p) => args.push(p))
+  options.parameterFilesPath?.forEach((p) => mountDirs.add(path.dirname(p)))
 
   // Options
   args.push('--memory-io')

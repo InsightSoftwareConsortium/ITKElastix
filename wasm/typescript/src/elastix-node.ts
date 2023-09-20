@@ -41,7 +41,7 @@ async function elastixNode(
   const resultName = '0'
   args.push(resultName)
 
-  const transformName = typeof options.transformPath === 'undefined' ? 'transform' : options.transformPath
+  const transformName = options.transformPath ?? 'transform'
   args.push(transformName)
   mountDirs.add(path.dirname(transformName))
 

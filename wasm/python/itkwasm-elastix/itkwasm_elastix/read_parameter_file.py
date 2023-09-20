@@ -9,16 +9,16 @@ from itkwasm import (
 )
 
 def read_parameter_file(
-    parameter_file: os.PathLike,
+    parameter_files: List[os.PathLike] = [],
 ) -> Any:
     """Read an elastix parameter text file into a parameter object.
 
-    :param parameter_file: Elastix parameter file
-    :type  parameter_file: os.PathLike
+    :param parameter_files: Elastix parameter files
+    :type  parameter_files: os.PathLike
 
     :return: Elastix parameter object representation
     :rtype:  Any
     """
     func = environment_dispatch("itkwasm_elastix", "read_parameter_file")
-    output = func(parameter_file)
+    output = func(parameter_files=parameter_files)
     return output

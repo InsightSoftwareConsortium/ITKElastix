@@ -8,6 +8,7 @@ import {
   runPipelineNode
 } from 'itk-wasm'
 
+import ReadParameterFileOptions from './read-parameter-file-options.js'
 import ReadParameterFileNodeResult from './read-parameter-file-node-result.js'
 
 
@@ -16,13 +17,12 @@ import path from 'path'
 /**
  * Read an elastix parameter text file into a parameter object.
  *
- * @param {string} parameterFile - Elastix parameter file
+ * @param {ReadParameterFileOptions} options - options object
  *
  * @returns {Promise<ReadParameterFileNodeResult>} - result object
  */
 async function readParameterFileNode(
-  parameterFile: string
-
+  options: ReadParameterFileOptions = { parameterFiles: [] as string[], }
 ) : Promise<ReadParameterFileNodeResult> {
 
   const mountDirs: Set<string> = new Set()
@@ -31,21 +31,28 @@ async function readParameterFileNode(
     { type: InterfaceTypes.JsonCompatible },
   ]
 
-  mountDirs.add(path.dirname(parameterFile as string))
   const inputs: Array<PipelineInput> = [
   ]
 
   const args = []
   // Inputs
-  const parameterFileName = parameterFile
-  args.push(parameterFileName as string)
-
   // Outputs
   const parameterObjectName = '0'
   args.push(parameterObjectName)
 
   // Options
   args.push('--memory-io')
+  if (typeof options.parameterFiles !== "undefined") {
+    if(options.parameterFiles.length < 1) {
+      throw new Error('"parameter-files" option must have a length > 1')
+    }
+    args.push('--parameter-files')
+
+    options.parameterFiles.forEach((value) => {
+      mountDirs.add(path.dirname(value as string))
+      args.push(value as string)
+    })
+  }
 
   const pipelinePath = path.join(path.dirname(import.meta.url.substring(7)), '..', 'pipelines', 'read-parameter-file')
 

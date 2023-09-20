@@ -19,12 +19,12 @@ from itkwasm import (
 )
 
 async def read_parameter_file_async(
-    parameter_file: os.PathLike,
+    parameter_files: List[os.PathLike] = [],
 ) -> Any:
     """Read an elastix parameter text file into a parameter object.
 
-    :param parameter_file: Elastix parameter file
-    :type  parameter_file: os.PathLike
+    :param parameter_files: Elastix parameter files
+    :type  parameter_files: os.PathLike
 
     :return: Elastix parameter object representation
     :rtype:  Any
@@ -33,8 +33,10 @@ async def read_parameter_file_async(
     web_worker = js_resources.web_worker
 
     kwargs = {}
+    if parameter_files is not None:
+        kwargs["parameterFiles"] = to_js(TextFile(parameter_files))
 
-    outputs = await js_module.readParameterFile(web_worker, to_js(TextFile(parameter_file)), **kwargs)
+    outputs = await js_module.readParameterFile(web_worker, **kwargs)
 
     output_web_worker = None
     output_list = []

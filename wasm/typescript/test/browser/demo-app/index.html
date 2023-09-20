@@ -148,8 +148,8 @@
     <small><i>Read an elastix parameter text file into a parameter object.</i></small><br /><br />
 
     <div id="readParameterFileInputs"><form action="">
-      <sl-tooltip content="Use the Upload button to provide the parameterFile"><sl-details id="readParameterFile-parameter-file-details"  summary="parameterFile: Elastix parameter file" disabled></sl-details></sl-tooltip>
-      <label for="parameter-file-file"><sl-button name="parameter-file-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file"  name="parameter-file-file" style="display: none"/>
+      <sl-tooltip content="Use the Upload button to provide the parameterFiles"><sl-details id="readParameterFile-parameter-files-details"  summary="parameterFiles: Elastix parameter files" disabled></sl-details></sl-tooltip>
+      <label for="parameter-files-file"><sl-button name="parameter-files-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" multiple  name="parameter-files-file" style="display: none"/>
 <br /><br />
     <sl-divider></sl-divider>
       <br /><sl-tooltip content="Load example input data. This will overwrite data any existing input data."><sl-button name="loadSampleInputs" variant="default" style="display: none;">Load sample inputs</sl-button></sl-tooltip>
@@ -183,7 +183,7 @@
     <sl-divider></sl-divider>
 
     <div id="writeParameterFileOutputs">
-      <sl-details disabled id="writeParameterFile-parameter-files-details" summary="parameterFiles: Elastix parameter file"></sl-details>
+      <sl-details disabled id="writeParameterFile-parameter-files-details" summary="parameterFiles: Elastix parameter files"></sl-details>
       <sl-button variant="neutral" outline name="parameter-files-download" disabled>Download</sl-button>
 <br /><br />
     </div>
