@@ -33,7 +33,7 @@ int main( int argc, char * argv[] )
   pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation")->required()->type_name("INPUT_JSON");
 
   std::vector<std::string> parameterFiles;
-  pipeline.add_option("parameter-files", parameterFiles, "Elastix parameter file")->required()->type_name("INPUT_TEXT_FILE");
+  pipeline.add_option("parameter-files", parameterFiles, "Elastix parameter file")->required()->type_name("OUTPUT_TEXT_FILE");
 
   ITK_WASM_PARSE(pipeline);
 

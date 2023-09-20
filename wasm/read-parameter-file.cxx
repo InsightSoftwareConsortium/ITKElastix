@@ -27,8 +27,8 @@ int main( int argc, char * argv[] )
 {
   itk::wasm::Pipeline pipeline("read-parameter-file", "Read an elastix parameter text file into a parameter object.", argc, argv);
 
-  std::string parameterFile;
-  pipeline.add_option("parameter-file", parameterFile, "Elastix parameter file")->required()->type_name("INPUT_TEXT_FILE");
+  std::vector<std::string> parameterFiles;
+  pipeline.add_option("-f,--parameter-files", parameterFiles, "Elastix parameter files")->required()->type_name("INPUT_TEXT_FILE");
 
   itk::wasm::OutputTextStream parameterObjectJson;
   pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation")->required()->type_name("OUTPUT_JSON");
@@ -37,7 +37,7 @@ int main( int argc, char * argv[] )
 
   using ParameterObjectType = elastix::ParameterObject;
   auto parameterObject = ParameterObjectType::New();
-  parameterObject->ReadParameterFile(parameterFile);
+  ITK_WASM_CATCH_EXCEPTION(pipeline, parameterObject->ReadParameterFiles(parameterFiles));
 
   rapidjson::Document document;
   document.SetArray();
