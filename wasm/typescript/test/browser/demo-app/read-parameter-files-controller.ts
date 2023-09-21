@@ -50,6 +50,7 @@ class ReadParameterFilesController  {
         model.options.set("parameterFiles", inputStrings)
         const details = document.getElementById("readParameterFiles-parameter-files-details")
         details.innerHTML = `<pre>${globalThis.escapeHtml(model.options.get("parameterFiles").map((x) => x.path).toString())}</pre>`
+        details.disabled = false
     })
 
     // ----------------------------------------------
