@@ -1,7 +1,7 @@
 // Generated file. To retain edits, remove this comment.
 
 export default null
-// export default async function writeParameterFilesLoadSampleInputs (model) {
+// export default async function writeParameterFilesLoadSampleInputs (model, preRun=false) {
 
   // Load sample inputs for the writeParameterFiles function.
   //

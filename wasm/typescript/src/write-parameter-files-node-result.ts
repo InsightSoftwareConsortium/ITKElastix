@@ -2,8 +2,6 @@
 
 interface WriteParameterFilesNodeResult {
   /** Elastix parameter files */
-  parameterFiles: string
-
 }
 
 export default WriteParameterFilesNodeResult

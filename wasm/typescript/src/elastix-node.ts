@@ -29,7 +29,6 @@ async function elastixNode(
 
   const desiredOutputs: Array<PipelineOutput> = [
     { type: InterfaceTypes.Image },
-    { type: InterfaceTypes.BinaryFile },
   ]
 
   const inputs: Array<PipelineInput> = [
@@ -73,7 +72,6 @@ async function elastixNode(
 
   const result = {
     result: outputs[0].data as Image,
-    transform: outputs[1].data as string,
   }
   return result
 }

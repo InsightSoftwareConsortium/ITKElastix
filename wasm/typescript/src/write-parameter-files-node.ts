@@ -30,7 +30,6 @@ async function writeParameterFilesNode(
   const mountDirs: Set<string> = new Set()
 
   const desiredOutputs: Array<PipelineOutput> = [
-    { type: InterfaceTypes.TextFile },
   ]
 
   const inputs: Array<PipelineInput> = [
@@ -54,14 +53,12 @@ async function writeParameterFilesNode(
   const {
     returnValue,
     stderr,
-    outputs
   } = await runPipelineNode(pipelinePath, args, desiredOutputs, inputs, mountDirs)
   if (returnValue !== 0) {
     throw new Error(stderr)
   }
 
   const result = {
-    parameterFiles: outputs[0].data as string,
   }
   return result
 }

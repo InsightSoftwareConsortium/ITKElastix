@@ -7,8 +7,6 @@ interface ElastixNodeResult {
   result: Image
 
   /** Fixed-to-moving transform */
-  transform: string
-
 }
 
 export default ElastixNodeResult
