@@ -49,12 +49,13 @@ main(int argc, char * argv[])
   document.Parse(ss.str().c_str());
 
   using ParameterObjectType = elastix::ParameterObject;
-  auto       parameterObject = ParameterObjectType::New();
   const auto numParameterMaps = document.Size();
+  using ParameterMapType = std::map<std::string, std::vector<std::string>>;
+  std::vector<ParameterMapType> parameterMaps;
   for (unsigned int i = 0; i < numParameterMaps; ++i)
   {
     const auto &                                    parameterMapJson = document[i];
-    std::map<std::string, std::vector<std::string>> parameterMap;
+    ParameterMapType parameterMap;
     for (auto it = parameterMapJson.MemberBegin(); it != parameterMapJson.MemberEnd(); ++it)
     {
       const auto &             key = it->name.GetString();
@@ -67,10 +68,12 @@ main(int argc, char * argv[])
       }
       parameterMap[key] = value;
     }
-    parameterObject->AddParameterMap(parameterMap);
+    parameterMaps.push_back(parameterMap);
   }
 
-  ITK_WASM_CATCH_EXCEPTION(pipeline, parameterObject->WriteParameterFiles(parameterFiles));
+  // The initial is not written by WriteParameterFiles
+  ITK_WASM_CATCH_EXCEPTION(pipeline, elastix::ParameterObject::WriteParameterFile(parameterMaps[0], parameterFiles[0]));
+  ITK_WASM_CATCH_EXCEPTION(pipeline, elastix::ParameterObject::WriteParameterFiles(parameterMaps, parameterFiles));
 
   return EXIT_SUCCESS;
 }
