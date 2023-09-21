@@ -1,6 +1,4 @@
 import test from 'ava'
-import path from 'path'
-import fs from 'fs'
 
 import { defaultParameterMapNode } from '../../dist/bundles/elastix-node.js'
 
