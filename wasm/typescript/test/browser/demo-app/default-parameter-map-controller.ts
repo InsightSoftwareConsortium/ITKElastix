@@ -58,13 +58,13 @@ class DefaultParameterMapController  {
 
     // ----------------------------------------------
     // Outputs
-    const parameterObjectOutputDownload = document.querySelector('#defaultParameterMapOutputs sl-button[name=parameter-object-download]')
-    parameterObjectOutputDownload.addEventListener('click', async (event) => {
+    const parameterMapOutputDownload = document.querySelector('#defaultParameterMapOutputs sl-button[name=parameter-map-download]')
+    parameterMapOutputDownload.addEventListener('click', async (event) => {
         event.preventDefault()
         event.stopPropagation()
-        if (model.outputs.has("parameterObject")) {
-            const fileName = `parameterObject.json`
-            globalThis.downloadFile(new TextEncoder().encode(JSON.stringify(model.outputs.get("parameterObject"))), fileName)
+        if (model.outputs.has("parameterMap")) {
+            const fileName = `parameterMap.json`
+            globalThis.downloadFile(new TextEncoder().encode(JSON.stringify(model.outputs.get("parameterMap"))), fileName)
         }
     })
 
@@ -99,17 +99,17 @@ class DefaultParameterMapController  {
         runButton.loading = true
 
         const t0 = performance.now()
-        const { parameterObject, } = await this.run()
+        const { parameterMap, } = await this.run()
         const t1 = performance.now()
         globalThis.notify("defaultParameterMap successfully completed", `in ${t1 - t0} milliseconds.`, "success", "rocket-fill")
 
-        model.outputs.set("parameterObject", parameterObject)
-        parameterObjectOutputDownload.variant = "success"
-        parameterObjectOutputDownload.disabled = false
-        const parameterObjectDetails = document.getElementById("defaultParameterMap-parameter-object-details")
-        parameterObjectDetails.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(parameterObject, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
-        parameterObjectDetails.disabled = false
-        const parameterObjectOutput = document.getElementById("defaultParameterMap-parameter-object-details")
+        model.outputs.set("parameterMap", parameterMap)
+        parameterMapOutputDownload.variant = "success"
+        parameterMapOutputDownload.disabled = false
+        const parameterMapDetails = document.getElementById("defaultParameterMap-parameter-map-details")
+        parameterMapDetails.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(parameterMap, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+        parameterMapDetails.disabled = false
+        const parameterMapOutput = document.getElementById("defaultParameterMap-parameter-map-details")
       } catch (error) {
         globalThis.notify("Error while running pipeline", error.toString(), "danger", "exclamation-octagon")
         throw error
@@ -120,13 +120,13 @@ class DefaultParameterMapController  {
   }
 
   async run() {
-    const { webWorker, parameterObject, } = await elastix.defaultParameterMap(this.webWorker,
+    const { webWorker, parameterMap, } = await elastix.defaultParameterMap(this.webWorker,
       this.model.inputs.get('transformName'),
       Object.fromEntries(this.model.options.entries())
     )
     this.webWorker = webWorker
 
-    return { parameterObject, }
+    return { parameterMap, }
   }
 }
 

@@ -7,7 +7,7 @@ interface DefaultParameterMapResult {
   webWorker: Worker | null
 
   /** Elastix parameter map representation */
-  parameterObject: JsonCompatible
+  parameterMap: JsonCompatible
 
 }
 

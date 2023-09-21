@@ -41,8 +41,8 @@ async function defaultParameterMap(
   args.push(transformName.toString())
 
   // Outputs
-  const parameterObjectName = '0'
-  args.push(parameterObjectName)
+  const parameterMapName = '0'
+  args.push(parameterMapName)
 
   // Options
   args.push('--memory-io')
@@ -69,7 +69,7 @@ async function defaultParameterMap(
 
   const result = {
     webWorker: usedWebWorker as Worker,
-    parameterObject: outputs[0].data as JsonCompatible,
+    parameterMap: outputs[0].data as JsonCompatible,
   }
   return result
 }

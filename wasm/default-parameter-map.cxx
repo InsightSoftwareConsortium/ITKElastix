@@ -44,8 +44,8 @@ main(int argc, char * argv[])
                       finalGridSpacingInPhysicalUnits,
                       "Final grid spacing in physical units for bspline transforms.");
 
-  itk::wasm::OutputTextStream parameterObjectJson;
-  pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter map representation")
+  itk::wasm::OutputTextStream parameterMapJson;
+  pipeline.add_option("parameter-map", parameterMapJson, "Elastix parameter map representation")
     ->required()
     ->type_name("OUTPUT_JSON");
 
@@ -75,7 +75,7 @@ main(int argc, char * argv[])
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
   document.Accept(writer);
 
-  parameterObjectJson.Get() << buffer.GetString();
+  parameterMapJson.Get() << buffer.GetString();
 
   return EXIT_SUCCESS;
 }

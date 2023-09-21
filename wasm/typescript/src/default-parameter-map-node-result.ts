@@ -4,7 +4,7 @@ import { JsonCompatible } from 'itk-wasm'
 
 interface DefaultParameterMapNodeResult {
   /** Elastix parameter map representation */
-  parameterObject: JsonCompatible
+  parameterMap: JsonCompatible
 
 }
 

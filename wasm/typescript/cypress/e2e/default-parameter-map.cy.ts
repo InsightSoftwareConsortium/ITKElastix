@@ -11,6 +11,6 @@ describe('defaultParameterMap', () => {
     cy.get('#defaultParameterMapInputs sl-button[name="loadSampleInputs"]').click()
     cy.get('#defaultParameterMapInputs sl-button[name="run"]').click()
 
-    cy.get('#defaultParameterMap-parameter-object-details').should('contain', '"AutomaticParameterEstimation"')
+    cy.get('#defaultParameterMap-parameter-map-details').should('contain', '"AutomaticParameterEstimation"')
   })
 })
