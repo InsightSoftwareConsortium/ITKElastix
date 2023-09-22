@@ -1,28 +1,24 @@
-// Generated file. To retain edits, remove this comment.
+export default async function writeParameterFilesLoadSampleInputs (model, preRun=false) {
+  const dataUrl = 'https://w3s.link/ipfs/bafybeifq7m3mb4m3mgbhft2vqejjgwxx4azmmzuxwf5cubajpyaf4hq2gq/data/input'
 
-export default null
-// export default async function writeParameterFilesLoadSampleInputs (model, preRun=false) {
+  const parameterObjectButton = document.querySelector("#writeParameterFilesInputs [name=parameter-object-file-button]")
+  if (!preRun) {
+    parameterObjectButton.loading = true
+  }
+  const parameterObjectFile = 'parameters_multiple.json'
+  const parameterObjectResponse = await fetch(`${dataUrl}/${parameterObjectFile}`)
+  const parameterObject = await parameterObjectResponse.json()
+  console.log(parameterObject)
+  model.inputs.set("parameterObject", parameterObject)
 
-  // Load sample inputs for the writeParameterFiles function.
-  //
-  // This function should load sample inputs:
-  //
-  //  1) In the provided model map.
-  //  2) Into the corresponding HTML input elements if preRun is not true.
-  //
-  // Example for an input named `exampleInput`:
+  const parameterObjectElement = document.getElementById('writeParameterFiles-parameter-object-details')
+  if (!preRun) {
+    parameterObjectElement.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(parameterObject), globalThis.interfaceTypeJsonReplacer, 2)}</pre>`
+    parameterObjectElement.disabled = false
+    parameterObjectButton.loading = false
+  }
 
-  // const exampleInput = 5
-  // model.inputs.set("exampleInput", exampleInput)
-  // if (!preRun) {
-  //   const exampleElement = document.querySelector("#writeParameterFilesInputs [name=example-input]")
-  //   exampleElement.value = 5
-  // }
+  return model
+}
 
-  // return model
-// }
-
-// Use this function to run the pipeline when this tab group is select.
-// This will load the web worker if it is not already loaded, download the wasm module, and allocate memory in the wasm model.
-// Set this to `false` if sample inputs are very large or sample pipeline computation is long.
 export const usePreRun = true
