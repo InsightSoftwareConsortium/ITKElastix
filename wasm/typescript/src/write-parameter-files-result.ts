@@ -7,7 +7,7 @@ interface WriteParameterFilesResult {
   webWorker: Worker | null
 
   /** Elastix parameter files */
-  parameterFiles: TextFile
+  parameterFiles: TextFile[]
 
 }
 

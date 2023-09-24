@@ -65,8 +65,14 @@ class ReadParameterFilesController  {
         }
     })
 
-    const tabGroup = document.querySelector('sl-tab-group')
-    tabGroup.addEventListener('sl-tab-show', async (event) => {
+    const preRun = async () => {
+      if (!this.webWorker && loadSampleInputs && usePreRun) {
+        await loadSampleInputs(model, true)
+        await this.run()
+      }
+    }
+
+    const onSelectTab = async (event) => {
       if (event.detail.name === 'readParameterFiles-panel') {
         const params = new URLSearchParams(window.location.search)
         if (!params.has('functionName') || params.get('functionName') !== 'readParameterFiles') {
@@ -75,10 +81,16 @@ class ReadParameterFilesController  {
           url.search = params
           window.history.replaceState({ functionName: 'readParameterFiles' }, '', url)
         }
-        if (!this.webWorker && loadSampleInputs && usePreRun) {
-          await loadSampleInputs(model, true)
-          await this.run()
-        }
+        await preRun()
+      }
+    }
+
+    const tabGroup = document.querySelector('sl-tab-group')
+    tabGroup.addEventListener('sl-tab-show', onSelectTab)
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search)
+      if (params.has('functionName') && params.get('functionName') === 'readParameterFiles') {
+        preRun()
       }
     })
 

@@ -35,6 +35,11 @@ async function writeParameterFiles(
     ...parameterFilesPipelineOutputs,
   ]
 
+  let outputIndex = 0
+  const parameterFilesStart = outputIndex
+  outputIndex += options.parameterFilesPath ? options.parameterFilesPath.length : 0
+  const parameterFilesEnd = outputIndex
+
   const inputs: Array<PipelineInput> = [
     { type: InterfaceTypes.JsonCompatible, data: parameterObject as JsonCompatible  },
   ]
@@ -64,7 +69,7 @@ async function writeParameterFiles(
 
   const result = {
     webWorker: usedWebWorker as Worker,
-    parameterFiles: outputs[0].data as TextFile,
+    parameterFiles: outputs.slice(parameterFilesStart, parameterFilesEnd).map(o => (o.data as TextFile)),
   }
   return result
 }

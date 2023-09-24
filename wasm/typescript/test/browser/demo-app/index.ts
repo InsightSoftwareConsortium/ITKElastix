@@ -13,11 +13,10 @@ import './elastix-controller.js'
 import './read-parameter-files-controller.js'
 import './write-parameter-files-controller.js'
 
-const tabGroup = document.querySelector('sl-tab-group')
 const params = new URLSearchParams(window.location.search)
-if (params.has('functionName')) {
-  const functionName = params.get('functionName')
-  tabGroup.show(functionName + '-panel')
-} else {
-  tabGroup.show('defaultParameterMap-panel')
+if (!params.has('functionName')) {
+  params.set('functionName', 'defaultParameterMap')
+  const url = new URL(document.location)
+  url.search = params
+  window.history.replaceState({ functionName: 'defaultParameterMap' }, '', url)
 }

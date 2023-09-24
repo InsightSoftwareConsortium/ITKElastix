@@ -53,6 +53,12 @@ class WriteParameterFilesController  {
 
     // ----------------------------------------------
     // Options
+    const parameterFilesElement = document.querySelector('#writeParameterFilesInputs sl-input[name=parameter-files]')
+    parameterFilesElement.addEventListener('sl-change', (event) => {
+        const values = parameterFilesElement.value.split(',').map(s => s.trim())
+        model.options.set("parameterFiles", values)
+    })
+
     // ----------------------------------------------
     // Outputs
     const parameterFilesOutputDownload = document.querySelector('#writeParameterFilesOutputs sl-button[name=parameter-files-download]')
@@ -60,12 +66,18 @@ class WriteParameterFilesController  {
         event.preventDefault()
         event.stopPropagation()
         if (model.outputs.has("parameterFiles")) {
-            globalThis.downloadFile(new TextEncoder().encode(model.outputs.get("parameterFiles").data), model.outputs.get("parameterFiles").path)
+            model.outputs.get("parameterFiles").forEach((o) => globalThis.downloadFile(new TextEncoder().encode(o.data), o.path))
         }
     })
 
-    const tabGroup = document.querySelector('sl-tab-group')
-    tabGroup.addEventListener('sl-tab-show', async (event) => {
+    const preRun = async () => {
+      if (!this.webWorker && loadSampleInputs && usePreRun) {
+        await loadSampleInputs(model, true)
+        await this.run()
+      }
+    }
+
+    const onSelectTab = async (event) => {
       if (event.detail.name === 'writeParameterFiles-panel') {
         const params = new URLSearchParams(window.location.search)
         if (!params.has('functionName') || params.get('functionName') !== 'writeParameterFiles') {
@@ -74,10 +86,16 @@ class WriteParameterFilesController  {
           url.search = params
           window.history.replaceState({ functionName: 'writeParameterFiles' }, '', url)
         }
-        if (!this.webWorker && loadSampleInputs && usePreRun) {
-          await loadSampleInputs(model, true)
-          await this.run()
-        }
+        await preRun()
+      }
+    }
+
+    const tabGroup = document.querySelector('sl-tab-group')
+    tabGroup.addEventListener('sl-tab-show', onSelectTab)
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search)
+      if (params.has('functionName') && params.get('functionName') === 'writeParameterFiles') {
+        preRun()
       }
     })
 
@@ -103,7 +121,7 @@ class WriteParameterFilesController  {
         parameterFilesOutputDownload.variant = "success"
         parameterFilesOutputDownload.disabled = false
         const parameterFilesOutput = document.getElementById("writeParameterFiles-parameter-files-details")
-        parameterFilesOutput.innerHTML = `<pre>${globalThis.escapeHtml(parameterFiles.data.substring(0, 1024).toString() + ' ...')}</pre>`
+        parameterFilesOutput.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(parameterFiles))}</pre>`
         parameterFilesOutput.disabled = false
       } catch (error) {
         globalThis.notify("Error while running pipeline", error.toString(), "danger", "exclamation-octagon")

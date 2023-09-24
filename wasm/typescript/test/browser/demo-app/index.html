@@ -101,6 +101,7 @@
       <sl-tooltip content="Use the Upload button to provide the moving"><sl-details id="elastix-moving-details" summary="moving: Moving image" disabled></sl-details></sl-tooltip>
       <label for="moving-file"><sl-button name="moving-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" name="moving-file" style="display: none"/>
 <br /><br />
+      <sl-input required name="transform" type="text" label="transform" help-text="Fixed-to-moving transform"></sl-input>
     <sl-divider></sl-divider>
       <br /><sl-tooltip content="Load example input data. This will overwrite data any existing input data."><sl-button name="loadSampleInputs" variant="default" style="display: none;">Load sample inputs</sl-button></sl-tooltip>
       <sl-button type="button" variant="success" name="run">Run</sl-button><br /><br />
@@ -175,6 +176,7 @@
       <sl-tooltip content="Use the Upload button to provide the parameterObject"><sl-details id="writeParameterFiles-parameter-object-details" summary="parameterObject: Elastix parameter object representation" disabled></sl-details></sl-tooltip>
       <label for="parameter-object-file"><sl-button name="parameter-object-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" name="parameter-object-file" style="display: none"/>
 <br /><br />
+      <sl-input required name="parameter-files" type="text" label="parameterFiles" help-text="Elastix parameter files"></sl-input>
     <sl-divider></sl-divider>
       <br /><sl-tooltip content="Load example input data. This will overwrite data any existing input data."><sl-button name="loadSampleInputs" variant="default" style="display: none;">Load sample inputs</sl-button></sl-tooltip>
       <sl-button type="button" variant="success" name="run">Run</sl-button><br /><br />

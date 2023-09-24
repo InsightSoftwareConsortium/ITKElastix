@@ -69,6 +69,11 @@ class ElastixController  {
         details.disabled = false
     })
 
+    const transformElement = document.querySelector('#elastixInputs sl-input[name=transform]')
+    transformElement.addEventListener('sl-change', (event) => {
+        model.options.set("transform", transformElement.value)
+    })
+
     // ----------------------------------------------
     // Outputs
     const resultOutputDownload = document.querySelector('#elastixOutputs sl-button[name=result-download]')
@@ -95,8 +100,14 @@ class ElastixController  {
         }
     })
 
-    const tabGroup = document.querySelector('sl-tab-group')
-    tabGroup.addEventListener('sl-tab-show', async (event) => {
+    const preRun = async () => {
+      if (!this.webWorker && loadSampleInputs && usePreRun) {
+        await loadSampleInputs(model, true)
+        await this.run()
+      }
+    }
+
+    const onSelectTab = async (event) => {
       if (event.detail.name === 'elastix-panel') {
         const params = new URLSearchParams(window.location.search)
         if (!params.has('functionName') || params.get('functionName') !== 'elastix') {
@@ -105,10 +116,16 @@ class ElastixController  {
           url.search = params
           window.history.replaceState({ functionName: 'elastix' }, '', url)
         }
-        if (!this.webWorker && loadSampleInputs && usePreRun) {
-          await loadSampleInputs(model, true)
-          await this.run()
-        }
+        await preRun()
+      }
+    }
+
+    const tabGroup = document.querySelector('sl-tab-group')
+    tabGroup.addEventListener('sl-tab-show', onSelectTab)
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search)
+      if (params.has('functionName') && params.get('functionName') === 'elastix') {
+        preRun()
       }
     })
 
