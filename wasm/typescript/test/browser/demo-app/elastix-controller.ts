@@ -41,6 +41,18 @@ class ElastixController  {
 
     // ----------------------------------------------
     // Inputs
+    const parameterObjectElement = document.querySelector('#elastixInputs input[name=parameter-object-file]')
+    parameterObjectElement.addEventListener('change', async (event) => {
+        const dataTransfer = event.dataTransfer
+        const files = event.target.files || dataTransfer.files
+
+        const arrayBuffer = await files[0].arrayBuffer()
+        model.inputs.set("parameterObject", JSON.parse(new TextDecoder().decode(new Uint8Array(arrayBuffer))))
+        const details = document.getElementById("elastix-parameter-object-details")
+        details.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(model.inputs.get("parameterObject"), globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+        details.disabled = false
+    })
+
     // ----------------------------------------------
     // Options
     const fixedElement = document.querySelector('#elastixInputs input[name=fixed-file]')
@@ -66,6 +78,18 @@ class ElastixController  {
         model.options.set("moving", image)
         const details = document.getElementById("elastix-moving-details")
         details.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(image, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+        details.disabled = false
+    })
+
+    const initialTransformElement = document.querySelector('#elastixInputs input[name=initial-transform-file]')
+    initialTransformElement.addEventListener('change', async (event) => {
+        const dataTransfer = event.dataTransfer
+        const files = event.target.files || dataTransfer.files
+
+        const arrayBuffer = await files[0].arrayBuffer()
+        model.options.set("initialTransform", { data: new Uint8Array(arrayBuffer), path: files[0].name })
+        const details = document.getElementById("elastix-initial-transform-details")
+        details.innerHTML = `<pre>${globalThis.escapeHtml(model.options.get("initialTransform").data.subarray(0, 50).toString() + ' ...')}</pre>`
         details.disabled = false
     })
 
@@ -133,6 +157,10 @@ class ElastixController  {
     runButton.addEventListener('click', async (event) => {
       event.preventDefault()
 
+      if(!model.inputs.has('parameterObject')) {
+        globalThis.notify("Required input not provided", "parameterObject", "danger", "exclamation-octagon")
+        return
+      }
 
 
       try {
@@ -168,6 +196,7 @@ class ElastixController  {
 
   async run() {
     const { webWorker, result, transform, } = await elastix.elastix(this.webWorker,
+      this.model.inputs.get('parameterObject'),
       Object.fromEntries(this.model.options.entries())
     )
     this.webWorker = webWorker

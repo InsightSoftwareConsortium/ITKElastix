@@ -10,16 +10,24 @@ from itkwasm import (
 )
 
 async def elastix_async(
+    parameter_object: Any,
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
+    initial_transform: Optional[os.PathLike] = None,
 ) -> Tuple[Image, os.PathLike]:
     """Rigid and non-rigid registration of images.
+
+    :param parameter_object: Elastix parameter object representation
+    :type  parameter_object: Any
 
     :param fixed: Fixed image
     :type  fixed: Image
 
     :param moving: Moving image
     :type  moving: Image
+
+    :param initial_transform: Initial transform to apply before registrtion 
+    :type  initial_transform: os.PathLike
 
     :return: Resampled moving image
     :rtype:  Image
@@ -28,5 +36,5 @@ async def elastix_async(
     :rtype:  os.PathLike
     """
     func = environment_dispatch("itkwasm_elastix", "elastix_async")
-    output = await func(fixed=fixed, moving=moving)
+    output = await func(parameter_object, fixed=fixed, moving=moving, initial_transform=initial_transform)
     return output

@@ -20,16 +20,24 @@ from itkwasm import (
 )
 
 async def elastix_async(
+    parameter_object: Any,
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
+    initial_transform: Optional[os.PathLike] = None,
 ) -> Tuple[Image, os.PathLike]:
     """Rigid and non-rigid registration of images.
+
+    :param parameter_object: Elastix parameter object representation
+    :type  parameter_object: Any
 
     :param fixed: Fixed image
     :type  fixed: Image
 
     :param moving: Moving image
     :type  moving: Image
+
+    :param initial_transform: Initial transform to apply before registrtion 
+    :type  initial_transform: os.PathLike
 
     :return: Resampled moving image
     :rtype:  Image
@@ -45,8 +53,10 @@ async def elastix_async(
         kwargs["fixed"] = to_js(fixed)
     if moving is not None:
         kwargs["moving"] = to_js(moving)
+    if initial_transform is not None:
+        kwargs["initialTransform"] = to_js(BinaryFile(initial_transform))
 
-    outputs = await js_module.elastix(web_worker, **kwargs)
+    outputs = await js_module.elastix(web_worker, to_js(parameter_object), **kwargs)
 
     output_web_worker = None
     output_list = []

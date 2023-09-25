@@ -6,6 +6,7 @@ import {
   InterfaceTypes,
   PipelineOutput,
   PipelineInput,
+  JsonCompatible,
   runPipeline
 } from 'itk-wasm'
 
@@ -19,12 +20,14 @@ import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
 /**
  * Rigid and non-rigid registration of images.
  *
+ * @param {JsonCompatible} parameterObject - Elastix parameter object representation
  * @param {ElastixOptions} options - options object
  *
  * @returns {Promise<ElastixResult>} - result object
  */
 async function elastix(
   webWorker: null | Worker,
+  parameterObject: JsonCompatible,
   options: ElastixOptions = {}
 ) : Promise<ElastixResult> {
 
@@ -35,10 +38,14 @@ async function elastix(
   ]
 
   const inputs: Array<PipelineInput> = [
+    { type: InterfaceTypes.JsonCompatible, data: parameterObject as JsonCompatible  },
   ]
 
   const args = []
   // Inputs
+  const parameterObjectName = '0'
+  args.push(parameterObjectName as string)
+
   // Outputs
   const resultName = '0'
   args.push(resultName)
@@ -58,6 +65,20 @@ async function elastix(
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.Image, data: options.moving as Image })
     args.push('--moving', inputCountString)
+
+  }
+  if (typeof options.initialTransform !== "undefined") {
+    const initialTransform = options.initialTransform
+    let initialTransformFile = initialTransform
+    if (initialTransform instanceof File) {
+      const initialTransformBuffer = await initialTransform.arrayBuffer()
+      initialTransformFile = { path: initialTransform.name, data: new Uint8Array(initialTransformBuffer) }
+    }
+    args.push('--initial-transform')
+
+    inputs.push({ type: InterfaceTypes.BinaryFile, data: initialTransformFile as BinaryFile })
+    const name = initialTransform instanceof File ? initialTransform.name : (initialTransform as BinaryFile).path
+    args.push(name)
 
   }
 

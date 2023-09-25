@@ -5,6 +5,7 @@ import {
   InterfaceTypes,
   PipelineOutput,
   PipelineInput,
+  JsonCompatible,
   runPipelineNode
 } from 'itk-wasm'
 
@@ -17,11 +18,13 @@ import path from 'path'
 /**
  * Rigid and non-rigid registration of images.
  *
+ * @param {JsonCompatible} parameterObject - Elastix parameter object representation
  * @param {ElastixOptions} options - options object
  *
  * @returns {Promise<ElastixNodeResult>} - result object
  */
 async function elastixNode(
+  parameterObject: JsonCompatible,
   options: ElastixOptions = {}
 ) : Promise<ElastixNodeResult> {
 
@@ -32,10 +35,14 @@ async function elastixNode(
   ]
 
   const inputs: Array<PipelineInput> = [
+    { type: InterfaceTypes.JsonCompatible, data: parameterObject as JsonCompatible  },
   ]
 
   const args = []
   // Inputs
+  const parameterObjectName = '0'
+  args.push(parameterObjectName as string)
+
   // Outputs
   const resultName = '0'
   args.push(resultName)
@@ -56,6 +63,15 @@ async function elastixNode(
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.Image, data: options.moving as Image })
     args.push('--moving', inputCountString)
+
+  }
+  if (typeof options.initialTransform !== "undefined") {
+    const initialTransform = options.initialTransform
+    mountDirs.add(path.dirname(value as string))
+    args.push('--initial-transform')
+
+    const name = initialTransform as string
+    args.push(name)
 
   }
 

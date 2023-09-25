@@ -43,7 +43,6 @@ export default async function elastixLoadSampleInputs (model, preRun=false) {
     transformElement.value = transformFile
   }
 
-
   return model
 }
 

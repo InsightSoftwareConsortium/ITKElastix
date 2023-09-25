@@ -20,16 +20,24 @@ from itkwasm import (
 )
 
 def elastix(
+    parameter_object: Any,
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
+    initial_transform: Optional[os.PathLike] = None,
 ) -> Tuple[Image, os.PathLike]:
     """Rigid and non-rigid registration of images.
+
+    :param parameter_object: Elastix parameter object representation
+    :type  parameter_object: Any
 
     :param fixed: Fixed image
     :type  fixed: Image
 
     :param moving: Moving image
     :type  moving: Image
+
+    :param initial_transform: Initial transform to apply before registrtion 
+    :type  initial_transform: os.PathLike
 
     :return: Resampled moving image
     :rtype:  Image
@@ -47,10 +55,12 @@ def elastix(
     ]
 
     pipeline_inputs: List[PipelineInput] = [
+        PipelineInput(InterfaceTypes.JsonCompatible, parameter_object),
     ]
 
     args: List[str] = ['--memory-io',]
     # Inputs
+    args.append('0')
     # Outputs
     args.append('0')
     args.append(str(PurePosixPath(transform)))
@@ -66,6 +76,12 @@ def elastix(
         pipeline_inputs.append(PipelineInput(InterfaceTypes.Image, moving))
         args.append('--moving')
         args.append(input_count_string)
+
+    if initial_transform is not None:
+        input_file = str(PurePosixPath(initial_transform))
+        pipeline_inputs.append(PipelineInput(InterfaceTypes.BinaryFile, BinaryFile(initial_transform)))
+        args.append('--initial-transform')
+        args.append(input_file)
 
 
     outputs = _pipeline.run(args, pipeline_outputs, pipeline_inputs)

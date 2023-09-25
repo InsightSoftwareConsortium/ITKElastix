@@ -1,6 +1,6 @@
 // Generated file. To retain edits, remove this comment.
 
-import { Image } from 'itk-wasm'
+import { Image,BinaryFile } from 'itk-wasm'
 
 interface ElastixOptions {
   /** Fixed image */
@@ -8,6 +8,9 @@ interface ElastixOptions {
 
   /** Moving image */
   moving?: Image
+
+  /** Initial transform to apply before registrtion  */
+  initialTransform?: string | File | BinaryFile
 
   /** Fixed-to-moving transform path */
   transformPath?: string
