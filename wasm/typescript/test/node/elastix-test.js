@@ -19,8 +19,9 @@ try {
 test('Default 2D registration', async t => {
   const fixedImage = await readImageLocalFile(path.join(testDataInputDirectory, 'CT_2D_head_fixed.iwi.cbor'))
   const movingImage = await readImageLocalFile(path.join(testDataInputDirectory, 'CT_2D_head_moving.iwi.cbor'))
+  const parameterObject = JSON.parse(fs.readFileSync(path.join(testDataInputDirectory, 'parameters_single.json'))) 
   const transform = path.join(testDataOutputDirectory, 'CT_2D_head_node_transform.txt')
-  const { result } = await elastixNode({ fixed: fixedImage, moving: movingImage, transformPath: transform })
+  const { result } = await elastixNode(parameterObject, { fixed: fixedImage, moving: movingImage, transformPath: transform })
 
   t.is(result.imageType.dimension, 2)
   t.is(result.imageType.componentType, 'int16')

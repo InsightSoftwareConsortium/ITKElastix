@@ -54,7 +54,7 @@ public:
     pipeline.add_option("-m,--moving", movingImage, "Moving image")->type_name("INPUT_IMAGE");
 
     std::string initialTransformFile;
-    pipeline.add_option("-i,--initial-transform", initialTransformFile, "Initial transform to apply before registrtion ")->type_name("INPUT_BINARY_FILE");
+    pipeline.add_option("-i,--initial-transform", initialTransformFile, "Initial transform to apply before registration")->type_name("INPUT_BINARY_FILE");
 
     itk::wasm::InputTextStream parameterObjectJson;
     pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation")

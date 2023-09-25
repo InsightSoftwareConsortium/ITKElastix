@@ -67,7 +67,7 @@ async function elastixNode(
   }
   if (typeof options.initialTransform !== "undefined") {
     const initialTransform = options.initialTransform
-    mountDirs.add(path.dirname(value as string))
+    mountDirs.add(path.dirname(initialTransform as string))
     args.push('--initial-transform')
 
     const name = initialTransform as string

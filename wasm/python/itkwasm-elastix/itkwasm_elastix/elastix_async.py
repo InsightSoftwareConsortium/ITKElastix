@@ -26,7 +26,7 @@ async def elastix_async(
     :param moving: Moving image
     :type  moving: Image
 
-    :param initial_transform: Initial transform to apply before registrtion 
+    :param initial_transform: Initial transform to apply before registration
     :type  initial_transform: os.PathLike
 
     :return: Resampled moving image

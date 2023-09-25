@@ -9,7 +9,7 @@ interface ElastixOptions {
   /** Moving image */
   moving?: Image
 
-  /** Initial transform to apply before registrtion  */
+  /** Initial transform to apply before registration */
   initialTransform?: string | File | BinaryFile
 
   /** Fixed-to-moving transform path */
