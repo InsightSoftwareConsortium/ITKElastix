@@ -1,5 +1,3 @@
-// Generated file. To retain edits, remove this comment.
-
 import * as elastix from '../../../dist/bundles/elastix.js'
 
 // Use local, vendored WebAssembly module assets
@@ -15,8 +13,8 @@ import './write-parameter-files-controller.js'
 
 const params = new URLSearchParams(window.location.search)
 if (!params.has('functionName')) {
-  params.set('functionName', 'defaultParameterMap')
+  params.set('functionName', 'elastix')
   const url = new URL(document.location)
   url.search = params
-  window.history.replaceState({ functionName: 'defaultParameterMap' }, '', url)
+  window.history.replaceState({ functionName: 'elastix' }, '', url)
 }

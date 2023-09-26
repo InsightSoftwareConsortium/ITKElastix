@@ -1,6 +1,4 @@
-// Generated file. To retain edits, remove this comment.
-
-import { readImageFile, copyImage } from 'itk-wasm'
+import { readImageFile } from 'itk-wasm'
 import { writeImageArrayBuffer, copyImage } from 'itk-wasm'
 import * as elastix from '../../../dist/bundles/elastix.js'
 import elastixLoadSampleInputs, { usePreRun } from "./elastix-load-sample-inputs.js"
@@ -81,22 +79,23 @@ class ElastixController  {
         details.disabled = false
     })
 
-    const initialTransformElement = document.querySelector('#elastixInputs input[name=initial-transform-file]')
-    initialTransformElement.addEventListener('change', async (event) => {
-        const dataTransfer = event.dataTransfer
-        const files = event.target.files || dataTransfer.files
+    // const initialTransformElement = document.querySelector('#elastixInputs input[name=initial-transform-file]')
+    // initialTransformElement.addEventListener('change', async (event) => {
+    //     const dataTransfer = event.dataTransfer
+    //     const files = event.target.files || dataTransfer.files
 
-        const arrayBuffer = await files[0].arrayBuffer()
-        model.options.set("initialTransform", { data: new Uint8Array(arrayBuffer), path: files[0].name })
-        const details = document.getElementById("elastix-initial-transform-details")
-        details.innerHTML = `<pre>${globalThis.escapeHtml(model.options.get("initialTransform").data.subarray(0, 50).toString() + ' ...')}</pre>`
-        details.disabled = false
-    })
+    //     const arrayBuffer = await files[0].arrayBuffer()
+    //     model.options.set("initialTransform", { data: new Uint8Array(arrayBuffer), path: files[0].name })
+    //     const details = document.getElementById("elastix-initial-transform-details")
+    //     details.innerHTML = `<pre>${globalThis.escapeHtml(model.options.get("initialTransform").data.subarray(0, 50).toString() + ' ...')}</pre>`
+    //     details.disabled = false
+    // })
 
-    const transformElement = document.querySelector('#elastixInputs sl-input[name=transform]')
-    transformElement.addEventListener('sl-change', (event) => {
-        model.options.set("transform", transformElement.value)
-    })
+    // const transformElement = document.querySelector('#elastixInputs sl-input[name=transform]')
+    // transformElement.addEventListener('sl-change', (event) => {
+    //     model.options.set("transform", transformElement.value)
+    // })
+    model.options.set("transformPath", "transform.h5")
 
     // ----------------------------------------------
     // Outputs
@@ -127,7 +126,7 @@ class ElastixController  {
     const preRun = async () => {
       if (!this.webWorker && loadSampleInputs && usePreRun) {
         await loadSampleInputs(model, true)
-        await this.run()
+        await this.run(true)
       }
     }
 
@@ -167,7 +166,7 @@ class ElastixController  {
         runButton.loading = true
 
         const t0 = performance.now()
-        const { result, transform, } = await this.run()
+        const { result, transform, } = await this.run(false)
         const t1 = performance.now()
         globalThis.notify("elastix successfully completed", `in ${t1 - t0} milliseconds.`, "success", "rocket-fill")
 
@@ -194,12 +193,68 @@ class ElastixController  {
     })
   }
 
-  async run() {
+  async run(preRun) {
+    let viewer = null
+    const toMultiscaleSpatialImage = globalThis.itkVtkViewer.utils.toMultiscaleSpatialImage
+    const fixed = this.model.options.get('fixed')
+    const moving = this.model.options.get('moving')
+    const transformPath = this.model.options.get('transformPath')
+
+    if (!preRun) {
+      const viewerElement = document.getElementById('viewer')
+      const fixedImage = await toMultiscaleSpatialImage(copyImage(fixed))
+      const movingImage = await toMultiscaleSpatialImage(copyImage(moving))
+      const use2D = fixedImage.imageType.dimension === 2
+      const config = {
+        renderingViewContainerStyle:
+          {
+            "position": "relative",
+            "width":"600px",
+            "height":"400px",
+            "minHeight":"400px",
+            "minWidth":"600px",
+            "maxHeight":"400px",
+            "maxWidth":"600px",
+            "margin":"0",
+            "padding":"0",
+            "top":"0",
+            "left":"0",
+            "overflow":"hidden"
+          },
+        uiCollapsed: true,
+      }
+      viewer = await globalThis.itkVtkViewer.createViewer(viewerElement,
+        {
+          image: movingImage,
+          fixedImage,
+          rotate: false,
+          use2D,
+          config,
+          compare: { method: 'cyan-magenta', checkerboard: true },
+        })
+      setTimeout(() => {
+        const animateLabel = document.querySelector('label[itk-vtk-tooltip-content="animate"]')
+        const animateInput = animateLabel.parentElement.querySelector('input')
+        animateInput.checked || animateInput.click()
+
+      }, 6000)
+    }
+
     const { webWorker, result, transform, } = await elastix.elastix(this.webWorker,
       this.model.inputs.get('parameterObject'),
-      Object.fromEntries(this.model.options.entries())
+      {
+        fixed: copyImage(fixed),
+        moving: copyImage(moving),
+        transformPath,
+      },
     )
     this.webWorker = webWorker
+
+
+    if (!preRun) {
+      const resultImage = await toMultiscaleSpatialImage(copyImage(result))
+      await viewer.setImage(resultImage, 'Image')
+    }
 
     return { result, transform, }
   }
