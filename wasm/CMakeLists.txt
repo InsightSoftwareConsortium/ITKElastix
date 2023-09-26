@@ -46,6 +46,7 @@ add_test(NAME elastix-wasm-test
     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_single.json
     ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung_registered.iwi.cbor
     ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung.h5
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung.json
     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_fixed.iwi.cbor
     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_moving.iwi.cbor
   )
@@ -55,15 +56,28 @@ add_test(NAME elastix-wasm-2d-test
     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_single.json
     ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_registered.iwi.cbor
     ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head.h5
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head.json
     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_fixed.iwi.cbor
     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_moving.iwi.cbor
   )
 
-add_test(NAME elastix-wasm-2d-initial-test
+add_test(NAME elastix-wasm-2d-initial-transform-test
   COMMAND elastix
     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_single.json
-    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_registered.iwi.cbor
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_registered_initial.iwi.cbor
     ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_initial.h5
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_initial.json
+    -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_fixed.iwi.cbor
+    -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_moving.iwi.cbor
+    -i ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_translation.h5
+  )
+
+add_test(NAME elastix-wasm-2d-initial-transform-parameter-object-test
+  COMMAND elastix
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_single.json
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_registered_initial_transform_parameter_object.iwi.cbor
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_initial_transform_parameter_object.h5
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_initial_transform_parameter_object.json
     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_fixed.iwi.cbor
     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_moving.iwi.cbor
     -i ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_translation.h5
@@ -74,6 +88,7 @@ add_test(NAME elastix-wasm-2d-multiple-test
     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_multiple.json
     ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_multiple_registered.iwi.cbor
     ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_multiple.h5
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_multiple.json
     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_fixed.iwi.cbor
     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_moving.iwi.cbor
   )

@@ -20,6 +20,7 @@
 #include "itkInputImage.h"
 #include "itkOutputImage.h"
 #include "itkInputTextStream.h"
+#include "itkOutputTextStream.h"
 #include "itkSupportInputImageTypes.h"
 
 #include "itkImage.h"
@@ -71,6 +72,11 @@ public:
     pipeline.add_option("transform", outputTransform, "Fixed-to-moving transform")
       ->required()
       ->type_name("OUTPUT_BINARY_FILE");
+
+    itk::wasm::OutputTextStream transformParameterObjectJson;
+    pipeline.add_option("transform-parameter-object", transformParameterObjectJson, "Elastix optimized transform parameter object representation")
+      ->required()
+      ->type_name("OUTPUT_JSON");
 
     ITK_WASM_PARSE(pipeline);
 
@@ -201,6 +207,36 @@ public:
       writer->SetFileName(outputTransform);
       ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
     }
+
+    const auto transformParameterObject = registration->GetTransformParameterObject();
+    rapidjson::Document transformDocument;
+    transformDocument.SetArray();
+    rapidjson::Document::AllocatorType & allocator = transformDocument.GetAllocator();
+
+    const auto numTransformParameterMaps = transformParameterObject->GetNumberOfParameterMaps();
+    for (unsigned int i = 0; i < numTransformParameterMaps; ++i)
+    {
+      const auto &     parameterMap = transformParameterObject->GetParameterMap(i);
+      rapidjson::Value parameterMapJson(rapidjson::kObjectType);
+      for (const auto & parameter : parameterMap)
+      {
+        const auto &     key = parameter.first;
+        const auto &     value = parameter.second;
+        rapidjson::Value valueJson(rapidjson::kArrayType);
+        for (const auto & valueElement : value)
+        {
+          valueJson.PushBack(rapidjson::Value(valueElement.c_str(), allocator).Move(), allocator);
+        }
+        parameterMapJson.AddMember(rapidjson::Value(key.c_str(), allocator).Move(), valueJson, allocator);
+      }
+      transformDocument.PushBack(parameterMapJson, allocator);
+    }
+
+    rapidjson::StringBuffer                          buffer;
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> transformParamWriter(buffer);
+    transformDocument.Accept(transformParamWriter);
+
+    transformParameterObjectJson.Get() << buffer.GetString();
 
     return EXIT_SUCCESS;
   }
