@@ -39,17 +39,17 @@ class ElastixController  {
 
     // ----------------------------------------------
     // Inputs
-    const parameterObjectElement = document.querySelector('#elastixInputs input[name=parameter-object-file]')
-    parameterObjectElement.addEventListener('change', async (event) => {
-        const dataTransfer = event.dataTransfer
-        const files = event.target.files || dataTransfer.files
+    // const parameterObjectElement = document.querySelector('#elastixInputs input[name=parameter-object-file]')
+    // parameterObjectElement.addEventListener('change', async (event) => {
+    //     const dataTransfer = event.dataTransfer
+    //     const files = event.target.files || dataTransfer.files
 
-        const arrayBuffer = await files[0].arrayBuffer()
-        model.inputs.set("parameterObject", JSON.parse(new TextDecoder().decode(new Uint8Array(arrayBuffer))))
-        const details = document.getElementById("elastix-parameter-object-details")
-        details.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(model.inputs.get("parameterObject"), globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
-        details.disabled = false
-    })
+    //     const arrayBuffer = await files[0].arrayBuffer()
+    //     model.inputs.set("parameterObject", JSON.parse(new TextDecoder().decode(new Uint8Array(arrayBuffer))))
+    //     const details = document.getElementById("elastix-parameter-object-details")
+    //     details.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(model.inputs.get("parameterObject"), globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+    //     details.disabled = false
+    // })
 
     // ----------------------------------------------
     // Options
@@ -200,6 +200,44 @@ class ElastixController  {
     const moving = this.model.options.get('moving')
     const transformPath = this.model.options.get('transformPath')
 
+    const parameterObject = []
+    const stages = []
+
+    const { webWorker: defaultWorker, parameterMap: rigidMap } = await elastix.defaultParameterMap(this.webWorker,
+      'rigid',
+      { numberOfResolutions: 3 }
+    )
+    this.webWorker = defaultWorker
+    parameterObject.push(rigidMap)
+    stages.push('Rigid')
+
+    const { parameterMap: affineMap } = await elastix.defaultParameterMap(this.webWorker,
+      'affine',
+      { numberOfResolutions: 3 }
+    )
+    parameterObject.push(affineMap)
+    stages.push('Affine')
+
+    const lengths = fixed.size.map((v, idx) => v * fixed.spacing[idx])
+    const maxLength = Math.max(...lengths)
+
+    const { parameterMap: roughSplineMap } = await elastix.defaultParameterMap(this.webWorker,
+      'bspline',
+      // { numberOfResolutions: 3, finalGridSpacing: maxLength / 5 }
+      { numberOfResolutions: 3, }
+    )
+    parameterObject.push(roughSplineMap)
+    stages.push('Rough BSpline')
+
+    const { parameterMap: fineSplineMap } = await elastix.defaultParameterMap(this.webWorker,
+      'bspline',
+      { numberOfResolutions: 4, finalGridSpacing: maxLength / 12 }
+    )
+    parameterObject.push(fineSplineMap)
+    stages.push('Fine BSpline')
+
+    console.log(parameterObject)
+
     if (!preRun) {
       const viewerElement = document.getElementById('viewer')
       const fixedImage = await toMultiscaleSpatialImage(copyImage(fixed))
@@ -236,19 +274,44 @@ class ElastixController  {
         const animateLabel = document.querySelector('label[itk-vtk-tooltip-content="animate"]')
         const animateInput = animateLabel.parentElement.querySelector('input')
         animateInput.checked || animateInput.click()
-
-      }, 6000)
+      }, 4000)
     }
 
-    const { webWorker, result, transform, } = await elastix.elastix(this.webWorker,
-      this.model.inputs.get('parameterObject'),
-      {
-        fixed: copyImage(fixed),
-        moving: copyImage(moving),
-        transformPath,
-      },
-    )
-    this.webWorker = webWorker
+    let previousTransform
+
+    for (let idx = 0; idx < parameterObject.length; ++idx) {
+      const stage = stages[idx]
+      console.log(stage)
+      const map = [parameterObject[idx],]
+      const { webWorker, result, transform, } = await elastix.elastix(this.webWorker,
+        map,
+        {
+          fixed: copyImage(fixed),
+          moving: copyImage(moving),
+          transformPath,
+          initialTransform: previousTransform,
+        },
+      )
+      this.webWorker = webWorker
+
+      if (!preRun) {
+        const resultImage = await toMultiscaleSpatialImage(copyImage(result))
+        await viewer.setImage(resultImage, 'Image')
+      }
+
+      console.log(transform)
+      previousTransform = transform
+    }
+    // const { webWorker, result, transform, } = await elastix.elastix(this.webWorker,
+    //   this.model.inputs.get('parameterObject'),
+    //   {
+    //     fixed: copyImage(fixed),
+    //     moving: copyImage(moving),
+    //     transformPath,
+    //     initialTransform: previousTransform,
+    //   },
+    // )
+    // this.webWorker = webWorker
 
 
     if (!preRun) {
