@@ -54,7 +54,7 @@ main(int argc, char * argv[])
   std::vector<ParameterMapType> parameterMaps;
   for (unsigned int i = 0; i < numParameterMaps; ++i)
   {
-    const auto &                                    parameterMapJson = document[i];
+    const auto &     parameterMapJson = document[i];
     ParameterMapType parameterMap;
     for (auto it = parameterMapJson.MemberBegin(); it != parameterMapJson.MemberEnd(); ++it)
     {

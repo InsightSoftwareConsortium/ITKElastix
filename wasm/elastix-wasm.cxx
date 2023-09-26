@@ -54,7 +54,9 @@ public:
     pipeline.add_option("-m,--moving", movingImage, "Moving image")->type_name("INPUT_IMAGE");
 
     std::string initialTransformFile;
-    pipeline.add_option("-i,--initial-transform", initialTransformFile, "Initial transform to apply before registration")->type_name("INPUT_BINARY_FILE");
+    pipeline
+      .add_option("-i,--initial-transform", initialTransformFile, "Initial transform to apply before registration")
+      ->type_name("INPUT_BINARY_FILE");
 
     itk::wasm::InputTextStream parameterObjectJson;
     pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation")
@@ -98,7 +100,7 @@ public:
     std::vector<ParameterMapType> parameterMaps;
     for (unsigned int i = 0; i < numParameterMaps; ++i)
     {
-      const auto &                                    parameterMapJson = document[i];
+      const auto &     parameterMapJson = document[i];
       ParameterMapType parameterMap;
       for (auto it = parameterMapJson.MemberBegin(); it != parameterMapJson.MemberEnd(); ++it)
       {
@@ -148,7 +150,7 @@ public:
       }
       else if (transformReader->GetTransformList()->size() > 1)
       {
-        CompositeHelperType helper;
+        CompositeHelperType                      helper;
         typename CompositeTransformType::Pointer compositeTransform = CompositeTransformType::New();
         helper.SetTransformList(compositeTransform, *transformReader->GetModifiableTransformList());
         initialTransform = compositeTransform;
@@ -209,6 +211,7 @@ main(int argc, char * argv[])
 {
   itk::wasm::Pipeline pipeline("elastix", "Rigid and non-rigid registration of images.", argc, argv);
 
-  return itk::wasm::SupportInputImageTypes<PipelineFunctor, uint8_t, uint16_t, int16_t, double, float>::
-    Dimensions<2U, 3U>("-f,--fixed", pipeline);
+  return itk::wasm::SupportInputImageTypes<PipelineFunctor, uint8_t, uint16_t, int16_t, double, float>::Dimensions<2U,
+                                                                                                                   3U>(
+    "-f,--fixed", pipeline);
 }
