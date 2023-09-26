@@ -1,7 +1,7 @@
 import { readImageFile } from 'itk-wasm'
 import { writeImageArrayBuffer, copyImage } from 'itk-wasm'
 import * as elastix from '../../../dist/bundles/elastix.js'
-import elastixLoadSampleInputs, { usePreRun } from "./elastix-load-sample-inputs.js"
+import elastixLoadSampleInputs, { usePreRun, elastixLoadSample3dInputs } from "./elastix-load-sample-inputs.js"
 
 class ElastixModel {
 
@@ -36,6 +36,14 @@ class ElastixController  {
         loadSampleInputsButton.loading = false
       })
     }
+
+    const loadSample3dInputsButton = document.querySelector("#elastixInputs [name=loadSample3dInputs]")
+    loadSample3dInputsButton.setAttribute('style', 'display: block-inline;')
+    loadSample3dInputsButton.addEventListener('click', async (event) => {
+      loadSample3dInputsButton.loading = true
+      await elastixLoadSample3dInputs(model)
+      loadSample3dInputsButton.loading = false
+    })
 
     // ----------------------------------------------
     // Inputs
@@ -100,6 +108,7 @@ class ElastixController  {
     // ----------------------------------------------
     // Outputs
     const resultOutputDownload = document.querySelector('#elastixOutputs sl-button[name=result-download]')
+    this.resultOutputDownload = resultOutputDownload
     resultOutputDownload.addEventListener('click', async (event) => {
         event.preventDefault()
         event.stopPropagation()
@@ -115,6 +124,7 @@ class ElastixController  {
     })
 
     const transformOutputDownload = document.querySelector('#elastixOutputs sl-button[name=transform-download]')
+    this.transformOutputDownload = transformOutputDownload
     transformOutputDownload.addEventListener('click', (event) => {
         event.preventDefault()
         event.stopPropagation()
@@ -127,6 +137,7 @@ class ElastixController  {
       if (!this.webWorker && loadSampleInputs && usePreRun) {
         await loadSampleInputs(model, true)
         await this.run(true)
+        // await this.run(false)
       }
     }
 
@@ -139,7 +150,7 @@ class ElastixController  {
           url.search = params
           window.history.replaceState({ functionName: 'elastix' }, '', url)
         }
-        await preRun()
+        // await preRun()
       }
     }
 
@@ -148,7 +159,7 @@ class ElastixController  {
     document.addEventListener('DOMContentLoaded', () => {
       const params = new URLSearchParams(window.location.search)
       if (params.has('functionName') && params.get('functionName') === 'elastix') {
-        preRun()
+        // preRun()
       }
     })
 
@@ -156,17 +167,17 @@ class ElastixController  {
     runButton.addEventListener('click', async (event) => {
       event.preventDefault()
 
-      if(!model.inputs.has('parameterObject')) {
-        globalThis.notify("Required input not provided", "parameterObject", "danger", "exclamation-octagon")
-        return
-      }
+      // if(!model.inputs.has('parameterObject')) {
+      //   globalThis.notify("Required input not provided", "parameterObject", "danger", "exclamation-octagon")
+      //   return
+      // }
 
 
       try {
         runButton.loading = true
 
         const t0 = performance.now()
-        const { result, transform, } = await this.run(false)
+        const { result, transform, transformParameterObject } = await this.run(false)
         const t1 = performance.now()
         globalThis.notify("elastix successfully completed", `in ${t1 - t0} milliseconds.`, "success", "rocket-fill")
 
@@ -179,10 +190,12 @@ class ElastixController  {
         const resultOutput = document.getElementById('elastix-result-details')
 
         model.outputs.set("transform", transform)
+        model.outputs.set("transformParameterObject", transformParameterObject)
         transformOutputDownload.variant = "success"
         transformOutputDownload.disabled = false
         const transformOutput = document.getElementById("elastix-transform-details")
-        transformOutput.innerHTML = `<pre>${globalThis.escapeHtml(transform.data.subarray(0, 1024).toString() + ' ...')}</pre>`
+        transformOutput.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(transformParameterObject, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+        // transformOutput.innerHTML = `<pre>${globalThis.escapeHtml(transform.data.subarray(0, 1024).toString() + ' ...')}</pre>`
         transformOutput.disabled = false
       } catch (error) {
         globalThis.notify("Error while running pipeline", error.toString(), "danger", "exclamation-octagon")
@@ -202,6 +215,10 @@ class ElastixController  {
 
     const parameterObject = []
     const stages = []
+
+    const progressBar = document.getElementById('elastix-progress-bar')
+    progressBar.setAttribute('style', 'display: block-inline;')
+    progressBar.value = 0
 
     const { webWorker: defaultWorker, parameterMap: rigidMap } = await elastix.defaultParameterMap(this.webWorker,
       'rigid',
@@ -223,8 +240,7 @@ class ElastixController  {
 
     const { parameterMap: roughSplineMap } = await elastix.defaultParameterMap(this.webWorker,
       'bspline',
-      // { numberOfResolutions: 3, finalGridSpacing: maxLength / 5 }
-      { numberOfResolutions: 3, }
+      { numberOfResolutions: 3, finalGridSpacing: maxLength / 5 }
     )
     parameterObject.push(roughSplineMap)
     stages.push('Rough BSpline')
@@ -235,8 +251,6 @@ class ElastixController  {
     )
     parameterObject.push(fineSplineMap)
     stages.push('Fine BSpline')
-
-    console.log(parameterObject)
 
     if (!preRun) {
       const viewerElement = document.getElementById('viewer')
@@ -278,18 +292,22 @@ class ElastixController  {
     }
 
     let previousTransform
+    let finalResult
+    let finalTransform
 
     for (let idx = 0; idx < parameterObject.length; ++idx) {
       const stage = stages[idx]
+      progressBar.textContent = `${stage} stage`
+      progressBar.value = (idx / parameterObject.length) * 100
       console.log(stage)
       const map = [parameterObject[idx],]
-      const { webWorker, result, transform, } = await elastix.elastix(this.webWorker,
+      const { webWorker, result, transform, transformParameterObject } = await elastix.elastix(this.webWorker,
         map,
         {
           fixed: copyImage(fixed),
           moving: copyImage(moving),
           transformPath,
-          initialTransform: previousTransform,
+          initialTransformParameterObject: previousTransform,
         },
       )
       this.webWorker = webWorker
@@ -299,10 +317,26 @@ class ElastixController  {
         await viewer.setImage(resultImage, 'Image')
       }
 
-      console.log(transform)
-      previousTransform = transform
+      console.log('TransformParameterObject', transformParameterObject)
+      finalResult = result
+      finalTransform = transform
+      previousTransform = transformParameterObject
+
+      this.model.outputs.set("result", result)
+      this.resultOutputDownload.variant = "success"
+      this.resultOutputDownload.disabled = false
+      const resultDetails = document.getElementById("elastix-result-details")
+      resultDetails.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(result, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+      resultDetails.disabled = false
+
+      this.model.outputs.set("transform", transform)
+      this.transformOutputDownload.variant = "success"
+      this.transformOutputDownload.disabled = false
+      const transformOutput = document.getElementById("elastix-transform-details")
+      transformOutput.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(transformParameterObject, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+      transformOutput.disabled = false
     }
-    // const { webWorker, result, transform, } = await elastix.elastix(this.webWorker,
+    // const { webWorker, result, transform, transformParameterObject } = await elastix.elastix(this.webWorker,
     //   this.model.inputs.get('parameterObject'),
     //   {
     //     fixed: copyImage(fixed),
@@ -312,14 +346,9 @@ class ElastixController  {
     //   },
     // )
     // this.webWorker = webWorker
+    progressBar.setAttribute('style', 'display: none;')
 
-
-    if (!preRun) {
-      const resultImage = await toMultiscaleSpatialImage(copyImage(result))
-      await viewer.setImage(resultImage, 'Image')
-    }
-
-    return { result, transform, }
+    return { result: finalResult, transform: finalTransform, transformParameterObject: previousTransform }
   }
 }
 

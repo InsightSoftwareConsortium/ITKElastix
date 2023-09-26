@@ -64,4 +64,43 @@ export default async function elastixLoadSampleInputs (model, preRun=false) {
   return model
 }
 
+export async function elastixLoadSample3dInputs (model, preRun=false) {
+  const fixedButton = document.querySelector('#elastixInputs sl-button[name=fixed-file-button]')
+  if (!preRun) {
+    fixedButton.loading = true
+  }
+  const fixedFileName = 'tpl-MNI152NLin2009aSym_res-1_T2w.nii.gz'
+  const urlPrefix = 'https://w3s.link/ipfs/bafybeiabjayndqcwxyxymqg3766m57eikfcs42fyhp66vexsbrjecxmkry/'
+  const fixedReponse = await fetch(`${urlPrefix}${fixedFileName}`)
+  const fixedData = new Uint8Array(await fixedReponse.arrayBuffer())
+  const { webWorker, image: fixedImage } = await readImageArrayBuffer(null, fixedData.buffer, fixedFileName)
+  model.options.set('fixed', fixedImage)
+  if (!preRun) {
+    const fixedElement = document.querySelector('#elastix-fixed-details')
+    fixedElement.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(fixedImage, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+    fixedElement.disabled = false
+    fixedButton.loading = false
+  }
+
+  const movingButton = document.querySelector('#elastixInputs sl-button[name=moving-file-button]')
+  if (!preRun) {
+    movingButton.loading = true
+  }
+  const movingFileName = 'tpl-MNI305_T1w.nii.gz'
+  const movingReponse = await fetch(`${urlPrefix}${movingFileName}`)
+  const movingData = new Uint8Array(await movingReponse.arrayBuffer())
+  const { image: movingImage } = await readImageArrayBuffer(webWorker, movingData.buffer, movingFileName)
+  webWorker.terminate()
+  model.options.set('moving', movingImage)
+
+  if (!preRun) {
+    const movingElement = document.querySelector('#elastix-moving-details')
+    movingElement.innerHTML = `<pre>${globalThis.escapeHtml(JSON.stringify(movingImage, globalThis.interfaceTypeJsonReplacer, 2))}</pre>`
+    movingElement.disabled = false
+    movingButton.loading = false
+  }
+
+  return model
+}
+
 export const usePreRun = true

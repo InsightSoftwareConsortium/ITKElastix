@@ -54,7 +54,7 @@ async function elastix(
   const transformName = transformPath
   args.push(transformName)
 
-  const transformParameterObjectName = '1'
+  const transformParameterObjectName = '2'
   args.push(transformParameterObjectName)
 
   // Options
@@ -108,7 +108,7 @@ async function elastix(
     webWorker: usedWebWorker as Worker,
     result: outputs[0].data as Image,
     transform: outputs[1].data as BinaryFile,
-    transformParameterObject: outputs[1].data as JsonCompatible,
+    transformParameterObject: outputs[2].data as JsonCompatible,
   }
   return result
 }

@@ -27,6 +27,8 @@
   import '@shoelace-style/shoelace/dist/components/option/option.js';
   import '@shoelace-style/shoelace/dist/components/tooltip/tooltip.js';
 
+  import '@shoelace-style/shoelace/dist/components/progress-bar/progress-bar.js';
+
   import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path';
   setBasePath('/');
 
@@ -98,10 +100,10 @@
 
     <div id="elastixInputs"><form action="">
 
-      <sl-tooltip content="Use the Upload button to provide the fixed"><sl-details id="elastix-fixed-details" summary="fixed: Fixed image" disabled></sl-details></sl-tooltip>
+      <sl-tooltip content="Use the Upload button to provide the fixed image"><sl-details id="elastix-fixed-details" summary="fixed: Fixed image" disabled></sl-details></sl-tooltip>
       <label for="fixed-file"><sl-button name="fixed-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" name="fixed-file" style="display: none"/>
 <br /><br />
-      <sl-tooltip content="Use the Upload button to provide the moving"><sl-details id="elastix-moving-details" summary="moving: Moving image" disabled></sl-details></sl-tooltip>
+      <sl-tooltip content="Use the Upload button to provide the moving image"><sl-details id="elastix-moving-details" summary="moving: Moving image" disabled></sl-details></sl-tooltip>
       <label for="moving-file"><sl-button name="moving-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" name="moving-file" style="display: none"/>
 <br /><br />
 
@@ -115,9 +117,15 @@
 <br /><br /> -->
 
     <sl-divider></sl-divider>
-      <br /><sl-tooltip content="Load example input data. This will overwrite data any existing input data."><sl-button name="loadSampleInputs" variant="default" style="display: none;">Load sample inputs</sl-button></sl-tooltip>
-      <sl-button type="button" variant="success" name="run">Run</sl-button><br /><br />
-
+    <div style="text-align: center;">
+      <sl-tooltip content="Load example 2D input data. This will overwrite data any existing input data."><sl-button name="loadSampleInputs" variant="default" style="display: block-inline;">Load sample 2D input images</sl-button></sl-tooltip>
+      <br />
+      <sl-tooltip content="Load example 3D input data. This will overwrite data any existing input data."><sl-button name="loadSample3dInputs" variant="default" style="display: block-inline;">Load sample 3D input images</sl-button></sl-tooltip>
+      <br />
+      <br />
+      <sl-button type="button" variant="success" name="run">Run</sl-button><br />
+      <sl-progress-bar id="elastix-progress-bar" label="Progress" value="0" style="display: none;"></sl-progress-bar>
+    </div>
     </form></div>
     <sl-divider></sl-divider>
 
