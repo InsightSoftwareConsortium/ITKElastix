@@ -80,7 +80,7 @@ add_test(NAME elastix-wasm-2d-initial-transform-parameter-object-test
     ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_initial_transform_parameter_object.json
     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_fixed.iwi.cbor
     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_moving.iwi.cbor
-    -i ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_translation.h5
+    -t ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_translation.json
   )
 
 add_test(NAME elastix-wasm-2d-multiple-test

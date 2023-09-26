@@ -59,6 +59,10 @@ public:
       .add_option("-i,--initial-transform", initialTransformFile, "Initial transform to apply before registration")
       ->type_name("INPUT_BINARY_FILE");
 
+    itk::wasm::InputTextStream initialTransformParameterObjectJson;
+    auto initialTransformParameterObjectOption = pipeline.add_option("-t,--initial-transform-parameter-object", initialTransformParameterObjectJson, "Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform.")
+      ->type_name("INPUT_JSON");
+
     itk::wasm::InputTextStream parameterObjectJson;
     pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation")
       ->required()
@@ -162,6 +166,38 @@ public:
         initialTransform = compositeTransform;
         registration->SetExternalInitialTransform(initialTransform);
       }
+    } else if (!initialTransformParameterObjectOption->empty())
+    {
+      rapidjson::Document initialDocument;
+      std::stringstream   ss;
+      ss << initialTransformParameterObjectJson.Get().rdbuf();
+      initialDocument.Parse(ss.str().c_str());
+
+      using ParameterObjectType = elastix::ParameterObject;
+      const auto initialTransformParameterObject = ParameterObjectType::New();
+      const auto numTransformParameterMaps = initialDocument.Size();
+      using ParameterMapType = std::map<std::string, std::vector<std::string>>;
+      std::vector<ParameterMapType> transformParameterMaps;
+      for (unsigned int i = 0; i < numTransformParameterMaps; ++i)
+      {
+        const auto &     parameterMapJson = initialDocument[i];
+        ParameterMapType parameterMap;
+        for (auto it = parameterMapJson.MemberBegin(); it != parameterMapJson.MemberEnd(); ++it)
+        {
+          const auto &             key = it->name.GetString();
+          const auto &             valueJson = it->value;
+          std::vector<std::string> value;
+          for (auto it2 = valueJson.Begin(); it2 != valueJson.End(); ++it2)
+          {
+            const auto & valueElement = it2->GetString();
+            value.push_back(valueElement);
+          }
+          parameterMap[key] = value;
+        }
+        initialTransformParameterObject->AddParameterMap(parameterMap);
+      }
+
+      registration->SetInitialTransformParameterObject(initialTransformParameterObject);
     }
 
 
