@@ -24,7 +24,8 @@ def elastix(
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
     initial_transform: Optional[os.PathLike] = None,
-) -> Tuple[Image, os.PathLike]:
+    initial_transform_parameter_object: Optional[Any] = None,
+) -> Tuple[Image, os.PathLike, Any]:
     """Rigid and non-rigid registration of images.
 
     :param parameter_object: Elastix parameter object representation
@@ -39,11 +40,17 @@ def elastix(
     :param initial_transform: Initial transform to apply before registration
     :type  initial_transform: os.PathLike
 
+    :param initial_transform_parameter_object: Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform.
+    :type  initial_transform_parameter_object: Any
+
     :return: Resampled moving image
     :rtype:  Image
 
     :return: Fixed-to-moving transform
     :rtype:  os.PathLike
+
+    :return: Elastix optimized transform parameter object representation
+    :rtype:  Any
     """
     global _pipeline
     if _pipeline is None:
@@ -52,6 +59,7 @@ def elastix(
     pipeline_outputs: List[PipelineOutput] = [
         PipelineOutput(InterfaceTypes.Image),
         PipelineOutput(InterfaceTypes.BinaryFile, BinaryFile(PurePosixPath(transform))),
+        PipelineOutput(InterfaceTypes.JsonCompatible),
     ]
 
     pipeline_inputs: List[PipelineInput] = [
@@ -64,6 +72,7 @@ def elastix(
     # Outputs
     args.append('0')
     args.append(str(PurePosixPath(transform)))
+    args.append('2')
     # Options
     if fixed is not None:
         input_count_string = str(len(pipeline_inputs))
@@ -83,12 +92,19 @@ def elastix(
         args.append('--initial-transform')
         args.append(input_file)
 
+    if initial_transform_parameter_object is not None:
+        input_count_string = str(len(pipeline_inputs))
+        pipeline_inputs.append(PipelineInput(InterfaceTypes.JsonCompatible, initial_transform_parameter_object))
+        args.append('--initial-transform-parameter-object')
+        args.append(input_count_string)
+
 
     outputs = _pipeline.run(args, pipeline_outputs, pipeline_inputs)
 
     result = (
         outputs[0].data,
         Path(outputs[1].data.path),
+        outputs[2].data.data,
     )
     return result
 

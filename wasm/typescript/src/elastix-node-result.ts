@@ -1,12 +1,15 @@
 // Generated file. To retain edits, remove this comment.
 
-import { Image } from 'itk-wasm'
+import { Image, JsonCompatible } from 'itk-wasm'
 
 interface ElastixNodeResult {
   /** Resampled moving image */
   result: Image
 
   /** Fixed-to-moving transform */
+  /** Elastix optimized transform parameter object representation */
+  transformParameterObject: JsonCompatible
+
 }
 
 export default ElastixNodeResult

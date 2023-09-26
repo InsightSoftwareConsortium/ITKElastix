@@ -284,6 +284,7 @@ main(int argc, char * argv[])
   itk::wasm::Pipeline pipeline("elastix", "Rigid and non-rigid registration of images.", argc, argv);
 
   return itk::wasm::SupportInputImageTypes<PipelineFunctor, uint8_t, uint16_t, int16_t, double, float>::Dimensions<2U,
-                                                                                                                   3U>(
+                                                                                                                   3U,
+                                                                                                                   4U>(
     "-f,--fixed", pipeline);
 }

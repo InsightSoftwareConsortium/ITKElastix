@@ -24,7 +24,8 @@ async def elastix_async(
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
     initial_transform: Optional[os.PathLike] = None,
-) -> Tuple[Image, os.PathLike]:
+    initial_transform_parameter_object: Optional[Any] = None,
+) -> Tuple[Image, os.PathLike, Any]:
     """Rigid and non-rigid registration of images.
 
     :param parameter_object: Elastix parameter object representation
@@ -39,11 +40,17 @@ async def elastix_async(
     :param initial_transform: Initial transform to apply before registration
     :type  initial_transform: os.PathLike
 
+    :param initial_transform_parameter_object: Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform.
+    :type  initial_transform_parameter_object: Any
+
     :return: Resampled moving image
     :rtype:  Image
 
     :return: Fixed-to-moving transform
     :rtype:  os.PathLike
+
+    :return: Elastix optimized transform parameter object representation
+    :rtype:  Any
     """
     js_module = await js_package.js_module
     web_worker = js_resources.web_worker
@@ -55,6 +62,8 @@ async def elastix_async(
         kwargs["moving"] = to_js(moving)
     if initial_transform is not None:
         kwargs["initialTransform"] = to_js(BinaryFile(initial_transform))
+    if initial_transform_parameter_object is not None:
+        kwargs["initialTransformParameterObject"] = to_js(initial_transform_parameter_object)
 
     outputs = await js_module.elastix(web_worker, to_js(parameter_object), **kwargs)
 

@@ -1,11 +1,11 @@
 // Generated file. To retain edits, remove this comment.
 
 import {
+  JsonCompatible,
   Image,
   InterfaceTypes,
   PipelineOutput,
   PipelineInput,
-  JsonCompatible,
   runPipelineNode
 } from 'itk-wasm'
 
@@ -32,6 +32,7 @@ async function elastixNode(
 
   const desiredOutputs: Array<PipelineOutput> = [
     { type: InterfaceTypes.Image },
+    { type: InterfaceTypes.JsonCompatible },
   ]
 
   const inputs: Array<PipelineInput> = [
@@ -50,6 +51,9 @@ async function elastixNode(
   const transformName = options.transformPath ?? 'transform'
   args.push(transformName)
   mountDirs.add(path.dirname(transformName))
+
+  const transformParameterObjectName = '1'
+  args.push(transformParameterObjectName)
 
   // Options
   args.push('--memory-io')
@@ -74,6 +78,12 @@ async function elastixNode(
     args.push(name)
 
   }
+  if (typeof options.initialTransformParameterObject !== "undefined") {
+    const inputCountString = inputs.length.toString()
+    inputs.push({ type: InterfaceTypes.JsonCompatible, data: options.initialTransformParameterObject as JsonCompatible })
+    args.push('--initial-transform-parameter-object', inputCountString)
+
+  }
 
   const pipelinePath = path.join(path.dirname(import.meta.url.substring(7)), '..', 'pipelines', 'elastix')
 
@@ -88,6 +98,7 @@ async function elastixNode(
 
   const result = {
     result: outputs[0].data as Image,
+    transformParameterObject: outputs[1].data as JsonCompatible,
   }
   return result
 }

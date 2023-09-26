@@ -1,6 +1,6 @@
 // Generated file. To retain edits, remove this comment.
 
-import { Image, BinaryFile } from 'itk-wasm'
+import { Image, BinaryFile, JsonCompatible } from 'itk-wasm'
 
 interface ElastixResult {
   /** WebWorker used for computation */
@@ -11,6 +11,9 @@ interface ElastixResult {
 
   /** Fixed-to-moving transform */
   transform: BinaryFile
+
+  /** Elastix optimized transform parameter object representation */
+  transformParameterObject: JsonCompatible
 
 }
 

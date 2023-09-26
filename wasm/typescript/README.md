@@ -54,10 +54,10 @@ async function defaultParameterMap(
 
 **`DefaultParameterMapResult` interface:**
 
-|      Property     |       Type       | Description                          |
-| :---------------: | :--------------: | :----------------------------------- |
-|   **webWorker**   |     *Worker*     | WebWorker used for computation       |
-| `parameterObject` | *JsonCompatible* | Elastix parameter map representation |
+|    Property    |       Type       | Description                          |
+| :------------: | :--------------: | :----------------------------------- |
+|  **webWorker** |     *Worker*     | WebWorker used for computation       |
+| `parameterMap` | *JsonCompatible* | Elastix parameter map representation |
 
 #### elastix
 
@@ -66,28 +66,33 @@ async function defaultParameterMap(
 ```ts
 async function elastix(
   webWorker: null | Worker,
+  parameterObject: JsonCompatible,
   options: ElastixOptions = {}
 ) : Promise<ElastixResult>
 ```
 
-| Parameter | Type | Description |
-| :-------: | :--: | :---------- |
+|     Parameter     |       Type       | Description                             |
+| :---------------: | :--------------: | :-------------------------------------- |
+| `parameterObject` | *JsonCompatible* | Elastix parameter object representation |
 
 **`ElastixOptions` interface:**
 
-|     Property    |   Type   | Description                    |
-| :-------------: | :------: | :----------------------------- |
-|     `fixed`     |  *Image* | Fixed image                    |
-|     `moving`    |  *Image* | Moving image                   |
-| `transformPath` | *string* | Fixed-to-moving transform path |
+|              Property             |             Type             | Description                                                                                                         |
+| :-------------------------------: | :--------------------------: | :------------------------------------------------------------------------------------------------------------------ |
+|              `fixed`              |            *Image*           | Fixed image                                                                                                         |
+|              `moving`             |            *Image*           | Moving image                                                                                                        |
+|         `initialTransform`        | *string | File | BinaryFile* | Initial transform to apply before registration                                                                      |
+| `initialTransformParameterObject` |       *JsonCompatible*       | Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform. |
+|          `transformPath`          |           *string*           | Fixed-to-moving transform path                                                                                      |
 
 **`ElastixResult` interface:**
 
-|    Property   |     Type     | Description                    |
-| :-----------: | :----------: | :----------------------------- |
-| **webWorker** |   *Worker*   | WebWorker used for computation |
-|    `result`   |    *Image*   | Resampled moving image         |
-|  `transform`  | *BinaryFile* | Fixed-to-moving transform      |
+|          Property          |       Type       | Description                                                 |
+| :------------------------: | :--------------: | :---------------------------------------------------------- |
+|        **webWorker**       |     *Worker*     | WebWorker used for computation                              |
+|          `result`          |      *Image*     | Resampled moving image                                      |
+|         `transform`        |   *BinaryFile*   | Fixed-to-moving transform                                   |
+| `transformParameterObject` | *JsonCompatible* | Elastix optimized transform parameter object representation |
 
 #### readParameterFiles
 
@@ -222,9 +227,9 @@ async function defaultParameterMapNode(
 
 **`DefaultParameterMapNodeResult` interface:**
 
-|      Property     |       Type       | Description                          |
-| :---------------: | :--------------: | :----------------------------------- |
-| `parameterObject` | *JsonCompatible* | Elastix parameter map representation |
+|    Property    |       Type       | Description                          |
+| :------------: | :--------------: | :----------------------------------- |
+| `parameterMap` | *JsonCompatible* | Elastix parameter map representation |
 
 #### elastixNode
 
@@ -232,27 +237,32 @@ async function defaultParameterMapNode(
 
 ```ts
 async function elastixNode(
+  parameterObject: JsonCompatible,
   options: ElastixOptions = {}
 ) : Promise<ElastixNodeResult>
 ```
 
-| Parameter | Type | Description |
-| :-------: | :--: | :---------- |
+|     Parameter     |       Type       | Description                             |
+| :---------------: | :--------------: | :-------------------------------------- |
+| `parameterObject` | *JsonCompatible* | Elastix parameter object representation |
 
 **`ElastixNodeOptions` interface:**
 
-|     Property    |   Type   | Description                    |
-| :-------------: | :------: | :----------------------------- |
-|     `fixed`     |  *Image* | Fixed image                    |
-|     `moving`    |  *Image* | Moving image                   |
-| `transformPath` | *string* | Fixed-to-moving transform path |
+|              Property             |             Type             | Description                                                                                                         |
+| :-------------------------------: | :--------------------------: | :------------------------------------------------------------------------------------------------------------------ |
+|              `fixed`              |            *Image*           | Fixed image                                                                                                         |
+|              `moving`             |            *Image*           | Moving image                                                                                                        |
+|         `initialTransform`        | *string | File | BinaryFile* | Initial transform to apply before registration                                                                      |
+| `initialTransformParameterObject` |       *JsonCompatible*       | Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform. |
+|          `transformPath`          |           *string*           | Fixed-to-moving transform path                                                                                      |
 
 **`ElastixNodeResult` interface:**
 
-|   Property  |     Type     | Description               |
-| :---------: | :----------: | :------------------------ |
-|   `result`  |    *Image*   | Resampled moving image    |
-| `transform` | *BinaryFile* | Fixed-to-moving transform |
+|          Property          |       Type       | Description                                                 |
+| :------------------------: | :--------------: | :---------------------------------------------------------- |
+|          `result`          |      *Image*     | Resampled moving image                                      |
+|         `transform`        |   *BinaryFile*   | Fixed-to-moving transform                                   |
+| `transformParameterObject` | *JsonCompatible* | Elastix optimized transform parameter object representation |
 
 #### readParameterFilesNode
 

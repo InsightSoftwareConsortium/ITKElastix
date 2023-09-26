@@ -1,11 +1,11 @@
 // Generated file. To retain edits, remove this comment.
 
 import {
+  JsonCompatible,
   TextFile,
   InterfaceTypes,
   PipelineOutput,
   PipelineInput,
-  JsonCompatible,
   runPipeline
 } from 'itk-wasm'
 
