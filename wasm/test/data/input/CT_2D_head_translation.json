@@ -1,0 +1,78 @@
+[
+    {
+        "CompressResultImage": [
+            "false"
+        ],
+        "DefaultPixelValue": [
+            "0"
+        ],
+        "Direction": [
+            "1",
+            "0",
+            "0",
+            "1"
+        ],
+        "FinalBSplineInterpolationOrder": [
+            "3"
+        ],
+        "FixedImageDimension": [
+            "2"
+        ],
+        "FixedInternalImagePixelType": [
+            "float"
+        ],
+        "HowToCombineTransforms": [
+            "Compose"
+        ],
+        "Index": [
+            "0",
+            "0"
+        ],
+        "InitialTransformParameterFileName": [
+            "NoInitialTransform"
+        ],
+        "MovingImageDimension": [
+            "2"
+        ],
+        "MovingInternalImagePixelType": [
+            "float"
+        ],
+        "NumberOfParameters": [
+            "2"
+        ],
+        "Origin": [
+            "0",
+            "0"
+        ],
+        "ResampleInterpolator": [
+            "FinalBSplineInterpolator"
+        ],
+        "Resampler": [
+            "DefaultResampler"
+        ],
+        "ResultImageFormat": [
+            "mhd"
+        ],
+        "ResultImagePixelType": [
+            "float"
+        ],
+        "Size": [
+            "256",
+            "256"
+        ],
+        "Spacing": [
+            "1",
+            "1"
+        ],
+        "Transform": [
+            "TranslationTransform"
+        ],
+        "TransformParameters": [
+            "-1.451973790392139",
+            "-0.5025077319642668"
+        ],
+        "UseDirectionCosines": [
+            "true"
+        ]
+    }
+]
