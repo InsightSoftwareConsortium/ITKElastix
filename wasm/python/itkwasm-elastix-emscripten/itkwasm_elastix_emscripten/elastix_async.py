@@ -21,15 +21,19 @@ from itkwasm import (
 
 async def elastix_async(
     parameter_object: Any,
+    transform: str,
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
     initial_transform: Optional[os.PathLike] = None,
     initial_transform_parameter_object: Optional[Any] = None,
-) -> Tuple[Image, os.PathLike, Any]:
+) -> Tuple[Image, Any]:
     """Rigid and non-rigid registration of images.
 
     :param parameter_object: Elastix parameter object representation
     :type  parameter_object: Any
+
+    :param transform: Fixed-to-moving transform file
+    :type  transform: str
 
     :param fixed: Fixed image
     :type  fixed: Image
@@ -45,9 +49,6 @@ async def elastix_async(
 
     :return: Resampled moving image
     :rtype:  Image
-
-    :return: Fixed-to-moving transform
-    :rtype:  os.PathLike
 
     :return: Elastix optimized transform parameter object representation
     :rtype:  Any

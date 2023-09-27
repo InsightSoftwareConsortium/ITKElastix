@@ -1,7 +1,5 @@
 # Generated file. To retain edits, remove this comment.
 
-# Generated file. Do not edit.
-
 from pathlib import Path, PurePosixPath
 import os
 from typing import Dict, Tuple, Optional, List, Any
@@ -43,8 +41,11 @@ def read_parameter_files(
     args: List[str] = ['--memory-io',]
     # Inputs
     # Outputs
-    args.append('0')
+    parameter_object_name = '0'
+    args.append(parameter_object_name)
+
     # Options
+    input_count = len(pipeline_inputs)
     if len(parameter_files) < 1:
        raise ValueError('"parameter-files" kwarg must have a length > 1')
     if len(parameter_files) > 0:
@@ -57,6 +58,6 @@ def read_parameter_files(
 
     outputs = _pipeline.run(args, pipeline_outputs, pipeline_inputs)
 
-    result = outputs[0].data.data
+    result = outputs[0].data
     return result
 

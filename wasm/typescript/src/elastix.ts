@@ -21,6 +21,7 @@ import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
  * Rigid and non-rigid registration of images.
  *
  * @param {JsonCompatible} parameterObject - Elastix parameter object representation
+ * @param {string} transform - Fixed-to-moving transform file
  * @param {ElastixOptions} options - options object
  *
  * @returns {Promise<ElastixResult>} - result object
@@ -28,13 +29,13 @@ import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
 async function elastix(
   webWorker: null | Worker,
   parameterObject: JsonCompatible,
+  transform: string,
   options: ElastixOptions = {}
 ) : Promise<ElastixResult> {
 
-  const transformPath = options.transformPath ?? 'transform'
   const desiredOutputs: Array<PipelineOutput> = [
     { type: InterfaceTypes.Image },
-    { type: InterfaceTypes.BinaryFile, data: { path: transformPath, data: new Uint8Array() }},
+    { type: InterfaceTypes.BinaryFile, data: { path: transform, data: new Uint8Array() }},
     { type: InterfaceTypes.JsonCompatible },
   ]
 
@@ -51,7 +52,7 @@ async function elastix(
   const resultName = '0'
   args.push(resultName)
 
-  const transformName = transformPath
+  const transformName = transform
   args.push(transformName)
 
   const transformParameterObjectName = '2'

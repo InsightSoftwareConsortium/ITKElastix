@@ -18,7 +18,7 @@ export default async function writeParameterFilesLoadSampleInputs (model, preRun
   }
 
   const parameterFiles = ['translation_parameters.txt', 'affine_parameters.txt']
-  model.options.set("parameterFilesPath", parameterFiles)
+  model.inputs.set("parameterFiles", parameterFiles)
   if (!preRun) {
     const parameterFilesElement = document.querySelector("#writeParameterFilesInputs [name=parameter-files]")
     parameterFilesElement.value = parameterFiles.join(', ')

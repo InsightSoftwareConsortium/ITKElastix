@@ -9,7 +9,7 @@ interface ElastixResult {
   /** Resampled moving image */
   result: Image
 
-  /** Fixed-to-moving transform */
+  /** Fixed-to-moving transform file */
   transform: BinaryFile
 
   /** Elastix optimized transform parameter object representation */

@@ -55,7 +55,7 @@ export default async function elastixLoadSampleInputs (model, preRun=false) {
   }
 
   // const transformFile = 'transform.h5'
-  // model.options.set("transformPath", transformFile)
+  // model.inputs.set("transform", transformFile)
   // if (!preRun) {
   //   const transformElement = document.querySelector('#elastixInputs sl-input[name=transform]')
   //   transformElement.value = transformFile

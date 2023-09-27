@@ -51,14 +51,14 @@ class WriteParameterFilesController  {
         details.disabled = false
     })
 
-    // ----------------------------------------------
-    // Options
     const parameterFilesElement = document.querySelector('#writeParameterFilesInputs sl-input[name=parameter-files]')
     parameterFilesElement.addEventListener('sl-change', (event) => {
         const values = parameterFilesElement.value.split(',').map(s => s.trim())
-        model.options.set("parameterFiles", values)
+        model.inputs.set("parameterFiles", values)
     })
 
+    // ----------------------------------------------
+    // Options
     // ----------------------------------------------
     // Outputs
     const parameterFilesOutputDownload = document.querySelector('#writeParameterFilesOutputs sl-button[name=parameter-files-download]')
@@ -137,6 +137,7 @@ class WriteParameterFilesController  {
   async run() {
     const { webWorker, parameterFiles, } = await elastix.writeParameterFiles(this.webWorker,
       this.model.inputs.get('parameterObject'),
+      this.model.inputs.get('parameterFiles'),
       Object.fromEntries(this.model.options.entries())
     )
     this.webWorker = webWorker

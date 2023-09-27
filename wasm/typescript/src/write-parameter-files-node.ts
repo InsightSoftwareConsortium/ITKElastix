@@ -8,7 +8,6 @@ import {
   runPipelineNode
 } from 'itk-wasm'
 
-import WriteParameterFilesOptions from './write-parameter-files-options.js'
 import WriteParameterFilesNodeResult from './write-parameter-files-node-result.js'
 
 
@@ -17,14 +16,15 @@ import path from 'path'
 /**
  * Write an elastix parameter text file from a parameter object.
  *
- * @param {JsonCompatible} parameterObject - Elastix parameter object representation
- * @param {WriteParameterFilesOptions} options - options object
+ * @param {JsonCompatible} parameterObject - Elastix parameter object representation.
+ * @param {string[]} parameterFiles - Elastix parameter files, must have the same length as the number of parameter maps in the parameter object.
  *
  * @returns {Promise<WriteParameterFilesNodeResult>} - result object
  */
 async function writeParameterFilesNode(
   parameterObject: JsonCompatible,
-  options: WriteParameterFilesOptions = {}
+  parameterFiles: string[]
+
 ) : Promise<WriteParameterFilesNodeResult> {
 
   const mountDirs: Set<string> = new Set()
@@ -42,8 +42,8 @@ async function writeParameterFilesNode(
   args.push(parameterObjectName as string)
 
   // Outputs
-  options.parameterFilesPath?.forEach((p) => args.push(p))
-  options.parameterFilesPath?.forEach((p) => mountDirs.add(path.dirname(p)))
+  parameterFiles.forEach((p) => args.push(p))
+  parameterFiles.forEach((p) => mountDirs.add(path.dirname(p)))
 
   // Options
   args.push('--memory-io')

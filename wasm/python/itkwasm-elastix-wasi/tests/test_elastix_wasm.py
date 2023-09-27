@@ -1,5 +1,6 @@
 from pathlib import Path
 from dataclasses import asdict
+import json
 
 import pytest
 
@@ -10,6 +11,14 @@ import itk
 from itkwasm_elastix_wasi import elastix
 
 def test_elastix_wasm():
+    parameter_object_filename = 'parameters_single.json'
+    parameter_object_filepath = Path(__file__).parent.parent.parent.parent / 'test' / 'data' / 'input' / parameter_object_filename
+    with open(parameter_object_filepath, 'r') as f:
+        parameter_object = json.load(f)
+
+    test_data_output_dir = Path(__file__).parent.parent.parent.parent / 'test' / 'data' / 'output'
+    test_data_output_dir.mkdir(parents=True, exist_ok=True)
+    transform = test_data_output_dir / 'transform.txt'
 
     fixed_filename = 'CT_2D_head_fixed.mha'
     fixed_filepath = Path(__file__).parent.parent.parent.parent / 'test' / 'data' / 'input' / fixed_filename
@@ -25,7 +34,7 @@ def test_elastix_wasm():
     moving_image_dict = itk.dict_from_image(moving_image)
     moving_image = Image(**moving_image_dict)
 
-    result_image = elastix(fixed_image, moving_image)
+    result_image, transform_parameter_object = elastix(parameter_object, transform, fixed_image, moving_image)
 
     output_dir = Path(__file__).parent.parent.parent.parent  / 'test' / 'data' / 'output'
     output_dir.mkdir(parents=True, exist_ok=True)

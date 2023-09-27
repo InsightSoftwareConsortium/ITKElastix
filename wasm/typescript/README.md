@@ -67,6 +67,7 @@ async function defaultParameterMap(
 async function elastix(
   webWorker: null | Worker,
   parameterObject: JsonCompatible,
+  transform: string,
   options: ElastixOptions = {}
 ) : Promise<ElastixResult>
 ```
@@ -74,6 +75,7 @@ async function elastix(
 |     Parameter     |       Type       | Description                             |
 | :---------------: | :--------------: | :-------------------------------------- |
 | `parameterObject` | *JsonCompatible* | Elastix parameter object representation |
+|    `transform`    |     *string*     | Fixed-to-moving transform file          |
 
 **`ElastixOptions` interface:**
 
@@ -83,7 +85,6 @@ async function elastix(
 |              `moving`             |            *Image*           | Moving image                                                                                                        |
 |         `initialTransform`        | *string | File | BinaryFile* | Initial transform to apply before registration                                                                      |
 | `initialTransformParameterObject` |       *JsonCompatible*       | Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform. |
-|          `transformPath`          |           *string*           | Fixed-to-moving transform path                                                                                      |
 
 **`ElastixResult` interface:**
 
@@ -91,7 +92,7 @@ async function elastix(
 | :------------------------: | :--------------: | :---------------------------------------------------------- |
 |        **webWorker**       |     *Worker*     | WebWorker used for computation                              |
 |          `result`          |      *Image*     | Resampled moving image                                      |
-|         `transform`        |   *BinaryFile*   | Fixed-to-moving transform                                   |
+|         `transform`        |   *BinaryFile*   | Fixed-to-moving transform file                              |
 | `transformParameterObject` | *JsonCompatible* | Elastix optimized transform parameter object representation |
 
 #### readParameterFiles
@@ -129,26 +130,22 @@ async function readParameterFiles(
 async function writeParameterFiles(
   webWorker: null | Worker,
   parameterObject: JsonCompatible,
-  options: WriteParameterFilesOptions = {}
+  parameterFiles: string[]
+
 ) : Promise<WriteParameterFilesResult>
 ```
 
-|     Parameter     |       Type       | Description                             |
-| :---------------: | :--------------: | :-------------------------------------- |
-| `parameterObject` | *JsonCompatible* | Elastix parameter object representation |
-
-**`WriteParameterFilesOptions` interface:**
-
-|       Property       |    Type    | Description                  |
-| :------------------: | :--------: | :--------------------------- |
-| `parameterFilesPath` | *string[]* | Elastix parameter files path |
+|     Parameter     |       Type       | Description                                                                                                 |
+| :---------------: | :--------------: | :---------------------------------------------------------------------------------------------------------- |
+| `parameterObject` | *JsonCompatible* | Elastix parameter object representation.                                                                    |
+|  `parameterFiles` |    *string[]*    | Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. |
 
 **`WriteParameterFilesResult` interface:**
 
-|     Property     |     Type     | Description                    |
-| :--------------: | :----------: | :----------------------------- |
-|   **webWorker**  |   *Worker*   | WebWorker used for computation |
-| `parameterFiles` | *TextFile[]* | Elastix parameter files        |
+|     Property     |     Type     | Description                                                                                                 |
+| :--------------: | :----------: | :---------------------------------------------------------------------------------------------------------- |
+|   **webWorker**  |   *Worker*   | WebWorker used for computation                                                                              |
+| `parameterFiles` | *TextFile[]* | Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. |
 
 #### setPipelinesBaseUrl
 
@@ -238,6 +235,7 @@ async function defaultParameterMapNode(
 ```ts
 async function elastixNode(
   parameterObject: JsonCompatible,
+  transform: string,
   options: ElastixOptions = {}
 ) : Promise<ElastixNodeResult>
 ```
@@ -245,6 +243,7 @@ async function elastixNode(
 |     Parameter     |       Type       | Description                             |
 | :---------------: | :--------------: | :-------------------------------------- |
 | `parameterObject` | *JsonCompatible* | Elastix parameter object representation |
+|    `transform`    |     *string*     | Fixed-to-moving transform file          |
 
 **`ElastixNodeOptions` interface:**
 
@@ -254,14 +253,13 @@ async function elastixNode(
 |              `moving`             |            *Image*           | Moving image                                                                                                        |
 |         `initialTransform`        | *string | File | BinaryFile* | Initial transform to apply before registration                                                                      |
 | `initialTransformParameterObject` |       *JsonCompatible*       | Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform. |
-|          `transformPath`          |           *string*           | Fixed-to-moving transform path                                                                                      |
 
 **`ElastixNodeResult` interface:**
 
 |          Property          |       Type       | Description                                                 |
 | :------------------------: | :--------------: | :---------------------------------------------------------- |
 |          `result`          |      *Image*     | Resampled moving image                                      |
-|         `transform`        |   *BinaryFile*   | Fixed-to-moving transform                                   |
+|         `transform`        |   *BinaryFile*   | Fixed-to-moving transform file                              |
 | `transformParameterObject` | *JsonCompatible* | Elastix optimized transform parameter object representation |
 
 #### readParameterFilesNode
@@ -296,22 +294,18 @@ async function readParameterFilesNode(
 ```ts
 async function writeParameterFilesNode(
   parameterObject: JsonCompatible,
-  options: WriteParameterFilesOptions = {}
+  parameterFiles: string[]
+
 ) : Promise<WriteParameterFilesNodeResult>
 ```
 
-|     Parameter     |       Type       | Description                             |
-| :---------------: | :--------------: | :-------------------------------------- |
-| `parameterObject` | *JsonCompatible* | Elastix parameter object representation |
-
-**`WriteParameterFilesNodeOptions` interface:**
-
-|       Property       |    Type    | Description                  |
-| :------------------: | :--------: | :--------------------------- |
-| `parameterFilesPath` | *string[]* | Elastix parameter files path |
+|     Parameter     |       Type       | Description                                                                                                 |
+| :---------------: | :--------------: | :---------------------------------------------------------------------------------------------------------- |
+| `parameterObject` | *JsonCompatible* | Elastix parameter object representation.                                                                    |
+|  `parameterFiles` |    *string[]*    | Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. |
 
 **`WriteParameterFilesNodeResult` interface:**
 
-|     Property     |     Type     | Description             |
-| :--------------: | :----------: | :---------------------- |
-| `parameterFiles` | *TextFile[]* | Elastix parameter files |
+|     Property     |     Type     | Description                                                                                                 |
+| :--------------: | :----------: | :---------------------------------------------------------------------------------------------------------- |
+| `parameterFiles` | *TextFile[]* | Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. |

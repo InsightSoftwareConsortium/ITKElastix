@@ -101,9 +101,9 @@ class ElastixController  {
 
     // const transformElement = document.querySelector('#elastixInputs sl-input[name=transform]')
     // transformElement.addEventListener('sl-change', (event) => {
-    //     model.options.set("transform", transformElement.value)
+    //     model.inputs.set("transform", transformElement.value)
     // })
-    model.options.set("transformPath", "transform.h5")
+    model.inputs.set("transform", "transform.h5")
 
     // ----------------------------------------------
     // Outputs
@@ -213,7 +213,6 @@ class ElastixController  {
     const toMultiscaleSpatialImage = globalThis.itkVtkViewer.utils.toMultiscaleSpatialImage
     const fixed = this.model.options.get('fixed')
     const moving = this.model.options.get('moving')
-    const transformPath = this.model.options.get('transformPath')
 
     const parameterObject = []
     const stages = []
@@ -290,7 +289,7 @@ class ElastixController  {
         const animateLabel = document.querySelector('label[itk-vtk-tooltip-content="animate"]')
         const animateInput = animateLabel.parentElement.querySelector('input')
         animateInput.checked || animateInput.click()
-      }, 4000)
+      }, 2000)
     }
 
     let previousTransform
@@ -305,10 +304,10 @@ class ElastixController  {
       const map = [parameterObject[idx],]
       const { webWorker, result, transform, transformParameterObject } = await elastix.elastix(this.webWorker,
         map,
+        this.model.inputs.get('transform'),
         {
           fixed: copyImage(fixed),
           moving: copyImage(moving),
-          transformPath,
           initialTransformParameterObject: previousTransform,
         },
       )
@@ -340,10 +339,10 @@ class ElastixController  {
     }
     // const { webWorker, result, transform, transformParameterObject } = await elastix.elastix(this.webWorker,
     //   this.model.inputs.get('parameterObject'),
+    //   this.model.inputs.get('transform'),
     //   {
     //     fixed: copyImage(fixed),
     //     moving: copyImage(moving),
-    //     transformPath,
     //     initialTransform: previousTransform,
     //   },
     // )

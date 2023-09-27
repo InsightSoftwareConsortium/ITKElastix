@@ -6,7 +6,7 @@ interface WriteParameterFilesResult {
   /** WebWorker used for computation */
   webWorker: Worker | null
 
-  /** Elastix parameter files */
+  /** Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. */
   parameterFiles: TextFile[]
 
 }

@@ -20,6 +20,6 @@ test('Write parameter files', async t => {
   const translationFile = path.join(testDataOutputDirectory, 'parameters_Translation.txt')
   const affineFile = path.join(testDataOutputDirectory, 'parameters_Affine.txt')
 
-  await writeParameterFilesNode(parametersMultiple, { parameterFilesPath: [translationFile, affineFile] })
+  await writeParameterFilesNode(parametersMultiple, [translationFile, affineFile])
   t.pass()
 })

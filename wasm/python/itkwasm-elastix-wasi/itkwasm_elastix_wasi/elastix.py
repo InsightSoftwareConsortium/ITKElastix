@@ -1,7 +1,5 @@
 # Generated file. To retain edits, remove this comment.
 
-# Generated file. Do not edit.
-
 from pathlib import Path, PurePosixPath
 import os
 from typing import Dict, Tuple, Optional, List, Any
@@ -21,15 +19,19 @@ from itkwasm import (
 
 def elastix(
     parameter_object: Any,
+    transform: str,
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
     initial_transform: Optional[os.PathLike] = None,
     initial_transform_parameter_object: Optional[Any] = None,
-) -> Tuple[Image, os.PathLike, Any]:
+) -> Tuple[Image, Any]:
     """Rigid and non-rigid registration of images.
 
     :param parameter_object: Elastix parameter object representation
     :type  parameter_object: Any
+
+    :param transform: Fixed-to-moving transform file
+    :type  transform: str
 
     :param fixed: Fixed image
     :type  fixed: Image
@@ -45,9 +47,6 @@ def elastix(
 
     :return: Resampled moving image
     :rtype:  Image
-
-    :return: Fixed-to-moving transform
-    :rtype:  os.PathLike
 
     :return: Elastix optimized transform parameter object representation
     :rtype:  Any
@@ -70,21 +69,28 @@ def elastix(
     # Inputs
     args.append('0')
     # Outputs
-    args.append('0')
-    args.append(str(PurePosixPath(transform)))
-    args.append('2')
+    result_name = '0'
+    args.append(result_name)
+
+    transform_name = str(PurePosixPath(transform))
+    args.append(transform_name)
+
+    transform_parameter_object_name = '2'
+    args.append(transform_parameter_object_name)
+
     # Options
+    input_count = len(pipeline_inputs)
     if fixed is not None:
-        input_count_string = str(len(pipeline_inputs))
         pipeline_inputs.append(PipelineInput(InterfaceTypes.Image, fixed))
         args.append('--fixed')
-        args.append(input_count_string)
+        args.append(str(input_count))
+        input_count += 1
 
     if moving is not None:
-        input_count_string = str(len(pipeline_inputs))
         pipeline_inputs.append(PipelineInput(InterfaceTypes.Image, moving))
         args.append('--moving')
-        args.append(input_count_string)
+        args.append(str(input_count))
+        input_count += 1
 
     if initial_transform is not None:
         input_file = str(PurePosixPath(initial_transform))
@@ -93,18 +99,17 @@ def elastix(
         args.append(input_file)
 
     if initial_transform_parameter_object is not None:
-        input_count_string = str(len(pipeline_inputs))
         pipeline_inputs.append(PipelineInput(InterfaceTypes.JsonCompatible, initial_transform_parameter_object))
         args.append('--initial-transform-parameter-object')
-        args.append(input_count_string)
+        args.append(str(input_count))
+        input_count += 1
 
 
     outputs = _pipeline.run(args, pipeline_outputs, pipeline_inputs)
 
     result = (
         outputs[0].data,
-        Path(outputs[1].data.path),
-        outputs[2].data.data,
+        outputs[2].data,
     )
     return result
 

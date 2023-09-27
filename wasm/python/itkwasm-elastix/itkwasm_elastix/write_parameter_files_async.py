@@ -10,14 +10,15 @@ from itkwasm import (
 
 async def write_parameter_files_async(
     parameter_object: Any,
+    parameter_files: List[str],
 ) -> os.PathLike:
     """Write an elastix parameter text file from a parameter object.
 
-    :param parameter_object: Elastix parameter object representation
+    :param parameter_object: Elastix parameter object representation.
     :type  parameter_object: Any
 
-    :return: Elastix parameter files
-    :rtype:  os.PathLike
+    :param parameter_files: Elastix parameter files, must have the same length as the number of parameter maps in the parameter object.
+    :type  parameter_files: List[str]
     """
     func = environment_dispatch("itkwasm_elastix", "write_parameter_files_async")
     output = await func(parameter_object)

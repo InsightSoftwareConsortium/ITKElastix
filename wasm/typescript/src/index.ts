@@ -37,9 +37,6 @@ export { readParameterFiles }
 import WriteParameterFilesResult from './write-parameter-files-result.js'
 export type { WriteParameterFilesResult }
 
-import WriteParameterFilesOptions from './write-parameter-files-options.js'
-export type { WriteParameterFilesOptions }
-
 import writeParameterFiles from './write-parameter-files.js'
 export { writeParameterFiles }
 

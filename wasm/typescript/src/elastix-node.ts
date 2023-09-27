@@ -19,12 +19,14 @@ import path from 'path'
  * Rigid and non-rigid registration of images.
  *
  * @param {JsonCompatible} parameterObject - Elastix parameter object representation
+ * @param {string} transform - Fixed-to-moving transform file
  * @param {ElastixOptions} options - options object
  *
  * @returns {Promise<ElastixNodeResult>} - result object
  */
 async function elastixNode(
   parameterObject: JsonCompatible,
+  transform: string,
   options: ElastixOptions = {}
 ) : Promise<ElastixNodeResult> {
 
@@ -48,7 +50,7 @@ async function elastixNode(
   const resultName = '0'
   args.push(resultName)
 
-  const transformName = options.transformPath ?? 'transform'
+  const transformName = transform
   args.push(transformName)
   mountDirs.add(path.dirname(transformName))
 

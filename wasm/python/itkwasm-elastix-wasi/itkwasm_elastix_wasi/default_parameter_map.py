@@ -1,7 +1,5 @@
 # Generated file. To retain edits, remove this comment.
 
-# Generated file. Do not edit.
-
 from pathlib import Path, PurePosixPath
 import os
 from typing import Dict, Tuple, Optional, List, Any
@@ -51,8 +49,11 @@ def default_parameter_map(
     # Inputs
     args.append(str(transform_name))
     # Outputs
-    args.append('0')
+    parameter_map_name = '0'
+    args.append(parameter_map_name)
+
     # Options
+    input_count = len(pipeline_inputs)
     if number_of_resolutions:
         args.append('--number-of-resolutions')
         args.append(str(number_of_resolutions))
@@ -64,6 +65,6 @@ def default_parameter_map(
 
     outputs = _pipeline.run(args, pipeline_outputs, pipeline_inputs)
 
-    result = outputs[0].data.data
+    result = outputs[0].data
     return result
 

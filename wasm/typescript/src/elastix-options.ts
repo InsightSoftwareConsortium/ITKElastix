@@ -15,9 +15,6 @@ interface ElastixOptions {
   /** Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform. */
   initialTransformParameterObject?: JsonCompatible
 
-  /** Fixed-to-moving transform path */
-  transformPath?: string
-
 }
 
 export default ElastixOptions

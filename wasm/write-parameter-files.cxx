@@ -32,12 +32,13 @@ main(int argc, char * argv[])
     "write-parameter-files", "Write an elastix parameter text file from a parameter object.", argc, argv);
 
   itk::wasm::InputTextStream parameterObjectJson;
-  pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation")
+  pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation.")
     ->required()
     ->type_name("INPUT_JSON");
 
   std::vector<std::string> parameterFiles;
-  pipeline.add_option("parameter-files", parameterFiles, "Elastix parameter files")
+  pipeline.add_option("parameter-files", parameterFiles, "Elastix parameter files, must have the same length as the "
+                                                         "number of parameter maps in the parameter object.")
     ->required()
     ->type_name("OUTPUT_TEXT_FILE");
 
