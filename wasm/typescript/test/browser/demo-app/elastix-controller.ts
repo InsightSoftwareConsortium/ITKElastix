@@ -149,19 +149,21 @@ class ElastixController  {
           const url = new URL(document.location)
           url.search = params
           window.history.replaceState({ functionName: 'elastix' }, '', url)
+          await preRun()
         }
-        // await preRun()
       }
     }
 
     const tabGroup = document.querySelector('sl-tab-group')
     tabGroup.addEventListener('sl-tab-show', onSelectTab)
-    document.addEventListener('DOMContentLoaded', () => {
+    function onInit() {
       const params = new URLSearchParams(window.location.search)
       if (params.has('functionName') && params.get('functionName') === 'elastix') {
-        // preRun()
+        tabGroup.show('elastix-panel')
+        preRun()
       }
-    })
+    }
+    onInit()
 
     const runButton = document.querySelector('#elastixInputs sl-button[name="run"]')
     runButton.addEventListener('click', async (event) => {
@@ -206,7 +208,7 @@ class ElastixController  {
     })
   }
 
-  async run(preRun) {
+  async run (preRun) {
     let viewer = null
     const toMultiscaleSpatialImage = globalThis.itkVtkViewer.utils.toMultiscaleSpatialImage
     const fixed = this.model.options.get('fixed')
@@ -228,31 +230,31 @@ class ElastixController  {
     parameterObject.push(rigidMap)
     stages.push('Rigid')
 
-    const { parameterMap: affineMap } = await elastix.defaultParameterMap(this.webWorker,
-      'affine',
-      { numberOfResolutions: 3 }
-    )
-    parameterObject.push(affineMap)
-    stages.push('Affine')
-
-    const lengths = fixed.size.map((v, idx) => v * fixed.spacing[idx])
-    const maxLength = Math.max(...lengths)
-
-    const { parameterMap: roughSplineMap } = await elastix.defaultParameterMap(this.webWorker,
-      'bspline',
-      { numberOfResolutions: 3, finalGridSpacing: maxLength / 5 }
-    )
-    parameterObject.push(roughSplineMap)
-    stages.push('Rough BSpline')
-
-    const { parameterMap: fineSplineMap } = await elastix.defaultParameterMap(this.webWorker,
-      'bspline',
-      { numberOfResolutions: 4, finalGridSpacing: maxLength / 12 }
-    )
-    parameterObject.push(fineSplineMap)
-    stages.push('Fine BSpline')
-
     if (!preRun) {
+      const { parameterMap: affineMap } = await elastix.defaultParameterMap(this.webWorker,
+        'affine',
+        { numberOfResolutions: 3 }
+      )
+      parameterObject.push(affineMap)
+      stages.push('Affine')
+
+      const lengths = fixed.size.map((v, idx) => v * fixed.spacing[idx])
+      const maxLength = Math.max(...lengths)
+
+      const { parameterMap: roughSplineMap } = await elastix.defaultParameterMap(this.webWorker,
+        'bspline',
+        { numberOfResolutions: 3, finalGridSpacing: maxLength / 5 }
+      )
+      parameterObject.push(roughSplineMap)
+      stages.push('Rough BSpline')
+
+      const { parameterMap: fineSplineMap } = await elastix.defaultParameterMap(this.webWorker,
+        'bspline',
+        { numberOfResolutions: 4, finalGridSpacing: maxLength / 12 }
+      )
+      parameterObject.push(fineSplineMap)
+      stages.push('Fine BSpline')
+
       const viewerElement = document.getElementById('viewer')
       const fixedImage = await toMultiscaleSpatialImage(copyImage(fixed))
       const movingImage = await toMultiscaleSpatialImage(copyImage(moving))
