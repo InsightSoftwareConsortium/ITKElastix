@@ -44,7 +44,7 @@ async function elastixNode(
   const args = []
   // Inputs
   const parameterObjectName = '0'
-  args.push(parameterObjectName as string)
+  args.push(parameterObjectName)
 
   // Outputs
   const resultName = '0'

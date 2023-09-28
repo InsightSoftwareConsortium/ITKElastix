@@ -15,7 +15,7 @@ import ReadParameterFilesNodeResult from './read-parameter-files-node-result.js'
 import path from 'path'
 
 /**
- * Read an elastix parameter text file into a parameter object.
+ * Read elastix parameter text files into a parameter object.
  *
  * @param {ReadParameterFilesOptions} options - options object
  *

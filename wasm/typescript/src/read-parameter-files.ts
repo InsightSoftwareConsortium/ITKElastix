@@ -17,7 +17,7 @@ import { getPipelinesBaseUrl } from './pipelines-base-url.js'
 import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
 
 /**
- * Read an elastix parameter text file into a parameter object.
+ * Read elastix parameter text files into a parameter object.
  *
  * @param {ReadParameterFilesOptions} options - options object
  *

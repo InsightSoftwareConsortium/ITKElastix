@@ -39,7 +39,7 @@ async function writeParameterFilesNode(
   const args = []
   // Inputs
   const parameterObjectName = '0'
-  args.push(parameterObjectName as string)
+  args.push(parameterObjectName)
 
   // Outputs
   parameterFiles.forEach((p) => args.push(p))

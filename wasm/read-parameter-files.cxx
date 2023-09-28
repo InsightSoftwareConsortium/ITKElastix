@@ -27,7 +27,7 @@ int
 main(int argc, char * argv[])
 {
   itk::wasm::Pipeline pipeline(
-    "read-parameter-files", "Read an elastix parameter text file into a parameter object.", argc, argv);
+    "read-parameter-files", "Read elastix parameter text files into a parameter object.", argc, argv);
 
   std::vector<std::string> parameterFiles;
   pipeline.add_option("-f,--parameter-files", parameterFiles, "Elastix parameter files")

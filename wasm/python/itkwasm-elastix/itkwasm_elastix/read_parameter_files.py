@@ -11,7 +11,7 @@ from itkwasm import (
 def read_parameter_files(
     parameter_files: List[os.PathLike] = [],
 ) -> Any:
-    """Read an elastix parameter text file into a parameter object.
+    """Read elastix parameter text files into a parameter object.
 
     :param parameter_files: Elastix parameter files
     :type  parameter_files: os.PathLike
