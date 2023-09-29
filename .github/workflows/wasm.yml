@@ -16,20 +16,16 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: 'Free up disk space'
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      with:
+        large-packages: false
+
+    - name: Install cypress deps
       run: |
-        # Workaround for https://github.com/actions/virtual-environments/issues/709
-        df -h
         sudo apt-get update
-        sudo apt-get remove -y '^dotnet-.*'
-        sudo apt-get remove -y '^llvm-.*'
-        sudo apt-get remove -y 'php.*'
-        sudo apt-get autoremove -y
-        sudo apt-get clean
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf /usr/share/dotnet/
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-        df -h
+        # https://docs.cypress.io/guides/continuous-integration/introduction#Dependencies
+        sudo apt-get install -y libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libgconf-2-4 libnss3 libxss1 libasound2 libxtst6 xauth xvfb
 
     - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
