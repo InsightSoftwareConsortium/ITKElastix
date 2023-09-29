@@ -21,5 +21,5 @@ def write_parameter_files(
     :type  parameter_files: List[str]
     """
     func = environment_dispatch("itkwasm_elastix", "write_parameter_files")
-    output = func(parameter_object)
+    output = func(parameter_object, parameter_files)
     return output

@@ -21,5 +21,5 @@ async def write_parameter_files_async(
     :type  parameter_files: List[str]
     """
     func = environment_dispatch("itkwasm_elastix", "write_parameter_files_async")
-    output = await func(parameter_object)
+    output = await func(parameter_object, parameter_files)
     return output

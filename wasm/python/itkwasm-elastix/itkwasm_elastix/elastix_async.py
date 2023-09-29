@@ -44,5 +44,5 @@ async def elastix_async(
     :rtype:  Any
     """
     func = environment_dispatch("itkwasm_elastix", "elastix_async")
-    output = await func(parameter_object, fixed=fixed, moving=moving, initial_transform=initial_transform, initial_transform_parameter_object=initial_transform_parameter_object)
+    output = await func(parameter_object, transform, fixed=fixed, moving=moving, initial_transform=initial_transform, initial_transform_parameter_object=initial_transform_parameter_object)
     return output

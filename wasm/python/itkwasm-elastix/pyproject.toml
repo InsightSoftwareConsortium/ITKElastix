@@ -45,15 +45,30 @@ path = "itkwasm_elastix/_version.py"
 [tool.hatch.envs.default]
 dependencies = [
   "pytest",
+  "pytest-pyodide",
 ]
+
+[tool.hatch.envs.default.scripts]
+test = [
+  "hatch build -t wheel",
+  "pytest --dist-dir=./dist --rt=chrome",
+]
+download-pyodide = [
+  "curl -L https://github.com/pyodide/pyodide/releases/download/0.23.1/pyodide-0.23.1.tar.bz2 -o pyodide.tar.bz2",
+  "tar xjf pyodide.tar.bz2",
+  "rm -rf dist pyodide.tar.bz2",
+  "mv pyodide dist",
+]
+serve = [
+  "hatch build -t wheel",
+  'echo "\nVisit http://localhost:8877/console.html\n"',
+  "python -m http.server --directory=./dist 8877",
+]
+
 
 [project.urls]
 Home = "https://github.com/InsightSoftwareConsortium/ITKElastix"
 Source = "https://github.com/InsightSoftwareConsortium/ITKElastix"
-
-[tool.hatch.envs.default.scripts]
-test = "pytest"
-
 
 [tool.hatch.build]
 exclude = [

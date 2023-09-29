@@ -44,5 +44,5 @@ def elastix(
     :rtype:  Any
     """
     func = environment_dispatch("itkwasm_elastix", "elastix")
-    output = func(parameter_object, fixed=fixed, moving=moving, initial_transform=initial_transform, initial_transform_parameter_object=initial_transform_parameter_object)
+    output = func(parameter_object, transform, fixed=fixed, moving=moving, initial_transform=initial_transform, initial_transform_parameter_object=initial_transform_parameter_object)
     return output
