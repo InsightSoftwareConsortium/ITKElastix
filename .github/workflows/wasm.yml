@@ -60,5 +60,6 @@ jobs:
     - name: Test Python WASI
       working-directory: ./wasm/python/itkwasm-elastix-wasi
       run: |
-        pip install hatch
-        hatch run test
+        pip install pytest itkwasm-compare-images itk-io
+        pip install -e .
+        pytest -s

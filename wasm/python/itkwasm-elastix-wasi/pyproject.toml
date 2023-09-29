@@ -52,7 +52,7 @@ Home = "https://github.com/InsightSoftwareConsortium/ITKElastix"
 Source = "https://github.com/InsightSoftwareConsortium/ITKElastix"
 
 [tool.hatch.envs.default.scripts]
-test = "pytest"
+test = "pytest -s"
 
 
 [tool.hatch.build]
