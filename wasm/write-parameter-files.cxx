@@ -37,8 +37,11 @@ main(int argc, char * argv[])
     ->type_name("INPUT_JSON");
 
   std::vector<std::string> parameterFiles;
-  pipeline.add_option("parameter-files", parameterFiles, "Elastix parameter files, must have the same length as the "
-                                                         "number of parameter maps in the parameter object.")
+  pipeline
+    .add_option("parameter-files",
+                parameterFiles,
+                "Elastix parameter files, must have the same length as the "
+                "number of parameter maps in the parameter object.")
     ->required()
     ->type_name("OUTPUT_TEXT_FILE");
 

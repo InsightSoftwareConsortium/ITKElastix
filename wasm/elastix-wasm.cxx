@@ -60,8 +60,13 @@ public:
       ->type_name("INPUT_BINARY_FILE");
 
     itk::wasm::InputTextStream initialTransformParameterObjectJson;
-    auto initialTransformParameterObjectOption = pipeline.add_option("-t,--initial-transform-parameter-object", initialTransformParameterObjectJson, "Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform.")
-      ->type_name("INPUT_JSON");
+    auto                       initialTransformParameterObjectOption =
+      pipeline
+        .add_option("-t,--initial-transform-parameter-object",
+                    initialTransformParameterObjectJson,
+                    "Initial elastix transform parameter object to apply before registration. Only provide this or an "
+                    "initial transform.")
+        ->type_name("INPUT_JSON");
 
     itk::wasm::InputTextStream parameterObjectJson;
     pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation")
@@ -78,7 +83,10 @@ public:
       ->type_name("OUTPUT_BINARY_FILE");
 
     itk::wasm::OutputTextStream transformParameterObjectJson;
-    pipeline.add_option("transform-parameter-object", transformParameterObjectJson, "Elastix optimized transform parameter object representation")
+    pipeline
+      .add_option("transform-parameter-object",
+                  transformParameterObjectJson,
+                  "Elastix optimized transform parameter object representation")
       ->required()
       ->type_name("OUTPUT_JSON");
 
@@ -166,7 +174,8 @@ public:
         initialTransform = compositeTransform;
         registration->SetExternalInitialTransform(initialTransform);
       }
-    } else if (!initialTransformParameterObjectOption->empty())
+    }
+    else if (!initialTransformParameterObjectOption->empty())
     {
       rapidjson::Document initialDocument;
       std::stringstream   ss;
@@ -244,7 +253,7 @@ public:
       ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
     }
 
-    const auto transformParameterObject = registration->GetTransformParameterObject();
+    const auto          transformParameterObject = registration->GetTransformParameterObject();
     rapidjson::Document transformDocument;
     transformDocument.SetArray();
     rapidjson::Document::AllocatorType & allocator = transformDocument.GetAllocator();
@@ -283,8 +292,6 @@ main(int argc, char * argv[])
 {
   itk::wasm::Pipeline pipeline("elastix", "Rigid and non-rigid registration of images.", argc, argv);
 
-  return itk::wasm::SupportInputImageTypes<PipelineFunctor, uint8_t, uint16_t, int16_t, double, float>::Dimensions<2U,
-                                                                                                                   3U,
-                                                                                                                   4U>(
-    "-f,--fixed", pipeline);
+  return itk::wasm::SupportInputImageTypes<PipelineFunctor, uint8_t, uint16_t, int16_t, double, float>::
+    Dimensions<2U, 3U, 4U>("-f,--fixed", pipeline);
 }
