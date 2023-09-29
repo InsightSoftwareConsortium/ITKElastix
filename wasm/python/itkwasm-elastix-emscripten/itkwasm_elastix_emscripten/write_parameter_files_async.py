@@ -1,7 +1,5 @@
 # Generated file. To retain edits, remove this comment.
 
-# Generated file. Do not edit.
-
 from pathlib import Path
 import os
 from typing import Dict, Tuple, Optional, List, Any
@@ -35,7 +33,7 @@ async def write_parameter_files_async(
 
     kwargs = {}
 
-    outputs = await js_module.writeParameterFiles(web_worker, to_js(parameter_object), **kwargs)
+    outputs = await js_module.writeParameterFiles(web_worker, to_js(parameter_object), to_js(parameter_files), **kwargs)
 
     output_web_worker = None
     output_list = []

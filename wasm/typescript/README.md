@@ -97,7 +97,7 @@ async function elastix(
 
 #### readParameterFiles
 
-*Read an elastix parameter text file into a parameter object.*
+*Read elastix parameter text files into a parameter object.*
 
 ```ts
 async function readParameterFiles(
@@ -264,7 +264,7 @@ async function elastixNode(
 
 #### readParameterFilesNode
 
-*Read an elastix parameter text file into a parameter object.*
+*Read elastix parameter text files into a parameter object.*
 
 ```ts
 async function readParameterFilesNode(

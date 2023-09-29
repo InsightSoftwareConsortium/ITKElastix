@@ -1,12 +1,7 @@
 from pathlib import Path
-from dataclasses import asdict
 import json
 
 import pytest
-
-from itkwasm_compare_images import compare_images
-from itkwasm import Image
-import itk
 
 from itkwasm_elastix_wasi import write_parameter_files
 

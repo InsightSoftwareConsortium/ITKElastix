@@ -10,8 +10,8 @@
     "build:wasi": "itk-wasm -i itkwasm/wasi:20230917-38fb6f92 build",
     "build:wasi:debug": "itk-wasm -i itkwasm/wasi:20230917-38fb6f92-debug build -- -DCMAKE_BUILD_TYPE:STRING=Debug",
     "build:testData": "dam download wasm/test/data wasm/test/data.tar.gz bafybeiblzvqdyzykgfy47qfuec3mysd7s4not6t7hgrwkxyuhjmwesqdgi https://data.kitware.com/api/v1/file/64ebf79837a2250d4df1463e/download https://w3s.link/ipfs/bafybeibfwkkoiugogidxetnqor76dzppfrbaspimjuyz2vdqdtqe4s7are",
-    "bindgen:typescript": "/home/matt/src/itk-wasm/src/itk-wasm-cli.js -b emscripten-build bindgen --output-dir wasm/typescript --package-name @itk-wasm/elastix --package-version 0.1.0 --package-description \"A toolbox for rigid and nonrigid registration of images.\" --repository 'https://github.com/InsightSoftwareConsortium/ITKElastix'",
-    "bindgen:python": "/home/matt/src/itk-wasm/src/itk-wasm-cli.js -b wasi-build bindgen --interface python --output-dir wasm/python --package-name itkwasm-elastix --package-version 0.1.0 --package-description \"A toolbox for rigid and nonrigid registration of images.\" --repository 'https://github.com/InsightSoftwareConsortium/ITKElastix'",
+    "bindgen:typescript": "/home/matt/src/itk-wasm/src/itk-wasm-cli.js -b emscripten-build bindgen --output-dir wasm/typescript --package-name @itk-wasm/elastix --package-version 0.2.0 --package-description \"A toolbox for rigid and nonrigid registration of images.\" --repository 'https://github.com/InsightSoftwareConsortium/ITKElastix'",
+    "bindgen:python": "/home/matt/src/itk-wasm/src/itk-wasm-cli.js -b wasi-build bindgen --interface python --output-dir wasm/python --package-name itkwasm-elastix --package-version 0.2.0 --package-description \"A toolbox for rigid and nonrigid registration of images.\" --repository 'https://github.com/InsightSoftwareConsortium/ITKElastix'",
     "test": "npm run test:wasi",
     "test:wasi": "itk-wasm test --test-dir wasm -- -V",
     "clean": "git clean -fdx -e node_modules"

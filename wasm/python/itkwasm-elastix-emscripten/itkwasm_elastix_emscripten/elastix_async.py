@@ -1,7 +1,5 @@
 # Generated file. To retain edits, remove this comment.
 
-# Generated file. Do not edit.
-
 from pathlib import Path
 import os
 from typing import Dict, Tuple, Optional, List, Any
@@ -66,7 +64,7 @@ async def elastix_async(
     if initial_transform_parameter_object is not None:
         kwargs["initialTransformParameterObject"] = to_js(initial_transform_parameter_object)
 
-    outputs = await js_module.elastix(web_worker, to_js(parameter_object), **kwargs)
+    outputs = await js_module.elastix(web_worker, to_js(parameter_object), to_js(transform), **kwargs)
 
     output_web_worker = None
     output_list = []
