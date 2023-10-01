@@ -17,3 +17,8 @@ zstd-1.2.0-linux.tar
 zstd-1.2.0-linux/
 .ipynb_checkpoints/
 examples/Parameters.*.txt
+node_modules/
+wasi-build
+emscripten-build
+wasm/typescript/demo/
+wasm/test

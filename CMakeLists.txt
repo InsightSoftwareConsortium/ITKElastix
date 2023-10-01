@@ -59,8 +59,14 @@ if(SKBUILD)
   mark_as_advanced(ELASTIX_NO_INSTALL_EXECUTABLES ELASTIX_NO_INSTALL_RUNTIME_LIBRARIES ELASTIX_NO_INSTALL_DEVELOPMENT)
 endif()
 
-set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_TAG "798ecaebab9d264d0f3cb375a1bf74174c41343c")
+if(WASI OR EMSCRIPTEN)
+  option(ELASTIX_USE_OPENMP "OpenMP not supported on WASI or Emscripten" OFF)
+  option(ELASTIX_NO_INSTALL_EXECUTABLES "Do not install executables" ON)
+endif()
+
+# set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
+set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
+set(elastix_GIT_TAG "e5428a8b8347d869040fc5b3ecc58106368c8ce4")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
@@ -98,9 +104,10 @@ if(ELASTIX_USE_OPENCL)
 endif()
 
 # Reset parameters for ITK remote module build
-set(BUILD_TESTING ${_itk_build_testing})
-set(BUILD_SHARED_LIBS ${_itk_build_shared})
-
+if (NOT WASI AND NOT EMSCRIPTEN)
+  set(BUILD_TESTING ${_itk_build_testing})
+  set(BUILD_SHARED_LIBS ${_itk_build_shared})
+endif()
 
 if(ITK_WRAP_PYTHON) # Python wrapping is enabled
   get_property(multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -115,10 +122,16 @@ if(ITK_WRAP_PYTHON) # Python wrapping is enabled
   endif()
 endif()
 
+option(ITKELASTIX_BUILD_WASM_EXECUTABLES "Build WASM executables" OFF)
+
 if(NOT ITK_SOURCE_DIR)
   find_package(ITK REQUIRED)
   list(APPEND CMAKE_MODULE_PATH ${ITK_CMAKE_DIR})
   include(ITKModuleExternal)
+  if(WASI OR EMSCRIPTEN OR ITKELASTIX_BUILD_WASM_EXECUTABLES)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    add_subdirectory(wasm)
+  endif()
 else()
   set(ITK_DIR ${CMAKE_BINARY_DIR})
   itk_module_impl()

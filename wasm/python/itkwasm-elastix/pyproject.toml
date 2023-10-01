@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "itkwasm-elastix"
+readme = "README.md"
+license = "Apache-2.0"
+dynamic = ["version", "description"]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python",
+  "Programming Language :: C++",
+  "Environment :: WebAssembly",
+  "Environment :: WebAssembly :: Emscripten",
+  "Environment :: WebAssembly :: WASI",
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+keywords = [
+  "itkwasm",
+  "webassembly",
+  "wasi",
+  "emscripten",
+]
+
+requires-python = ">=3.7"
+dependencies = [
+    "itkwasm >= 1.0.b131",
+    "itkwasm-elastix-wasi; sys_platform != \"emscripten\"",
+    "itkwasm-elastix-emscripten; sys_platform == \"emscripten\"",
+
+]
+
+[tool.hatch.version]
+path = "itkwasm_elastix/_version.py"
+
+[tool.hatch.envs.default]
+dependencies = [
+  "pytest",
+  "pytest-pyodide",
+]
+
+[tool.hatch.envs.default.scripts]
+test = [
+  "hatch build -t wheel",
+  "pytest --dist-dir=./dist --rt=chrome",
+]
+download-pyodide = [
+  "curl -L https://github.com/pyodide/pyodide/releases/download/0.23.1/pyodide-0.23.1.tar.bz2 -o pyodide.tar.bz2",
+  "tar xjf pyodide.tar.bz2",
+  "rm -rf dist pyodide.tar.bz2",
+  "mv pyodide dist",
+]
+serve = [
+  "hatch build -t wheel",
+  'echo "\nVisit http://localhost:8877/console.html\n"',
+  "python -m http.server --directory=./dist 8877",
+]
+
+
+[project.urls]
+Home = "https://github.com/InsightSoftwareConsortium/ITKElastix"
+Source = "https://github.com/InsightSoftwareConsortium/ITKElastix"
+
+[tool.hatch.build]
+exclude = [
+  "/examples",
+]

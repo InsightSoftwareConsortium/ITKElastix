@@ -1,0 +1,61 @@
+name: WebAssembly
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+       - '*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-wasm:
+    name: "build-test-wasm"
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      with:
+        large-packages: false
+
+    - name: Install cypress deps
+      run: |
+        sudo apt-get update
+        # https://docs.cypress.io/guides/continuous-integration/introduction#Dependencies
+        sudo apt-get install -y libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libgconf-2-4 libnss3 libxss1 libasound2 libxtst6 xauth xvfb
+
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+
+    - uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
+      with:
+        node-version: '18'
+
+    - name: Install
+      run: |
+        npm ci
+        npm run build:testData
+
+    - name: Build TypeScript
+      working-directory: ./wasm/typescript
+      run: |
+        npm ci
+        npm run build
+
+    - name: Test TypeScript
+      working-directory: ./wasm/typescript
+      run: |
+        npm test
+
+    - uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4.7.0
+      with:
+        python-version: '3.10'
+
+    - name: Test Python WASI
+      working-directory: ./wasm/python/itkwasm-elastix-wasi
+      run: |
+        pip install pytest itkwasm-compare-images itk-io
+        pip install -e .
+        pytest -s

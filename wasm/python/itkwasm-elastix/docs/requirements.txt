@@ -1,0 +1,7 @@
+sphinx
+furo
+sphinx-autodoc2
+myst-parser
+sphinx-copybutton
+sphinxext-opengraph
+sphinx-design

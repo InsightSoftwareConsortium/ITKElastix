@@ -1,0 +1,73 @@
+{
+  "name": "@itk-wasm/elastix",
+  "version": "0.2.0",
+  "description": "A toolbox for rigid and nonrigid registration of images.",
+  "type": "module",
+  "module": "./dist/bundles/elastix.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "browser": "./dist/bundles/elastix.js",
+      "node": "./dist/bundles/elastix-node.js",
+      "default": "./dist/bundles/elastix.js"
+    }
+  },
+  "scripts": {
+    "start": "npm run copyShoelaceAssets && vite -c build/vite.config.js",
+    "test": "npm run test:node && npm run test:browser",
+    "test:node": "ava --timeout 10m test/node/*.js",
+    "test:browser": "npm run test:browser:chrome && npm run test:browser:firefox",
+    "test:browser:firefox": "start-server-and-test start http-get://localhost:5173 cypress:runFirefox",
+    "test:browser:chrome": "start-server-and-test start http-get://localhost:5173 cypress:runChrome",
+    "test:browser:debug": "start-server-and-test start http-get://localhost:5173 cypress:open",
+    "cypress:open": "npx cypress open",
+    "cypress:runChrome": "npx cypress run --browser chrome",
+    "cypress:runFirefox": "npx cypress run --browser firefox",
+    "build": "npm run build:tsc && npm run build:node && npm run build:browser && npm run build:demo",
+    "build:node": "rollup -c ./build/rollup.node.config.js",
+    "build:browser": "rollup -c ./build/rollup.browser.config.js",
+    "build:tsc": "tsc --pretty",
+    "copyShoelaceAssets": "shx mkdir -p test/browser/demo-app/public && shx cp -r node_modules/@shoelace-style/shoelace/dist/assets test/browser/demo-app/public/",
+    "build:demo": "npm run copyShoelaceAssets && vite -c build/vite.config.js build"
+  },
+  "keywords": [
+    "itk",
+    "wasm",
+    "webassembly",
+    "wasi"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "itk-wasm": "^1.0.0-b.146"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^24.0.0",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "@rollup/plugin-terser": "^0.4.0",
+    "@rollup/plugin-typescript": "^11.1.1",
+    "@shoelace-style/shoelace": "^2.5.2",
+    "@types/node": "^20.2.5",
+    "ava": "^5.3.1",
+    "cypress": "^13.2.0",
+    "debug": "^4.3.4",
+    "itk-image-io": "^1.0.0-b.146",
+    "rollup": "^3.9.0",
+    "rollup-plugin-copy": "^3.4.0",
+    "rollup-plugin-ignore": "^1.0.10",
+    "rollup-plugin-polyfill-node": "^0.12.0",
+    "shx": "^0.3.4",
+    "start-server-and-test": "^2.0.0",
+    "supports-color": "^9.3.1",
+    "tslib": "^2.5.2",
+    "typescript": "^5.0.4",
+    "vite": "^4.3.3",
+    "vite-plugin-static-copy": "^0.14.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/InsightSoftwareConsortium/ITKElastix"
+  }
+}
