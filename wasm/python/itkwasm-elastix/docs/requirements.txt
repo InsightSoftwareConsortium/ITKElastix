@@ -1,3 +1,4 @@
+astroid<3
 sphinx
 furo
 sphinx-autodoc2
