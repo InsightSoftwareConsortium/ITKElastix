@@ -40,7 +40,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "itk-wasm": "^1.0.0-b.142"
+    "itk-wasm": "^1.0.0-b.146"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.0",
@@ -53,7 +53,7 @@
     "ava": "^5.3.1",
     "cypress": "^13.2.0",
     "debug": "^4.3.4",
-    "itk-image-io": "^1.0.0-b.142",
+    "itk-image-io": "^1.0.0-b.146",
     "rollup": "^3.9.0",
     "rollup-plugin-copy": "^3.4.0",
     "rollup-plugin-ignore": "^1.0.10",
