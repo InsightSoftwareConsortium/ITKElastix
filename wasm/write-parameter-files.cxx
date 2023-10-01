@@ -75,8 +75,6 @@ main(int argc, char * argv[])
     parameterMaps.push_back(parameterMap);
   }
 
-  // The initial is not written by WriteParameterFiles
-  ITK_WASM_CATCH_EXCEPTION(pipeline, elastix::ParameterObject::WriteParameterFile(parameterMaps[0], parameterFiles[0]));
   ITK_WASM_CATCH_EXCEPTION(pipeline, elastix::ParameterObject::WriteParameterFiles(parameterMaps, parameterFiles));
 
   return EXIT_SUCCESS;
