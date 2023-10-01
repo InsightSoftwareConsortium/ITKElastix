@@ -51,6 +51,4 @@ def test_elastix_wasm():
     result = Image(**result_dict)
 
     metrics, diff, diffuchar = compare_images(result, baseline_images=[expected,])
-    from pprint import pprint
-    pprint(metrics)
     assert metrics['almostEqual']
