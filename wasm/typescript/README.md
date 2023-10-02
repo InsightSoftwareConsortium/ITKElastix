@@ -4,6 +4,10 @@
 
 > A toolbox for rigid and nonrigid registration of images.
 
+[👨‍💻 **Live API Demo** ✨](https://itk-wasm-elastix-app-js.on.fleek.co/ ':include :type=iframe width=100% height=800px')
+
+[🕮 **Documentation** 📚](https://js.docs.elastix.wasm.itk.eth.limo/)
+
 ## Installation
 
 ```sh
