@@ -1,6 +1,7 @@
 ITKElastix
 ==========
 
+[![WebAssembly](https://github.com/InsightSoftwareConsortium/ITKElastix/actions/workflows/wasm.yml/badge.svg)](https://github.com/InsightSoftwareConsortium/ITKElastix/actions/workflows/wasm.yml)
 ![image](https://github.com/InsightSoftwareConsortium/ITKElastix/workflows/Build,%20test,%20package/badge.svg)
 [![PyPI Version](https://img.shields.io/pypi/v/itk-elastix.svg)](https://pypi.python.org/pypi/itk-elastix)
 [![binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/InsightSoftwareConsortium/ITKElastix/main?urlpath=lab/tree/examples%2FITK_Example01_SimpleRegistration.ipynb)
@@ -11,25 +12,41 @@ ITKElastix
 Overview
 --------
 
-Provides an [ITK](https://www.itk.org) Python interface to [elastix](https://elastix.lumc.nl/), a toolbox for rigid and nonrigid registration of images.
+Provides an [ITK](https://www.itk.org) Python, JavaScript, and WebAssembly interface to [elastix](https://elastix.lumc.nl/), a toolbox for rigid and nonrigid registration of images.
 
 elastix is open source software, based on the well-known [Insight Toolkit (ITK)](https://discourse.itk.org). The software consists of a collection of algorithms that are commonly used to solve (medical) image registration problems. The modular design of elastix allows the user to quickly configure, test, and compare different registration methods for a specific application.
+
+[👨‍💻 **Live JavaScript API Demo** ✨](https://itk-wasm-elastix-app-js.on.fleek.co/ ':include :type=iframe width=100% height=800px')
 
 Installation
 ------------
 
-Install cross-platform binary Python packages with [pip](https://pypi.org/project/pip/):
+Install cross-platform native binary Python packages with [pip](https://pypi.org/project/pip/):
 
-    pip install itk-elastix
+```sh
+pip install itk-elastix
+```
 
-*Experimental* GPU-accelerated packages can be installed on Linux with:
+*Experimental* WebAssembly Python packages can be installed across platforms with:
 
-    pip install itk-elastix-opencl
+```sh
+pip install itkwasm-elastix
+```
+
+> **Note**
+The API for the WebAssembly and native binary packages are slightly different. For the WebAssembly interface, see [the package's Sphinx documentation](https://py.docs.elastix.wasm.itk.eth.limo/). For the interface to the native binaries, see the *examples/* directory in this repository.
+
+JavaScript / TypesScript packages cas be installed with
+
+```sh
+npm install @itk-wasm/elastix
+```
+
 
 Usage
 -----
 
-To register two images, traditionally called the fixed image and the moving image:
+To register two images with the native Python binaries, traditionally called the fixed image and the moving image:
 
     import itk
 
@@ -45,6 +62,9 @@ ITKElastix can be used with both the [procedural](https://docs.python.org/3/howt
 To find parameters that work well with specific datasets, see the [elastix Model Zoo](https://elastix.lumc.nl/modelzoo/).
 
 For a graphical user interface in a desktop application, see the [napari plugin](https://github.com/SuperElastix/elastix_napari).
+
+Additional [documentation is available for the WebAssembly JavaScript bindings](https://js.docs.elastix.wasm.itk.eth.limo/) and [WebAssembly Python bindings](https://py.docs.elastix.wasm.itk.eth.limo/).
+
 
 Acknowledgements
 ----------------
@@ -62,10 +82,10 @@ contributed to elastix.
 
 If you use this software anywhere we would appreciate if you cite the following articles:
 
--   S.  Klein, M. Staring, K. Murphy, M.A. Viergever, J.P.W. Pluim,
-        \"elastix: a toolbox for intensity based medical image
-        registration,\" IEEE Transactions on Medical Imaging, vol. 29,
-        no. 1, pp. 196 - 205, January 2010.
+-   K. Ntatsis, N. Dekker, V. Valk, T. Birdsong, D. Zukić, S. Klein, M Staring, M McCormick,
+    [\"itk-elastix: Medical image registration in Python\"](https://conference.scipy.org/proceedings/scipy2023/konstantinos_ntatsis.html),
+    Proceedings of the 22nd Python in Science Conference,
+    pp. 101 - 105, 2023, https://doi.org/10.25080/gerudo-f2bc6f59-00d.
 
 -   D.P. Shamonin, E.E. Bron, B.P.F. Lelieveldt, M. Smits, S. Klein
     and M. Staring, \"Fast Parallel Image Registration on CPU and GPU
@@ -74,7 +94,7 @@ If you use this software anywhere we would appreciate if you cite the following 
 
 This ITK module is based on [SimpleElastix](https://simpleelastix.github.io/), created by [Kasper Marstal](https://github.com/kaspermarstal). For more information, see:
 
--   Kasper Marstal, Floris Berendsen, Marius Staring and Stefan Klein,
+-   Kasper Marstal, Floris Berendsen, Marius Staring and Stefajkn Klein,
     \"SimpleElastix: A user-friendly, multi-lingual library for medical
     image registration\", International Workshop on Biomedical Image
     Registration (WBIR), Las Vegas, Nevada, USA, 2016
