@@ -12,6 +12,7 @@ jobs:
     with:
       python3-minor-versions: '["8","11"]'
       manylinux-platforms: '["_2_28-x64","2014-x64"]'
+      test-notebooks: true
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
       
@@ -21,5 +22,6 @@ jobs:
     with:
       python3-minor-versions: '["8","9","10","11"]'
       manylinux-platforms: '["_2_28-x64","2014-x64"]'
+      test-notebooks: true
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
