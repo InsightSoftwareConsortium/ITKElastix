@@ -51,7 +51,7 @@
     "@shoelace-style/shoelace": "^2.5.2",
     "@types/node": "^20.2.5",
     "ava": "^5.3.1",
-    "cypress": "^13.2.0",
+    "cypress": "^13.7.3",
     "debug": "^4.3.4",
     "itk-image-io": "^1.0.0-b.146",
     "rollup": "^3.9.0",
