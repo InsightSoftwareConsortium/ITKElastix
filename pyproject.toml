@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "itk-elastix"
-version = "0.19.2"
+version = "0.20.0"
 description = "Provides an ITK Python interface to elastix, a toolbox for rigid and nonrigid registration of images"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -41,7 +41,7 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    "itk>=5.4rc3",
+    "itk~=5.4.0",
 ]
 
 [project.urls]

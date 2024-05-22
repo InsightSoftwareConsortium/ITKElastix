@@ -4,11 +4,11 @@ on: [push,pull_request]
 
 jobs:
   cxx-build-workflow:
-    uses: thewtex/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-cxx.yml@e15be287b1e1940b51e38fd6c8e0a32cfe629154
+    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-cxx.yml@v5.4.0
 
   python-build-workflow-dev:
     if: github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags')
-    uses: thewtex/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@e15be287b1e1940b51e38fd6c8e0a32cfe629154
+    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.0
     with:
       python3-minor-versions: '["8","11"]'
       manylinux-platforms: '["_2_28-x64","2014-x64"]'
@@ -18,7 +18,7 @@ jobs:
 
   python-build-workflow-main:
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags')
-    uses: thewtex/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@e15be287b1e1940b51e38fd6c8e0a32cfe629154
+    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.0
     with:
       python3-minor-versions: '["8","9","10","11"]'
       manylinux-platforms: '["_2_28-x64","2014-x64"]'
