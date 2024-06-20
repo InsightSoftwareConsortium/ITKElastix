@@ -64,11 +64,9 @@ if(WASI OR EMSCRIPTEN)
   option(ELASTIX_NO_INSTALL_EXECUTABLES "Do not install executables" ON)
 endif()
 
-# set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-# Upstream + wasm patches
-# Branch: ITKElastix-2023-01-01-022aa6cd
-set(elastix_GIT_TAG "022aa6cdaaa5621f3d6b2f245c388a9669cc7ef9")
+set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
+# Commit 2024-06-20: "ENH: Add support ComputeZYX parameter to EulerStackTransform (for 3D)"
+set(elastix_GIT_TAG "8111c672508d89995550e63ba54ab871e324105b")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
