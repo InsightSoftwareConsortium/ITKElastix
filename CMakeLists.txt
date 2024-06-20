@@ -64,11 +64,9 @@ if(WASI OR EMSCRIPTEN)
   option(ELASTIX_NO_INSTALL_EXECUTABLES "Do not install executables" ON)
 endif()
 
-# set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-# Upstream + wasm patches
-# Branch: ITKElastix-2023-01-01-022aa6cd
-set(elastix_GIT_TAG "022aa6cdaaa5621f3d6b2f245c388a9669cc7ef9")
+set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
+# Commit 2024-07-08: "STYLE: Remove unused ELASTIX_USE_OPENMP option and OpenMP compiler flags"
+set(elastix_GIT_TAG "e49c47fbb8bca796288796f85020c02ffe85b5d7")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
