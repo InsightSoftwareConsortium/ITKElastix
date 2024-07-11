@@ -59,8 +59,8 @@ if(WASI OR EMSCRIPTEN)
 endif()
 
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-# Commit 2024-07-08: "STYLE: Remove unused ELASTIX_USE_OPENMP option and OpenMP compiler flags"
-set(elastix_GIT_TAG "e49c47fbb8bca796288796f85020c02ffe85b5d7")
+# Released on 2024-07-18:
+set(elastix_GIT_TAG "5.2.0")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
