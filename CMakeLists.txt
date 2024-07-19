@@ -67,8 +67,8 @@ endif()
 # set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
 set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
 # Upstream + wasm patches
-# Branch: ITKElastix-2023-01-01-022aa6cd
-set(elastix_GIT_TAG "022aa6cdaaa5621f3d6b2f245c388a9669cc7ef9")
+# Branch: ITKElastix-2024-07-18-ebb429a33b
+set(elastix_GIT_TAG "0ab3f57a6528cce609feedeb1650e7c850beca94")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}

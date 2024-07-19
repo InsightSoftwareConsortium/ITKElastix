@@ -1,8 +1,8 @@
 // Generated file. To retain edits, remove this comment.
 
-import { TextFile } from 'itk-wasm'
+import { TextFile, WorkerPoolFunctionOption } from 'itk-wasm'
 
-interface ReadParameterFilesOptions {
+interface ReadParameterFilesOptions extends WorkerPoolFunctionOption {
   /** Elastix parameter files */
   parameterFiles: string[] | File[] | TextFile[]
 

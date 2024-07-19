@@ -5,8 +5,7 @@ import json
 import pytest
 
 from itkwasm_compare_images import compare_images
-from itkwasm import Image
-import itk
+from itkwasm_image_io import imread, imwrite
 
 from itkwasm_elastix_wasi import elastix
 
@@ -22,17 +21,11 @@ def test_elastix_wasm():
 
     fixed_filename = 'CT_2D_head_fixed.mha'
     fixed_filepath = Path(__file__).parent.parent.parent.parent / 'test' / 'data' / 'input' / fixed_filename
-    fixed_image = itk.imread(fixed_filepath)
-
-    fixed_image_dict = itk.dict_from_image(fixed_image)
-    fixed_image = Image(**fixed_image_dict)
+    fixed_image = imread(fixed_filepath)
 
     moving_filename = 'CT_2D_head_moving.mha'
     moving_filepath = Path(__file__).parent.parent.parent.parent / 'test' / 'data' / 'input' / moving_filename
-    moving_image = itk.imread(moving_filepath)
-
-    moving_image_dict = itk.dict_from_image(moving_image)
-    moving_image = Image(**moving_image_dict)
+    moving_image = imread(moving_filepath)
 
     result_image, transform_parameter_object = elastix(parameter_object, transform, fixed_image, moving_image)
 
@@ -40,15 +33,10 @@ def test_elastix_wasm():
     output_dir.mkdir(parents=True, exist_ok=True)
     output_filename = output_dir / fixed_filename.replace('fixed.mha', 'result.mha')
 
-    result = itk.image_from_dict(asdict(result_image))
-    itk.imwrite(result, output_filename)
+    imwrite(result_image, output_filename)
 
     expected_filename = Path(__file__).parent.parent.parent.parent / 'test' / 'data' / 'baseline' / fixed_filename.replace('fixed.mha', 'result.mha')
-    expected = itk.imread(expected_filename)
-    expected_dict = itk.dict_from_image(expected)
-    expected = Image(**expected_dict)
-    result_dict = itk.dict_from_image(result)
-    result = Image(**result_dict)
+    expected = imread(expected_filename)
 
-    metrics, diff, diffuchar = compare_images(result, baseline_images=[expected,])
+    metrics, diff, diffuchar = compare_images(result_image, baseline_images=[expected,])
     assert metrics['almostEqual']

@@ -1,10 +1,9 @@
 // Generated file. To retain edits, remove this comment.
 
-import * as elastix from '../../../dist/bundles/elastix.js'
+import * as elastix from '../../../dist/index.js'
 import writeParameterFilesLoadSampleInputs, { usePreRun } from "./write-parameter-files-load-sample-inputs.js"
 
 class WriteParameterFilesModel {
-
   inputs: Map<string, any>
   options: Map<string, any>
   outputs: Map<string, any>
@@ -14,18 +13,16 @@ class WriteParameterFilesModel {
     this.options = new Map()
     this.outputs = new Map()
     }
-  }
+}
 
 
-class WriteParameterFilesController  {
+class WriteParameterFilesController {
 
   constructor(loadSampleInputs) {
     this.loadSampleInputs = loadSampleInputs
 
     this.model = new WriteParameterFilesModel()
     const model = this.model
-
-    this.webWorker = null
 
     if (loadSampleInputs) {
       const loadSampleInputsButton = document.querySelector("#writeParameterFilesInputs [name=loadSampleInputs]")
@@ -71,7 +68,7 @@ class WriteParameterFilesController  {
     })
 
     const preRun = async () => {
-      if (!this.webWorker && loadSampleInputs && usePreRun) {
+      if (loadSampleInputs && usePreRun) {
         await loadSampleInputs(model, true)
         await this.run()
       }
@@ -135,12 +132,11 @@ class WriteParameterFilesController  {
   }
 
   async run() {
-    const { webWorker, parameterFiles, } = await elastix.writeParameterFiles(this.webWorker,
-      this.model.inputs.get('parameterObject'),
+    const options = Object.fromEntries(this.model.options.entries())
+    const { parameterFiles, } = await elastix.writeParameterFiles(      this.model.inputs.get('parameterObject'),
       this.model.inputs.get('parameterFiles'),
       Object.fromEntries(this.model.options.entries())
     )
-    this.webWorker = webWorker
 
     return { parameterFiles, }
   }

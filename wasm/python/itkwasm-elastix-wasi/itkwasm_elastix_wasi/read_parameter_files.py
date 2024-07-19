@@ -51,7 +51,7 @@ def read_parameter_files(
     if len(parameter_files) > 0:
         args.append('--parameter-files')
         for value in parameter_files:
-            input_file = str(PurePosixPath(parameter_files))
+            input_file = str(PurePosixPath(value))
             pipeline_inputs.append(PipelineInput(InterfaceTypes.TextFile, TextFile(value)))
             args.append(input_file)
 

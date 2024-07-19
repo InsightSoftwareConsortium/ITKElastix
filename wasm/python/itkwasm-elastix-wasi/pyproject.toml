@@ -32,7 +32,7 @@ keywords = [
 
 requires-python = ">=3.7"
 dependencies = [
-    "itkwasm >= 1.0.b131",
+    "itkwasm >= 1.0.b177",
     "importlib_resources",
 
 ]
@@ -44,7 +44,7 @@ path = "itkwasm_elastix_wasi/_version.py"
 dependencies = [
   "pytest",
   "itkwasm-compare-images",
-  "itk-io",
+  "itkwasm-image-io",
 ]
 
 [project.urls]

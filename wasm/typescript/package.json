@@ -14,7 +14,7 @@
     }
   },
   "scripts": {
-    "start": "npm run copyShoelaceAssets && vite -c build/vite.config.js",
+    "start": "pnpm copyDemoAppAssets && vite",
     "test": "npm run test:node && npm run test:browser",
     "test:node": "ava --timeout 10m test/node/*.js",
     "test:browser": "npm run test:browser:chrome && npm run test:browser:firefox",
@@ -24,12 +24,12 @@
     "cypress:open": "npx cypress open",
     "cypress:runChrome": "npx cypress run --browser chrome",
     "cypress:runFirefox": "npx cypress run --browser firefox",
-    "build": "npm run build:tsc && npm run build:node && npm run build:browser && npm run build:demo",
-    "build:node": "rollup -c ./build/rollup.node.config.js",
-    "build:browser": "rollup -c ./build/rollup.browser.config.js",
-    "build:tsc": "tsc --pretty",
-    "copyShoelaceAssets": "shx mkdir -p test/browser/demo-app/public && shx cp -r node_modules/@shoelace-style/shoelace/dist/assets test/browser/demo-app/public/",
-    "build:demo": "npm run copyShoelaceAssets && vite -c build/vite.config.js build"
+    "build": "pnpm build:tsc && pnpm build:browser:workerEmbedded && pnpm build:browser:workerEmbeddedMin && pnpm build:demo",
+    "build:version": "node -p \"'const version = ' + JSON.stringify(require('./package.json').version) + '\\nexport default version\\n'\" > src/version.ts",
+    "build:browser:workerEmbedded": "esbuild --loader:.worker.js=dataurl --bundle --format=esm --outfile=./dist/bundle/index-worker-embedded.js ./src/index-worker-embedded.ts",
+    "build:browser:workerEmbeddedMin": "esbuild --minify --loader:.worker.js=dataurl --bundle --format=esm --outfile=./dist/bundle/index-worker-embedded.min.js ./src/index-worker-embedded.min.ts",
+    "build:tsc": "pnpm build:version && tsc --pretty",
+    "build:demo": "pnpm copyDemoAppAssets && vite build"
   },
   "keywords": [
     "itk",
@@ -40,31 +40,21 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "itk-wasm": "^1.0.0-b.146"
+    "itk-wasm": "^1.0.0-b.177"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^24.0.0",
-    "@rollup/plugin-json": "^6.0.0",
-    "@rollup/plugin-node-resolve": "^15.1.0",
-    "@rollup/plugin-terser": "^0.4.0",
-    "@rollup/plugin-typescript": "^11.1.1",
-    "@shoelace-style/shoelace": "^2.5.2",
+    "@itk-wasm/demo-app": "^0.2.0",
+    "@itk-wasm/image-io": "^1.2.1",
     "@types/node": "^20.2.5",
     "ava": "^5.3.1",
     "cypress": "^13.7.3",
     "debug": "^4.3.4",
-    "itk-image-io": "^1.0.0-b.146",
-    "rollup": "^3.9.0",
-    "rollup-plugin-copy": "^3.4.0",
-    "rollup-plugin-ignore": "^1.0.10",
-    "rollup-plugin-polyfill-node": "^0.12.0",
+    "esbuild": "^0.19.5",
     "shx": "^0.3.4",
     "start-server-and-test": "^2.0.0",
-    "supports-color": "^9.3.1",
-    "tslib": "^2.5.2",
-    "typescript": "^5.0.4",
-    "vite": "^4.3.3",
-    "vite-plugin-static-copy": "^0.14.0"
+    "typescript": "^5.4.3",
+    "vite": "^4.4.11",
+    "vite-plugin-static-copy": "^0.17.0"
   },
   "repository": {
     "type": "git",

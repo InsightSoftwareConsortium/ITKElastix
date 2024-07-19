@@ -1,8 +1,8 @@
 // Generated file. To retain edits, remove this comment.
 
-import { Image,BinaryFile,JsonCompatible } from 'itk-wasm'
+import { Image,BinaryFile,JsonCompatible, WorkerPoolFunctionOption } from 'itk-wasm'
 
-interface ElastixOptions {
+interface ElastixOptions extends WorkerPoolFunctionOption {
   /** Fixed image */
   fixed?: Image
 

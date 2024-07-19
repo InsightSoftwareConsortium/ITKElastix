@@ -8,23 +8,23 @@ import {
   runPipelineNode
 } from 'itk-wasm'
 
-import DefaultParameterMapOptions from './default-parameter-map-options.js'
+import DefaultParameterMapNodeOptions from './default-parameter-map-node-options.js'
 import DefaultParameterMapNodeResult from './default-parameter-map-node-result.js'
 
-
 import path from 'path'
+import { fileURLToPath } from 'url'
 
 /**
  * Returns the default elastix parameter map for a given transform type.
  *
  * @param {string} transformName - Transform name. One of: translation, rigid, affine, bspline, spline, groupwise
- * @param {DefaultParameterMapOptions} options - options object
+ * @param {DefaultParameterMapNodeOptions} options - options object
  *
  * @returns {Promise<DefaultParameterMapNodeResult>} - result object
  */
 async function defaultParameterMapNode(
   transformName: string,
-  options: DefaultParameterMapOptions = {}
+  options: DefaultParameterMapNodeOptions = {}
 ) : Promise<DefaultParameterMapNodeResult> {
 
   const desiredOutputs: Array<PipelineOutput> = [
@@ -44,28 +44,28 @@ async function defaultParameterMapNode(
 
   // Options
   args.push('--memory-io')
-  if (typeof options.numberOfResolutions !== "undefined") {
+  if (options.numberOfResolutions) {
     args.push('--number-of-resolutions', options.numberOfResolutions.toString())
 
   }
-  if (typeof options.finalGridSpacing !== "undefined") {
+  if (options.finalGridSpacing) {
     args.push('--final-grid-spacing', options.finalGridSpacing.toString())
 
   }
 
-  const pipelinePath = path.join(path.dirname(import.meta.url.substring(7)), '..', 'pipelines', 'default-parameter-map')
+  const pipelinePath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'pipelines', 'default-parameter-map')
 
   const {
     returnValue,
     stderr,
     outputs
   } = await runPipelineNode(pipelinePath, args, desiredOutputs, inputs)
-  if (returnValue !== 0) {
+  if (returnValue !== 0 && stderr !== "") {
     throw new Error(stderr)
   }
 
   const result = {
-    parameterMap: outputs[0].data as JsonCompatible,
+    parameterMap: outputs[0]?.data as JsonCompatible,
   }
   return result
 }

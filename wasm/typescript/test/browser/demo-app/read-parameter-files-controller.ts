@@ -1,10 +1,9 @@
 // Generated file. To retain edits, remove this comment.
 
-import * as elastix from '../../../dist/bundles/elastix.js'
+import * as elastix from '../../../dist/index.js'
 import readParameterFilesLoadSampleInputs, { usePreRun } from "./read-parameter-files-load-sample-inputs.js"
 
 class ReadParameterFilesModel {
-
   inputs: Map<string, any>
   options: Map<string, any>
   outputs: Map<string, any>
@@ -14,18 +13,16 @@ class ReadParameterFilesModel {
     this.options = new Map()
     this.outputs = new Map()
     }
-  }
+}
 
 
-class ReadParameterFilesController  {
+class ReadParameterFilesController {
 
   constructor(loadSampleInputs) {
     this.loadSampleInputs = loadSampleInputs
 
     this.model = new ReadParameterFilesModel()
     const model = this.model
-
-    this.webWorker = null
 
     if (loadSampleInputs) {
       const loadSampleInputsButton = document.querySelector("#readParameterFilesInputs [name=loadSampleInputs]")
@@ -66,7 +63,7 @@ class ReadParameterFilesController  {
     })
 
     const preRun = async () => {
-      if (!this.webWorker && loadSampleInputs && usePreRun) {
+      if (loadSampleInputs && usePreRun) {
         await loadSampleInputs(model, true)
         await this.run()
       }
@@ -127,10 +124,9 @@ class ReadParameterFilesController  {
   }
 
   async run() {
-    const { webWorker, parameterObject, } = await elastix.readParameterFiles(this.webWorker,
-      Object.fromEntries(this.model.options.entries())
+    const options = Object.fromEntries(this.model.options.entries())
+    const { parameterObject, } = await elastix.readParameterFiles(      Object.fromEntries(this.model.options.entries())
     )
-    this.webWorker = webWorker
 
     return { parameterObject, }
   }

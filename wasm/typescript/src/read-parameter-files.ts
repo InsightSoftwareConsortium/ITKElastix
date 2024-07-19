@@ -12,9 +12,10 @@ import {
 import ReadParameterFilesOptions from './read-parameter-files-options.js'
 import ReadParameterFilesResult from './read-parameter-files-result.js'
 
-
 import { getPipelinesBaseUrl } from './pipelines-base-url.js'
 import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
+
+import { getDefaultWebWorker } from './default-web-worker.js'
 
 /**
  * Read elastix parameter text files into a parameter object.
@@ -24,7 +25,6 @@ import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
  * @returns {Promise<ReadParameterFilesResult>} - result object
  */
 async function readParameterFiles(
-  webWorker: null | Worker,
   options: ReadParameterFilesOptions = { parameterFiles: [] as TextFile[] | File[] | string[], }
 ) : Promise<ReadParameterFilesResult> {
 
@@ -43,7 +43,7 @@ async function readParameterFiles(
 
   // Options
   args.push('--memory-io')
-  if (typeof options.parameterFiles !== "undefined") {
+  if (options.parameterFiles) {
     if(options.parameterFiles.length < 1) {
       throw new Error('"parameter-files" option must have a length > 1')
     }
@@ -63,19 +63,23 @@ async function readParameterFiles(
 
   const pipelinePath = 'read-parameter-files'
 
+  let workerToUse = options?.webWorker
+  if (workerToUse === undefined) {
+    workerToUse = await getDefaultWebWorker()
+  }
   const {
     webWorker: usedWebWorker,
     returnValue,
     stderr,
     outputs
-  } = await runPipeline(webWorker, pipelinePath, args, desiredOutputs, inputs, { pipelineBaseUrl: getPipelinesBaseUrl(), pipelineWorkerUrl: getPipelineWorkerUrl() })
-  if (returnValue !== 0) {
+  } = await runPipeline(pipelinePath, args, desiredOutputs, inputs, { pipelineBaseUrl: getPipelinesBaseUrl(), pipelineWorkerUrl: getPipelineWorkerUrl(), webWorker: workerToUse, noCopy: options?.noCopy })
+  if (returnValue !== 0 && stderr !== "") {
     throw new Error(stderr)
   }
 
   const result = {
     webWorker: usedWebWorker as Worker,
-    parameterObject: outputs[0].data as JsonCompatible,
+    parameterObject: outputs[0]?.data as JsonCompatible,
   }
   return result
 }
