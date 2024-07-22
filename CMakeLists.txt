@@ -27,11 +27,6 @@ if(NOT DEFINED USE_KNNGraphAlphaMutualInformationMetric)
   set(USE_KNNGraphAlphaMutualInformationMetric OFF CACHE BOOL "Use KNN metric.  Requires ANN library.")
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX AND
-  ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_EQUAL "4.8") OR
-  ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_GREATER "4.8" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0") )
-  set(ELASTIX_USE_OPENMP OFF CACHE BOOL "Use OpenMP in elastix")
-endif()
 if(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-aggressive-loop-optimizations")
 endif()
@@ -60,15 +55,12 @@ if(SKBUILD)
 endif()
 
 if(WASI OR EMSCRIPTEN)
-  option(ELASTIX_USE_OPENMP "OpenMP not supported on WASI or Emscripten" OFF)
   option(ELASTIX_NO_INSTALL_EXECUTABLES "Do not install executables" ON)
 endif()
 
-# set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-# Upstream + wasm patches
-# Branch: ITKElastix-2023-01-01-022aa6cd
-set(elastix_GIT_TAG "022aa6cdaaa5621f3d6b2f245c388a9669cc7ef9")
+set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
+# Branch https://github.com/SuperElastix/elastix/tree/PrintNumberOfThreads (2024-07-22):
+set(elastix_GIT_TAG "07cafb796423823f6426d7166ff3c78daedd1e73")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
@@ -90,17 +82,6 @@ find_package(Elastix REQUIRED)
 include_directories( ${ELASTIX_INCLUDE_DIRS} )
 link_directories( ${ELASTIX_LIBRARY_DIRS} )
 #include(${ELASTIX_USE_FILE})
-if(ELASTIX_USE_OPENMP)
-  find_package(OpenMP QUIET)
-  if(OPENMP_FOUND)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${OpenMP_SHARED_LINKER_FLAGS}")
-    set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${OpenMP_STATIC_LINKER_FLAGS}")
-    add_definitions(-DELASTIX_USE_OPENMP)
-  endif()
-endif()
 if(ELASTIX_USE_OPENCL)
   add_definitions(-DELASTIX_USE_OPENCL)
 endif()
