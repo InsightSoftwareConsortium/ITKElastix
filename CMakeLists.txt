@@ -59,8 +59,8 @@ if(WASI OR EMSCRIPTEN)
 endif()
 
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-# Released on 2024-07-18:
-set(elastix_GIT_TAG "5.2.0")
+# Branch https://github.com/SuperElastix/elastix/tree/PrintNumberOfThreads (2024-07-22):
+set(elastix_GIT_TAG "07cafb796423823f6426d7166ff3c78daedd1e73")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
