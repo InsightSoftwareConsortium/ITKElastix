@@ -43,7 +43,7 @@ async def default_parameter_map_async(
     if final_grid_spacing:
         kwargs["finalGridSpacing"] = to_js(final_grid_spacing)
 
-    outputs = await js_module.defaultParameterMap(web_worker, to_js(transform_name), **kwargs)
+    outputs = await js_module.defaultParameterMap(to_js(transform_name), webWorker=web_worker, noCopy=True, **kwargs)
 
     output_web_worker = None
     output_list = []

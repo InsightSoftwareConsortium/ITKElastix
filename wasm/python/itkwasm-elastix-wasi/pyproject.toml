@@ -18,11 +18,11 @@ classifiers = [
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
 keywords = [
   "itkwasm",
@@ -30,32 +30,37 @@ keywords = [
   "wasi",
 ]
 
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "itkwasm >= 1.0.b177",
     "importlib_resources",
-
-]
-
-[tool.hatch.version]
-path = "itkwasm_elastix_wasi/_version.py"
-
-[tool.hatch.envs.default]
-dependencies = [
-  "pytest",
-  "itkwasm-compare-images",
-  "itkwasm-image-io",
 ]
 
 [project.urls]
 Home = "https://github.com/InsightSoftwareConsortium/ITKElastix"
 Source = "https://github.com/InsightSoftwareConsortium/ITKElastix"
 
-[tool.hatch.envs.default.scripts]
-test = "pytest -s"
+[tool.hatch.version]
+path = "itkwasm_elastix_wasi/_version.py"
 
+[project.optional-dependencies]
+test = ["itkwasm-image-io>=1.2.1,<2", "itkwasm-compare-images>=5.2.0,<6", "pytest"]
 
 [tool.hatch.build]
 exclude = [
   "/examples",
 ]
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tool.pixi.pypi-dependencies]
+itkwasm-elastix-wasi = { path = ".", editable = true }
+
+[tool.pixi.feature.test.tasks]
+test = { cmd = "pytest -s", description = "Run units tests" }
+
+[tool.pixi.environments]
+default = {features = [], solve-group = "default"}
+test = {features = ["test"], solve-group = "default"}

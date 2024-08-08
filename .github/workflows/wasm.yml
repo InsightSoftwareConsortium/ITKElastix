@@ -29,35 +29,16 @@ jobs:
 
     - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
-    - uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3.6.0
-      with:
-        node-version: '22'
-
-    - name: Install
-      uses: pnpm/action-setup@v2
-      with:
-        run_install: true
-
-    - uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4.7.0
-      with:
-        python-version: '3.11'
-
-    - name: Download test data
-      run: |
-        pnpm run test:data:download
+    - uses: prefix-dev/setup-pixi@v0.8.1
 
     - name: Build
       run: |
-        pnpm run build
+        pixi run build
 
     - name: Test TypeScript
-      working-directory: ./wasm/typescript
       run: |
-        pnpm test
+        pixi run test-typescript
 
     - name: Test Python WASI
-      working-directory: ./wasm/python/itkwasm-elastix-wasi
       run: |
-        pip install pytest itkwasm-compare-images itk-io
-        pip install -e .
-        pytest -s
+        pixi run test-python-wasi

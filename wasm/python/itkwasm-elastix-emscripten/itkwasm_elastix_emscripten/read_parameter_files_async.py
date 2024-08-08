@@ -34,7 +34,7 @@ async def read_parameter_files_async(
     if parameter_files is not None:
         kwargs["parameterFiles"] = to_js(TextFile(parameter_files))
 
-    outputs = await js_module.readParameterFiles(web_worker, **kwargs)
+    outputs = await js_module.readParameterFiles(webWorker=web_worker, noCopy=True, **kwargs)
 
     output_web_worker = None
     output_list = []

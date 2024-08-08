@@ -16,8 +16,10 @@
     "noImplicitReturns": true,
     "skipLibCheck": true,
     "declaration": true,
-    "emitDeclarationOnly": true,
-    "declarationDir": "dist/"
+    "emitDeclarationOnly": false,
+    "outDir": "dist/",
+    "rootDir": "src/"
   },
-  "include": ["src/*.ts"]
+  "include": ["src/*.ts"],
+  "exclude": ["src/index-worker-embedded*.ts"]
 }

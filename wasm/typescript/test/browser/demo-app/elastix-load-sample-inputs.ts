@@ -1,4 +1,4 @@
-import { readImageArrayBuffer } from "itk-wasm"
+import { readImage } from "@itk-wasm/image-io"
 
 export default async function elastixLoadSampleInputs (model, preRun=false) {
   const dataUrl = 'https://w3s.link/ipfs/bafybeifq7m3mb4m3mgbhft2vqejjgwxx4azmmzuxwf5cubajpyaf4hq2gq/data/input'
@@ -27,7 +27,7 @@ export default async function elastixLoadSampleInputs (model, preRun=false) {
   const urlPrefix = 'https://bafybeiclckkwabcpcgh3yo5fun2omc6jiloe3x43p6cvj4ctsyxiuwo6c4.ipfs.w3s.link/ipfs/bafybeiclckkwabcpcgh3yo5fun2omc6jiloe3x43p6cvj4ctsyxiuwo6c4/data/input/'
   const fixedReponse = await fetch(`${urlPrefix}${fixedFileName}`)
   const fixedData = new Uint8Array(await fixedReponse.arrayBuffer())
-  const { webWorker, image: fixedImage } = await readImageArrayBuffer(null, fixedData.buffer, fixedFileName)
+  const { webWorker, image: fixedImage } = await readImage({ data: new Uint8Array(fixedData.buffer), path: fixedFileName })
   model.options.set('fixed', fixedImage)
   if (!preRun) {
     const fixedElement = document.querySelector('#elastix-fixed-details')
@@ -43,7 +43,7 @@ export default async function elastixLoadSampleInputs (model, preRun=false) {
   const movingFileName = 'CT_2D_head_moving.mha'
   const movingReponse = await fetch(`${urlPrefix}${movingFileName}`)
   const movingData = new Uint8Array(await movingReponse.arrayBuffer())
-  const { image: movingImage } = await readImageArrayBuffer(webWorker, movingData.buffer, movingFileName)
+  const { image: movingImage } = await readImage({ data: new Uint8Array(movingData.buffer), path: movingFileName }, { webWorker })
   webWorker.terminate()
   model.options.set('moving', movingImage)
 
@@ -73,7 +73,7 @@ export async function elastixLoadSample3dInputs (model, preRun=false) {
   const urlPrefix = 'https://w3s.link/ipfs/bafybeiabjayndqcwxyxymqg3766m57eikfcs42fyhp66vexsbrjecxmkry/'
   const fixedReponse = await fetch(`${urlPrefix}${fixedFileName}`)
   const fixedData = new Uint8Array(await fixedReponse.arrayBuffer())
-  const { webWorker, image: fixedImage } = await readImageArrayBuffer(null, fixedData.buffer, fixedFileName)
+  const { webWorker, image: fixedImage } = await readImage({ data: new Uint8Array(fixedData.buffer), path: fixedFileName })
   model.options.set('fixed', fixedImage)
   if (!preRun) {
     const fixedElement = document.querySelector('#elastix-fixed-details')
@@ -89,7 +89,7 @@ export async function elastixLoadSample3dInputs (model, preRun=false) {
   const movingFileName = 'tpl-MNI305_T1w.nii.gz'
   const movingReponse = await fetch(`${urlPrefix}${movingFileName}`)
   const movingData = new Uint8Array(await movingReponse.arrayBuffer())
-  const { image: movingImage } = await readImageArrayBuffer(webWorker, movingData.buffer, movingFileName)
+  const { image: movingImage } = await readImage({ data: new Uint8Array(movingData.buffer), path: movingFileName }, { webWorker })
   webWorker.terminate()
   model.options.set('moving', movingImage)
 
