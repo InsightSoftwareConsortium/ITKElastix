@@ -13,9 +13,10 @@ import {
 import ElastixOptions from './elastix-options.js'
 import ElastixResult from './elastix-result.js'
 
-
 import { getPipelinesBaseUrl } from './pipelines-base-url.js'
 import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
+
+import { getDefaultWebWorker } from './default-web-worker.js'
 
 /**
  * Rigid and non-rigid registration of images.
@@ -27,7 +28,6 @@ import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
  * @returns {Promise<ElastixResult>} - result object
  */
 async function elastix(
-  webWorker: null | Worker,
   parameterObject: JsonCompatible,
   transform: string,
   options: ElastixOptions = {}
@@ -60,19 +60,19 @@ async function elastix(
 
   // Options
   args.push('--memory-io')
-  if (typeof options.fixed !== "undefined") {
+  if (options.fixed) {
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.Image, data: options.fixed as Image })
     args.push('--fixed', inputCountString)
 
   }
-  if (typeof options.moving !== "undefined") {
+  if (options.moving) {
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.Image, data: options.moving as Image })
     args.push('--moving', inputCountString)
 
   }
-  if (typeof options.initialTransform !== "undefined") {
+  if (options.initialTransform) {
     const initialTransform = options.initialTransform
     let initialTransformFile = initialTransform
     if (initialTransform instanceof File) {
@@ -86,7 +86,7 @@ async function elastix(
     args.push(name)
 
   }
-  if (typeof options.initialTransformParameterObject !== "undefined") {
+  if (options.initialTransformParameterObject) {
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.JsonCompatible, data: options.initialTransformParameterObject as JsonCompatible })
     args.push('--initial-transform-parameter-object', inputCountString)
@@ -95,21 +95,25 @@ async function elastix(
 
   const pipelinePath = 'elastix'
 
+  let workerToUse = options?.webWorker
+  if (workerToUse === undefined) {
+    workerToUse = await getDefaultWebWorker()
+  }
   const {
     webWorker: usedWebWorker,
     returnValue,
     stderr,
     outputs
-  } = await runPipeline(webWorker, pipelinePath, args, desiredOutputs, inputs, { pipelineBaseUrl: getPipelinesBaseUrl(), pipelineWorkerUrl: getPipelineWorkerUrl() })
-  if (returnValue !== 0) {
+  } = await runPipeline(pipelinePath, args, desiredOutputs, inputs, { pipelineBaseUrl: getPipelinesBaseUrl(), pipelineWorkerUrl: getPipelineWorkerUrl(), webWorker: workerToUse, noCopy: options?.noCopy })
+  if (returnValue !== 0 && stderr !== "") {
     throw new Error(stderr)
   }
 
   const result = {
     webWorker: usedWebWorker as Worker,
-    result: outputs[0].data as Image,
-    transform: outputs[1].data as BinaryFile,
-    transformParameterObject: outputs[2].data as JsonCompatible,
+    result: outputs[0]?.data as Image,
+    transform: outputs[1]?.data as BinaryFile,
+    transformParameterObject: outputs[2]?.data as JsonCompatible,
   }
   return result
 }

@@ -1,11 +1,8 @@
 // Generated file. To retain edits, remove this comment.
 
-import { Image, BinaryFile, JsonCompatible } from 'itk-wasm'
+import { Image, BinaryFile, JsonCompatible, WorkerPoolFunctionResult } from 'itk-wasm'
 
-interface ElastixResult {
-  /** WebWorker used for computation */
-  webWorker: Worker | null
-
+interface ElastixResult extends WorkerPoolFunctionResult {
   /** Resampled moving image */
   result: Image
 

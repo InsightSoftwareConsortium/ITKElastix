@@ -1,6 +1,8 @@
 // Generated file. To retain edits, remove this comment.
 
-interface DefaultParameterMapOptions {
+import { WorkerPoolFunctionOption } from 'itk-wasm'
+
+interface DefaultParameterMapOptions extends WorkerPoolFunctionOption {
   /** Number of multiscale registration resolutions. */
   numberOfResolutions?: number
 

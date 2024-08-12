@@ -64,7 +64,7 @@ async def elastix_async(
     if initial_transform_parameter_object is not None:
         kwargs["initialTransformParameterObject"] = to_js(initial_transform_parameter_object)
 
-    outputs = await js_module.elastix(web_worker, to_js(parameter_object), to_js(transform), **kwargs)
+    outputs = await js_module.elastix(to_js(parameter_object), to_js(transform), webWorker=web_worker, noCopy=True, **kwargs)
 
     output_web_worker = None
     output_list = []

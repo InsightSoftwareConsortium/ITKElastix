@@ -10,8 +10,8 @@ import {
 
 import WriteParameterFilesNodeResult from './write-parameter-files-node-result.js'
 
-
 import path from 'path'
+import { fileURLToPath } from 'url'
 
 /**
  * Write an elastix parameter text file from a parameter object.
@@ -24,7 +24,6 @@ import path from 'path'
 async function writeParameterFilesNode(
   parameterObject: JsonCompatible,
   parameterFiles: string[]
-
 ) : Promise<WriteParameterFilesNodeResult> {
 
   const mountDirs: Set<string> = new Set()
@@ -48,13 +47,13 @@ async function writeParameterFilesNode(
   // Options
   args.push('--memory-io')
 
-  const pipelinePath = path.join(path.dirname(import.meta.url.substring(7)), '..', 'pipelines', 'write-parameter-files')
+  const pipelinePath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'pipelines', 'write-parameter-files')
 
   const {
     returnValue,
     stderr,
   } = await runPipelineNode(pipelinePath, args, desiredOutputs, inputs, mountDirs)
-  if (returnValue !== 0) {
+  if (returnValue !== 0 && stderr !== "") {
     throw new Error(stderr)
   }
 

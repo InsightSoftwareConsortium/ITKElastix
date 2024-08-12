@@ -22,3 +22,5 @@ wasi-build
 emscripten-build
 wasm/typescript/demo/
 wasm/test
+micromamba/
+.pixi/

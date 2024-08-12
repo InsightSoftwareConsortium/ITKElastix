@@ -1,11 +1,8 @@
 // Generated file. To retain edits, remove this comment.
 
-import { TextFile } from 'itk-wasm'
+import { TextFile, WorkerPoolFunctionResult } from 'itk-wasm'
 
-interface WriteParameterFilesResult {
-  /** WebWorker used for computation */
-  webWorker: Worker | null
-
+interface WriteParameterFilesResult extends WorkerPoolFunctionResult {
   /** Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. */
   parameterFiles: TextFile[]
 

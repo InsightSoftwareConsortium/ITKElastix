@@ -1,10 +1,9 @@
 // Generated file. To retain edits, remove this comment.
 
-import * as elastix from '../../../dist/bundles/elastix.js'
+import * as elastix from '../../../dist/index.js'
 import defaultParameterMapLoadSampleInputs, { usePreRun } from "./default-parameter-map-load-sample-inputs.js"
 
 class DefaultParameterMapModel {
-
   inputs: Map<string, any>
   options: Map<string, any>
   outputs: Map<string, any>
@@ -14,18 +13,16 @@ class DefaultParameterMapModel {
     this.options = new Map()
     this.outputs = new Map()
     }
-  }
+}
 
 
-class DefaultParameterMapController  {
+class DefaultParameterMapController {
 
   constructor(loadSampleInputs) {
     this.loadSampleInputs = loadSampleInputs
 
     this.model = new DefaultParameterMapModel()
     const model = this.model
-
-    this.webWorker = null
 
     if (loadSampleInputs) {
       const loadSampleInputsButton = document.querySelector("#defaultParameterMapInputs [name=loadSampleInputs]")
@@ -69,7 +66,7 @@ class DefaultParameterMapController  {
     })
 
     const preRun = async () => {
-      if (!this.webWorker && loadSampleInputs && usePreRun) {
+      if (loadSampleInputs && usePreRun) {
         await loadSampleInputs(model, true)
         await this.run()
       }
@@ -134,11 +131,10 @@ class DefaultParameterMapController  {
   }
 
   async run() {
-    const { webWorker, parameterMap, } = await elastix.defaultParameterMap(this.webWorker,
-      this.model.inputs.get('transformName'),
+    const options = Object.fromEntries(this.model.options.entries())
+    const { parameterMap, } = await elastix.defaultParameterMap(      this.model.inputs.get('transformName'),
       Object.fromEntries(this.model.options.entries())
     )
-    this.webWorker = webWorker
 
     return { parameterMap, }
   }

@@ -9,25 +9,25 @@ import {
   runPipelineNode
 } from 'itk-wasm'
 
-import ElastixOptions from './elastix-options.js'
+import ElastixNodeOptions from './elastix-node-options.js'
 import ElastixNodeResult from './elastix-node-result.js'
 
-
 import path from 'path'
+import { fileURLToPath } from 'url'
 
 /**
  * Rigid and non-rigid registration of images.
  *
  * @param {JsonCompatible} parameterObject - Elastix parameter object representation
  * @param {string} transform - Fixed-to-moving transform file
- * @param {ElastixOptions} options - options object
+ * @param {ElastixNodeOptions} options - options object
  *
  * @returns {Promise<ElastixNodeResult>} - result object
  */
 async function elastixNode(
   parameterObject: JsonCompatible,
   transform: string,
-  options: ElastixOptions = {}
+  options: ElastixNodeOptions = {}
 ) : Promise<ElastixNodeResult> {
 
   const mountDirs: Set<string> = new Set()
@@ -59,19 +59,19 @@ async function elastixNode(
 
   // Options
   args.push('--memory-io')
-  if (typeof options.fixed !== "undefined") {
+  if (options.fixed) {
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.Image, data: options.fixed as Image })
     args.push('--fixed', inputCountString)
 
   }
-  if (typeof options.moving !== "undefined") {
+  if (options.moving) {
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.Image, data: options.moving as Image })
     args.push('--moving', inputCountString)
 
   }
-  if (typeof options.initialTransform !== "undefined") {
+  if (options.initialTransform) {
     const initialTransform = options.initialTransform
     mountDirs.add(path.dirname(initialTransform as string))
     args.push('--initial-transform')
@@ -80,27 +80,27 @@ async function elastixNode(
     args.push(name)
 
   }
-  if (typeof options.initialTransformParameterObject !== "undefined") {
+  if (options.initialTransformParameterObject) {
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.JsonCompatible, data: options.initialTransformParameterObject as JsonCompatible })
     args.push('--initial-transform-parameter-object', inputCountString)
 
   }
 
-  const pipelinePath = path.join(path.dirname(import.meta.url.substring(7)), '..', 'pipelines', 'elastix')
+  const pipelinePath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'pipelines', 'elastix')
 
   const {
     returnValue,
     stderr,
     outputs
   } = await runPipelineNode(pipelinePath, args, desiredOutputs, inputs, mountDirs)
-  if (returnValue !== 0) {
+  if (returnValue !== 0 && stderr !== "") {
     throw new Error(stderr)
   }
 
   const result = {
-    result: outputs[0].data as Image,
-    transformParameterObject: outputs[1].data as JsonCompatible,
+    result: outputs[0]?.data as Image,
+    transformParameterObject: outputs[1]?.data as JsonCompatible,
   }
   return result
 }
