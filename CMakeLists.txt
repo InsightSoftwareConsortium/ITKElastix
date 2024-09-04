@@ -60,10 +60,10 @@ if(WASI OR EMSCRIPTEN)
 endif()
 
 # set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
+set(elastix_GIT_REPOSITORY "https://github.com/N-Dekker/elastix.git")
 # Upstream + wasm patches
-# Branch: ITKElastix-2024-07-18-ebb429a33b
-set(elastix_GIT_TAG "0ab3f57a6528cce609feedeb1650e7c850beca94")
+# Branch: Branch_from_ITKElastix-2024-07-18-ebb429a33b
+set(elastix_GIT_TAG "f0d287c7404b77fcf9ee39ab27168721d6496d67")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
