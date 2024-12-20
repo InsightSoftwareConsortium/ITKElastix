@@ -4,6 +4,7 @@ jupyterlab>=2.2.0
 imageio
 ipywidgets>=7.5.1
 ipympl>=0.5.7
+ngff-zarr>=0.12.0
 numpy
 torch>=2.0
 monai>=1.2.0
