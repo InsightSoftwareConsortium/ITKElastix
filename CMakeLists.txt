@@ -59,11 +59,9 @@ if(WASI OR EMSCRIPTEN)
   option(ELASTIX_NO_INSTALL_EXECUTABLES "Do not install executables" ON)
 endif()
 
-# set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-# Upstream + wasm patches
-# Branch: ITKElastix-2024-07-18-ebb429a33b
-set(elastix_GIT_TAG "0ab3f57a6528cce609feedeb1650e7c850beca94")
+set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
+# Commit 2261c7d: ENH: Add support 32-bit float coordinates of fixed and moving points
+set(elastix_GIT_TAG "2261c7dc930445c60ad5f93a970403a4fb78ee7d")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
