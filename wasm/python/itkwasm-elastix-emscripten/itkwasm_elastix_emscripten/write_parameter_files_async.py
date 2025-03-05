@@ -33,14 +33,7 @@ async def write_parameter_files_async(
 
     kwargs = {}
 
-    print('js-module', js_module)
-    print('web-worker', web_worker)
-    print('parameter-object', parameter_object)
-    print('parameter-files', parameter_files)
-
     outputs = await js_module.writeParameterFiles(to_js(parameter_object), to_js(parameter_files), webWorker=web_worker, noCopy=True, **kwargs)
-
-    print('outputs', outputs)
 
     output_web_worker = None
     output_list = []
