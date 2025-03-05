@@ -18,7 +18,7 @@ jobs:
     if: github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags')
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.0
     with:
-      python3-minor-versions: '["8","11"]'
+      python3-minor-versions: '["9","11"]'
       manylinux-platforms: '["_2_28-x64","2014-x64","_2_28-aarch64"]'
       test-notebooks: true
     secrets:
@@ -28,7 +28,7 @@ jobs:
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags')
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.0
     with:
-      python3-minor-versions: '["8","9","10","11"]'
+      python3-minor-versions: '["9","10","11"]'
       manylinux-platforms: '["_2_28-x64","2014-x64","_2_28-aarch64"]'
       test-notebooks: true
     secrets:
