@@ -1,4 +1,4 @@
-name: Build, test, package
+name: Build
 
 on:
   push:
@@ -11,10 +11,10 @@ on:
       - main
 
 jobs:
-  cxx-build-workflow:
+  cxx:
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-cxx.yml@v5.4.2
 
-  python-build-workflow-dev:
+  py-dev:
     if: github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags')
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.2
     with:
@@ -24,7 +24,7 @@ jobs:
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
 
-  python-build-workflow-main:
+  py-main:
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags')
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.2
     with:
