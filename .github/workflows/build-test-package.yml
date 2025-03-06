@@ -19,7 +19,7 @@ jobs:
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.2
     with:
       python3-minor-versions: '["9","11"]'
-      manylinux-platforms: '["_2_28-x64","2014-x64","_2_28-aarch64"]'
+      manylinux-platforms: '["_2_28-x64","2014-x64"]'
       test-notebooks: true
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
@@ -29,7 +29,7 @@ jobs:
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.2
     with:
       python3-minor-versions: '["9","10","11"]'
-      manylinux-platforms: '["_2_28-x64","2014-x64","_2_28-aarch64"]'
+      manylinux-platforms: '["_2_28-x64","2014-x64"]'
       test-notebooks: true
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
