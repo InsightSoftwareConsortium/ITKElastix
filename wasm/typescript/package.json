@@ -40,7 +40,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "itk-wasm": "^1.0.0-b.178"
+    "itk-wasm": "^1.0.0-b.188"
   },
   "devDependencies": {
     "@itk-wasm/demo-app": "^0.2.0",

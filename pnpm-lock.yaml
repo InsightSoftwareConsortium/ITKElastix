@@ -18,8 +18,8 @@ importers:
   wasm/typescript:
     dependencies:
       itk-wasm:
-        specifier: ^1.0.0-b.178
-        version: 1.0.0-b.178(debug@4.3.5)
+        specifier: ^1.0.0-b.188
+        version: 1.0.0-b.188(debug@4.3.5)
     devDependencies:
       '@itk-wasm/demo-app':
         specifier: ^0.2.0
@@ -2293,10 +2293,6 @@ packages:
 
   itk-wasm@1.0.0-b.160:
     resolution: {integrity: sha512-yrt0uRukqI9Q5s9HhzArxMNYvyU5CMbI1ddGzH0A4O3JWscnJug7J0RtY+RTl6nTHcqdrppNH7IRbnTXLZ79Rg==}
-    hasBin: true
-
-  itk-wasm@1.0.0-b.178:
-    resolution: {integrity: sha512-kW8sP2+6CwLL7VUC7jjRBnDjqsDLl/ZjRSwdcIj1XJ3I/JvFLIkLfPjsdaOlcG4VpKsi+LBQWpvpEb99iR9aWw==}
     hasBin: true
 
   itk-wasm@1.0.0-b.188:
@@ -5953,23 +5949,6 @@ snapshots:
       '@thewtex/zstddec': 0.2.1
       '@types/emscripten': 1.39.13
       axios: 1.7.2(debug@4.3.5)
-      comlink: 4.4.1
-      commander: 11.1.0
-      fs-extra: 11.2.0
-      glob: 8.1.0
-      markdown-table: 3.0.3
-      mime-types: 2.1.35
-      wasm-feature-detect: 1.6.2
-    transitivePeerDependencies:
-      - debug
-
-  itk-wasm@1.0.0-b.178(debug@4.3.5):
-    dependencies:
-      '@itk-wasm/dam': 1.1.1(debug@4.3.5)
-      '@thewtex/zstddec': 0.2.1
-      '@types/emscripten': 1.39.13
-      axios: 1.7.2(debug@4.3.5)
-      chalk: 5.3.0
       comlink: 4.4.1
       commander: 11.1.0
       fs-extra: 11.2.0
