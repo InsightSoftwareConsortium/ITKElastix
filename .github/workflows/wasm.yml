@@ -31,13 +31,13 @@ jobs:
 
     - uses: prefix-dev/setup-pixi@v0.8.1
 
-    - name: Build Emscripten
+    - name: Build Typescript
       run: |
-        pixi run build-emscripten
+        pixi run bindgen-build-typescript
 
-    - name: Build WASI
+    - name: Build Python
       run: |
-        pixi run build-wasi
+        pixi run bindgen-build-python
 
     - name: Test TypeScript
       run: |
