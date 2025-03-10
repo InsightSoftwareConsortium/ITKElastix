@@ -3,7 +3,7 @@ name = "@itk-wasm/elastix"
 version = "1.0.0"
 authors = ["Matt McCormick <matt.mccormick@kitware.com>"]
 channels = ["conda-forge"]
-platforms = ["linux-64"]
+platforms = ["linux-64", "win-64"]
 repository = "https://github.com/InsightSoftwareConsortium/ITKElastix"
 description = "A toolbox for rigid and nonrigid registration of images."
 license = "Apache-2.0"
@@ -57,6 +57,11 @@ test = { depends-on = ["test-typescript", "test-python"] }
 [dependencies]
 nodejs = ">=22.5.1,<23"
 pnpm = ">=9.6.0,<10"
-jq = ">=1.7.1,<2"
 python = ">=3.12.4,<4"
 hatch = ">=1.12.0,<2"
+
+[target.win-64.dependencies]
+m2w64-jq = ">=1.6.0,<2"
+
+[target.unix.dependencies]
+jq = ">=1.7.1,<2"
