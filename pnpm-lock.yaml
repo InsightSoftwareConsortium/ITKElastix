@@ -23,7 +23,7 @@ importers:
     devDependencies:
       '@itk-wasm/demo-app':
         specifier: ^0.2.0
-        version: 0.2.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.3)(autoprefixer@10.4.19(postcss@8.4.39))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)
+        version: 0.2.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.3)(autoprefixer@10.4.19(postcss@8.5.3))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)
       '@itk-wasm/image-io':
         specifier: ^1.3.0
         version: 1.3.0(debug@4.3.5)
@@ -52,11 +52,11 @@ importers:
         specifier: ^5.5.4
         version: 5.5.4
       vite:
-        specifier: ^4.4.11
-        version: 4.5.3(@types/node@20.14.11)(terser@5.39.0)
+        specifier: ^4.5.6
+        version: 4.5.6(@types/node@20.14.11)(terser@5.39.0)
       vite-plugin-static-copy:
         specifier: ^0.17.0
-        version: 0.17.1(vite@4.5.3(@types/node@20.14.11)(terser@5.39.0))
+        version: 0.17.1(vite@4.5.6(@types/node@20.14.11)(terser@5.39.0))
 
 packages:
 
@@ -2540,8 +2540,8 @@ packages:
     resolution: {integrity: sha512-/sF3ee6zvScXMb1XFJ8gDsSnY+X8PbOyjIuBhtgis10W2Jx4ZjIhikUCIF9c4gpJxVnQIsPAFrSwTCuAjicP6g==}
     engines: {node: '>=8.0.0'}
 
-  nanoid@3.3.7:
-    resolution: {integrity: sha512-eSRppjcPIatRIMC1U6UngP8XFcz8MQWGQdt1MTBQ7NaAmvXDfvNxbvWV3x2y6CdEUciCSsDHDQZbhYaB8QEo2g==}
+  nanoid@3.3.9:
+    resolution: {integrity: sha512-SppoicMGpZvbF1l3z4x7No3OlIjP7QJvC9XR7AhZr1kL133KHnKPztkKDc+Ir4aJ/1VhTySrtKhrsycmrMQfvg==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
@@ -2698,8 +2698,8 @@ packages:
   postcss-value-parser@4.2.0:
     resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
 
-  postcss@8.4.39:
-    resolution: {integrity: sha512-0vzE+lAiG7hZl1/9I8yzKLx3aR9Xbof3fBHKunvMfOCYAtMhrsnccJY2iTURb9EZd5+pLuiNV9/c/GZJOHsgIw==}
+  postcss@8.5.3:
+    resolution: {integrity: sha512-dle9A3yYxlBSrt8Fu+IpjGT8SY8hN0mlaA6GY8t0P5PjIOZemULz/E2Bnm/2dcUOena75OTNkHI76uZBNUUq3A==}
     engines: {node: ^10 || ^12 || >=14}
 
   pretty-bytes@5.6.0:
@@ -2848,8 +2848,8 @@ packages:
   rfdc@1.4.1:
     resolution: {integrity: sha512-q1b3N5QkRUWUl7iyylaaj3kOpIT0N2i9MqIEQXP73GVsN9cw3fdx8X63cEmWhJGi2PPCF23Ijp7ktmd39rawIA==}
 
-  rollup@3.29.4:
-    resolution: {integrity: sha512-oWzmBZwvYrU0iJHtDmhsm662rC15FRXmcjCk1xD771dFDx5jJ02ufAQQTn0etB2emNk4J9EZg/yWKpsn9BWGRw==}
+  rollup@3.29.5:
+    resolution: {integrity: sha512-GVsDdsbJzzy4S/v3dqWPJ7EfvZJfCHiDqe80IyrF59LYuP+e6U1LJoUqeuqRbwAWoMNoXivMNeNAOf5E22VA1w==}
     engines: {node: '>=14.18.0', npm: '>=8.0.0'}
     hasBin: true
 
@@ -2963,8 +2963,8 @@ packages:
     resolution: {integrity: sha512-/GbIKmo8ioc+NIWIhwdecY0ge+qVBSMdgxGygevmdHj24bsfgtCmcUUcQ5ZzcylGFHsN3k4HB4Cgkl96KVnuew==}
     engines: {node: '>=10.0.0'}
 
-  source-map-js@1.2.0:
-    resolution: {integrity: sha512-itJW8lvSA0TXEphiRoawsCksnlf8SyvmFzIhltqAHluXd88pkCd+cXJVHTDwdCr0IzwptSm035IHQktUu1QUMg==}
+  source-map-js@1.2.1:
+    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
   source-map-support@0.5.21:
@@ -3213,8 +3213,8 @@ packages:
     peerDependencies:
       vite: ^3.0.0 || ^4.0.0 || ^5.0.0
 
-  vite@4.5.3:
-    resolution: {integrity: sha512-kQL23kMeX92v3ph7IauVkXkikdDRsYMGTVl5KY2E9OY4ONLvkHf04MDTbnfo6NKxZiDLWzVpP5oTa8hQD8U3dg==}
+  vite@4.5.6:
+    resolution: {integrity: sha512-ElBNuVvJKslxcfY2gMmae5IjaKGqCYGicCNZ+8R56sAznobeE3pI9ctzI17cBS/6OJh5YuQNMSN4BP4dRjugBg==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
     peerDependencies:
@@ -4329,14 +4329,14 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@itk-viewer/element@0.3.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.4.39))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)':
+  '@itk-viewer/element@0.3.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.5.3))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)':
     dependencies:
       '@itk-viewer/arcball': 0.0.1
       '@itk-viewer/io': 0.1.8(debug@4.3.5)
       '@itk-viewer/remote-viewport': 0.2.19(debug@4.3.5)
       '@itk-viewer/utils': 0.1.3(debug@4.3.5)
       '@itk-viewer/viewer': 0.3.0(debug@4.3.5)
-      '@itk-viewer/vtkjs': 0.1.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.4.39))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)
+      '@itk-viewer/vtkjs': 0.1.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.5.3))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)
       '@lit/context': 1.1.2
       gl-matrix: 3.4.3
       itk-wasm: 1.0.0-b.160(debug@4.3.5)
@@ -4418,11 +4418,11 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@itk-viewer/vtkjs@0.1.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.4.39))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)':
+  '@itk-viewer/vtkjs@0.1.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.5.3))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)':
     dependencies:
       '@itk-viewer/io': 0.1.8(debug@4.3.5)
       '@itk-viewer/viewer': 0.3.0(debug@4.3.5)
-      '@kitware/vtk.js': 30.10.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.4.39))(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)
+      '@kitware/vtk.js': 30.10.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.5.3))(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)
       gl-matrix: 3.4.3
       xstate: 5.5.2
     transitivePeerDependencies:
@@ -4443,9 +4443,9 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@itk-wasm/demo-app@0.2.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.3)(autoprefixer@10.4.19(postcss@8.4.39))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)':
+  '@itk-wasm/demo-app@0.2.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.3)(autoprefixer@10.4.19(postcss@8.5.3))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)':
     dependencies:
-      '@itk-viewer/element': 0.3.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.4.39))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)
+      '@itk-viewer/element': 0.3.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.5.3))(debug@4.3.5)(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)
       '@itk-viewer/io': 0.1.8(debug@4.3.5)
       '@shoelace-style/shoelace': 2.15.1(@types/react@18.3.3)
       itk-wasm: 1.0.0-b.188(debug@4.3.5)
@@ -4498,12 +4498,12 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
 
-  '@kitware/vtk.js@30.10.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.4.39))(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)':
+  '@kitware/vtk.js@30.10.0(@babel/preset-env@7.24.8(@babel/core@7.24.9))(autoprefixer@10.4.19(postcss@8.5.3))(webpack@5.93.0(esbuild@0.25.0))(wslink@2.1.1)':
     dependencies:
       '@babel/preset-env': 7.24.8(@babel/core@7.24.9)
       '@babel/runtime': 7.22.11
       '@types/webxr': 0.5.19
-      autoprefixer: 10.4.19(postcss@8.4.39)
+      autoprefixer: 10.4.19(postcss@8.5.3)
       commander: 9.2.0
       d3-scale: 4.0.2
       fast-deep-equal: 3.1.3
@@ -4876,14 +4876,14 @@ snapshots:
 
   at-least-node@1.0.0: {}
 
-  autoprefixer@10.4.19(postcss@8.4.39):
+  autoprefixer@10.4.19(postcss@8.5.3):
     dependencies:
       browserslist: 4.24.4
       caniuse-lite: 1.0.30001703
       fraction.js: 4.3.7
       normalize-range: 0.1.2
       picocolors: 1.1.1
-      postcss: 8.4.39
+      postcss: 8.5.3
       postcss-value-parser: 4.2.0
 
   ava@5.3.1:
@@ -6186,7 +6186,7 @@ snapshots:
 
   murmurhash3js-revisited@3.0.0: {}
 
-  nanoid@3.3.7: {}
+  nanoid@3.3.9: {}
 
   neo-async@2.6.2: {}
 
@@ -6298,11 +6298,11 @@ snapshots:
 
   postcss-value-parser@4.2.0: {}
 
-  postcss@8.4.39:
+  postcss@8.5.3:
     dependencies:
-      nanoid: 3.3.7
-      picocolors: 1.0.1
-      source-map-js: 1.2.0
+      nanoid: 3.3.9
+      picocolors: 1.1.1
+      source-map-js: 1.2.1
 
   pretty-bytes@5.6.0: {}
 
@@ -6458,7 +6458,7 @@ snapshots:
 
   rfdc@1.4.1: {}
 
-  rollup@3.29.4:
+  rollup@3.29.5:
     optionalDependencies:
       fsevents: 2.3.3
 
@@ -6589,7 +6589,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  source-map-js@1.2.0: {}
+  source-map-js@1.2.1: {}
 
   source-map-support@0.5.21:
     dependencies:
@@ -6839,19 +6839,19 @@ snapshots:
       core-util-is: 1.0.2
       extsprintf: 1.3.0
 
-  vite-plugin-static-copy@0.17.1(vite@4.5.3(@types/node@20.14.11)(terser@5.39.0)):
+  vite-plugin-static-copy@0.17.1(vite@4.5.6(@types/node@20.14.11)(terser@5.39.0)):
     dependencies:
       chokidar: 3.6.0
       fast-glob: 3.3.2
       fs-extra: 11.2.0
       picocolors: 1.0.1
-      vite: 4.5.3(@types/node@20.14.11)(terser@5.39.0)
+      vite: 4.5.6(@types/node@20.14.11)(terser@5.39.0)
 
-  vite@4.5.3(@types/node@20.14.11)(terser@5.39.0):
+  vite@4.5.6(@types/node@20.14.11)(terser@5.39.0):
     dependencies:
       esbuild: 0.18.20
-      postcss: 8.4.39
-      rollup: 3.29.4
+      postcss: 8.5.3
+      rollup: 3.29.5
     optionalDependencies:
       '@types/node': 20.14.11
       fsevents: 2.3.3

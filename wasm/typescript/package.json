@@ -53,7 +53,7 @@
     "shx": "^0.3.4",
     "start-server-and-test": "^2.0.0",
     "typescript": "^5.5.4",
-    "vite": "^4.4.11",
+    "vite": "^4.5.6",
     "vite-plugin-static-copy": "^0.17.0"
   },
   "repository": {
