@@ -21,15 +21,16 @@ jobs:
       with:
         large-packages: false
 
-    - name: Install cypress deps
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+
+    - uses: prefix-dev/setup-pixi@v0.8.1
+
+    - name: Install cypress
       run: |
         sudo apt-get update
         # https://docs.cypress.io/app/get-started/install-cypress#UbuntuDebian
         sudo apt-get install libgtk2.0-0t64 libgtk-3-0t64 libgbm-dev libnotify-dev libnss3 libxss1 libasound2t64 libxtst6 xauth xvfb
-
-    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
-
-    - uses: prefix-dev/setup-pixi@v0.8.1
+        pixi run pnpx cypress install
 
     - name: Build Typescript
       run: |
