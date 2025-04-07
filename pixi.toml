@@ -56,7 +56,7 @@ test = { depends-on = ["test-typescript", "test-python"] }
 
 [dependencies]
 nodejs = ">=22.5.1,<23"
-pnpm = ">=9.6.0,<10"
+pnpm = ">=10.7.1,<11"
 jq = ">=1.7.1,<2"
 python = ">=3.12.4,<4"
 hatch = ">=1.12.0,<2"

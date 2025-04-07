@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "npm scripts to generate itk-wasm artifacts.",
   "private": true,
-  "packageManager": "pnpm@9.4.0",
+  "packageManager": "pnpm@10.7.1",
   "type": "module",
   "itk-wasm": {
     "description": "A toolbox for rigid and nonrigid registration of images.",
@@ -21,8 +21,7 @@
     "python-package-name": "itkwasm-elastix",
     "python-output-dir": "wasm/python"
   },
-  "scripts": {
-  },
+  "scripts": {},
   "license": "Apache-2.0",
   "devDependencies": {
     "@itk-wasm/dam": "^1.1.1",
