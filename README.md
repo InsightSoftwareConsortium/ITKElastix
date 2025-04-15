@@ -13,7 +13,7 @@ ITKElastix
 Overview
 --------
 
-Provides an [ITK](https://www.itk.org) Python, JavaScript, and WebAssembly interface to [elastix](https://elastix.lumc.nl/), a toolbox for rigid and nonrigid registration of images.
+Provides an [ITK](https://www.itk.org) Python, JavaScript, and WebAssembly interface to [elastix](https://elastix.dev/), a toolbox for rigid and nonrigid registration of images.
 
 elastix is open source software, based on the well-known [Insight Toolkit (ITK)](https://discourse.itk.org). The software consists of a collection of algorithms that are commonly used to solve (medical) image registration problems. The modular design of elastix allows the user to quickly configure, test, and compare different registration methods for a specific application.
 
@@ -60,7 +60,7 @@ Interactive examples and tutorial material can be found in the [examples](https:
 
 ITKElastix can be used with both the [procedural](https://docs.python.org/3/howto/functional.html) and the [object oriented method](https://docs.python.org/3/howto/functional.html), as shown in the example notebooks. The procedural method is shorter, less explicit and currently slightly less functional than the object oriented method, however the execution time and output do not differ apart from possible differences due to the stochastic nature of the Elastix algorithm.
 
-To find parameters that work well with specific datasets, see the [elastix Model Zoo](https://elastix.lumc.nl/modelzoo/).
+To find parameters that work well with specific datasets, see the [elastix Model Zoo](https://elastix.dev/modelzoo/).
 
 For a graphical user interface in a desktop application, see the [napari plugin](https://github.com/SuperElastix/elastix_napari).
 
