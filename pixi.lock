@@ -24,7 +24,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/filelock-3.17.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/h11-0.14.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/h2-4.2.0-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/hatch-1.14.0-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/hatch-1.14.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.27.0-pypyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.7-pyh29332c3_1.conda
@@ -68,6 +68,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-0.12.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pcre2-10.44-hba22ea6_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pexpect-4.9.0-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-25.1-pyh145f28c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.3.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.5.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pnpm-10.7.1-h6417eb3_0.conda
@@ -291,31 +292,31 @@ packages:
   license_family: MIT
   size: 53888
   timestamp: 1738578623567
-- conda: https://conda.anaconda.org/conda-forge/noarch/hatch-1.14.0-pyhd8ed1ab_1.conda
-  sha256: 908fc6e847da57da39011be839db0f56f16428d3d950f49a8c7ac1c9c1ed0505
-  md5: b34bdd91d7298c76d9891cea6c8ab27f
+- conda: https://conda.anaconda.org/conda-forge/noarch/hatch-1.14.1-pyhd8ed1ab_0.conda
+  sha256: d245185287bdf5d3c808267aebda2cb7fbce779099493f92e368f813e6a157d4
+  md5: 82f74ce5f4548c3627ed52dfac9da8ca
   depends:
   - click >=8.0.6
-  - hatchling >=1.24.2
+  - hatchling >=1.26.3
   - httpx >=0.22.0
   - hyperlink >=21.0.0
   - keyring >=23.5.0
-  - packaging >=24.2
-  - pexpect >=4.8,<5
+  - packaging >=23.2
+  - pexpect >=4.8,<5.dev0
   - platformdirs >=2.5.0
   - python >=3.9
   - rich >=11.2.0
   - shellingham >=1.4.0
   - tomli-w >=1.0
   - tomlkit >=0.11.1
-  - userpath >=1.7,<2
-  - uv >=0.1.35
+  - userpath >=1.7,<2.dev0
+  - uv >=0.5.23
   - virtualenv >=20.26.6
-  - zstandard <1.0
+  - zstandard <1
   license: MIT
   license_family: MIT
-  size: 177914
-  timestamp: 1734476985835
+  size: 178008
+  timestamp: 1744039278512
 - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.27.0-pypyhd8ed1ab_0.conda
   sha256: e83420f81390535774ac33b83d05249b8993e5376b76b4d461f83a77549e493d
   md5: b85c18ba6e927ae0da3fde426c893cc8
@@ -778,6 +779,15 @@ packages:
   license: ISC
   size: 53561
   timestamp: 1733302019362
+- conda: https://conda.anaconda.org/conda-forge/noarch/pip-25.1-pyh145f28c_0.conda
+  sha256: 7aed9a2e365707e03b43642c9661801dcbe1f619e40e9fe0723d7a20a1f2d8bc
+  md5: 4627e20c39e7340febed674c3bf05b16
+  depends:
+  - python >=3.13.0a0
+  license: MIT
+  license_family: MIT
+  size: 1246282
+  timestamp: 1745671894117
 - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.3.6-pyhd8ed1ab_1.conda
   sha256: bb50f6499e8bc1d1a26f17716c97984671121608dc0c3ecd34858112bce59a27
   md5: 577852c7e53901ddccc7e6a9959ddebe
