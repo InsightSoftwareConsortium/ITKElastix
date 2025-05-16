@@ -23,9 +23,9 @@
 #include "itkOutputTextStream.h"
 #include "itkSupportInputImageTypes.h"
 #include "itkOutputTransform.h"
+#include "itkInputTransform.h"
 
 #include "itkImage.h"
-#include "itkTransformFileReader.h"
 #include "itkIdentityTransform.h"
 #include "itkCompositeTransform.h"
 #include "itkCompositeTransformIOHelper.h"
@@ -34,6 +34,7 @@
 #include <sstream>
 
 #include "itkElastixWasmParameterObject.h"
+#include "glaze/glaze.hpp"
 
 std::string readParameterObject(const std::string & parameterObjectJson, elastix::ParameterObject * parameterObject)
 {
@@ -95,7 +96,6 @@ std::string readParameterObject(const std::string & parameterObjectJson, elastix
   return {};
 }
 
-#include "glaze/glaze.hpp"
 template <typename TImage>
 class PipelineFunctor
 {
@@ -108,6 +108,8 @@ public:
     using FloatImageType = itk::Image<float, ImageType::ImageDimension>;
     using RegistrationType = itk::ElastixRegistrationMethod<FloatImageType, FloatImageType>;
     using TransformType = typename RegistrationType::TransformType;
+    using CompositeTransformType = itk::CompositeTransform<ParametersValueType, ImageType::ImageDimension>;
+    using CompositeHelperType = itk::CompositeTransformIOHelperTemplate<ParametersValueType>;
 
     using InputImageType = itk::wasm::InputImage<ImageType>;
     InputImageType fixedImage;
@@ -116,10 +118,11 @@ public:
     InputImageType movingImage;
     pipeline.add_option("-m,--moving", movingImage, "Moving image")->type_name("INPUT_IMAGE");
 
-    std::string initialTransformFile;
+    using InputTransformType = itk::wasm::InputTransform<CompositeTransformType>;
+    InputTransformType initialTransform;
     pipeline
-      .add_option("-i,--initial-transform", initialTransformFile, "Initial transform to apply before registration")
-      ->type_name("INPUT_BINARY_FILE");
+      .add_option("-i,--initial-transform", initialTransform, "Initial transform to apply before registration")
+      ->type_name("INPUT_TRANSFORM");
 
     itk::wasm::InputTextStream initialTransformParameterObjectJson;
     auto                       initialTransformParameterObjectOption =
@@ -184,39 +187,10 @@ public:
     registration->SetMovingImage(movingCaster->GetOutput());
     registration->SetParameterObject(parameterObject);
 
-    typename RegistrationType::TransformType::Pointer initialTransform;
-    using CompositeTransformType = itk::CompositeTransform<ParametersValueType, ImageType::ImageDimension>;
-    using CompositeHelperType = itk::CompositeTransformIOHelperTemplate<ParametersValueType>;
-    using TransformReaderType = itk::TransformFileReaderTemplate<ParametersValueType>;
-    typename TransformReaderType::Pointer transformReader = TransformReaderType::New();
-    if (!initialTransformFile.empty())
+    typename RegistrationType::TransformType::Pointer externalInitialTransform;
+    if (initialTransform.Get())
     {
-      transformReader->SetFileName(initialTransformFile);
-      ITK_WASM_CATCH_EXCEPTION(pipeline, transformReader->Update());
-
-      if (transformReader->GetTransformList()->size() == 1)
-      {
-        auto firstTransform = transformReader->GetModifiableTransformList()->front();
-        if (!strcmp(firstTransform->GetNameOfClass(), "CompositeTransform"))
-        {
-          initialTransform = static_cast<CompositeTransformType *>(firstTransform.GetPointer());
-          registration->SetExternalInitialTransform(initialTransform);
-        }
-        // We could add support for other initial transform types here
-        else
-        {
-          std::cerr << "Initial transform is not a composite transform, which is not currently supported." << std::endl;
-          return EXIT_FAILURE;
-        }
-      }
-      else if (transformReader->GetTransformList()->size() > 1)
-      {
-        CompositeHelperType                      helper;
-        typename CompositeTransformType::Pointer compositeTransform = CompositeTransformType::New();
-        helper.SetTransformList(compositeTransform, *transformReader->GetModifiableTransformList());
-        initialTransform = compositeTransform;
-        registration->SetExternalInitialTransform(initialTransform);
-      }
+      registration->SetExternalInitialTransform(const_cast<CompositeTransformType *>(initialTransform.Get()));
     }
     else if (!initialTransformParameterObjectOption->empty())
     {

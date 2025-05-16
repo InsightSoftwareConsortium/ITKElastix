@@ -5,12 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 
 if(EMSCRIPTEN)
   set(io_components
-    ITKTransformIO
     )
 elseif(WASI)
   set(io_components
     ITKIOMeta
-    ITKTransformIO
+    ITKIOTransformHDF5
     )
 else()
   set(io_components
