@@ -28,6 +28,9 @@ include(${ITK_USE_FILE})
 add_executable(elastix elastix-wasm.cxx)
 target_link_libraries(elastix PUBLIC ${ITK_LIBRARIES})
 
+add_executable(transformix transformix-wasm.cxx)
+target_link_libraries(transformix PUBLIC ${ITK_LIBRARIES})
+
 add_executable(read-parameter-files read-parameter-files.cxx)
 target_link_libraries(read-parameter-files PUBLIC ${ITK_LIBRARIES})
 
@@ -91,6 +94,24 @@ add_test(NAME elastix-wasm-2d-multiple-test
     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_fixed.iwi.cbor
     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_moving.iwi.cbor
   )
+
+add_test(NAME transformix-wasm-test
+  COMMAND transformix
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_moving.iwi.cbor
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung.json
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung_transformix.iwi.cbor
+  )
+set_tests_properties(transformix-wasm-test PROPERTIES DEPENDS elastix-wasm-test)
+
+# add_test(NAME elastix-wasm-2d-test
+#   COMMAND elastix
+#     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_single.json
+#     ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_registered.iwi.cbor
+#     ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head.h5
+#     ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head.json
+#     -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_fixed.iwi.cbor
+#     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_moving.iwi.cbor
+#   )
 
 add_test(NAME read-parameter-files-test
   COMMAND read-parameter-files

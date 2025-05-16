@@ -25,6 +25,8 @@
 
 #include "glaze/glaze.hpp"
 
+#include "itkNumberToString.h"
+
 int
 main(int argc, char * argv[])
 {
@@ -90,12 +92,12 @@ main(int argc, char * argv[])
         else if (value.index() == 2)
         {
           const auto & valueInt = std::get<int64_t>(value);
-          parameterValues.push_back(std::to_string(valueInt));
+          parameterValues.push_back(itk::ConvertNumberToString(valueInt));
         }
         else if (value.index() == 3)
         {
           const auto & valueDouble = std::get<double>(value);
-          parameterValues.push_back(std::to_string(valueDouble));
+          parameterValues.push_back(itk::ConvertNumberToString(valueDouble));
         }
       }
       parameterMap[parameter.first] = parameterValues;

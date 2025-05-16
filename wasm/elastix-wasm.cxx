@@ -36,66 +36,6 @@
 #include "itkElastixWasmParameterObject.h"
 #include "glaze/glaze.hpp"
 
-std::string readParameterObject(const std::string & parameterObjectJson, elastix::ParameterObject * parameterObject)
-{
-  using ParameterObjectType = elastix::ParameterObject;
-
-  itk::wasm::ParameterMapVector wasmParameterMaps;
-  auto errorCode = glz::read_json<itk::wasm::ParameterMapVector>(wasmParameterMaps, parameterObjectJson);
-  if (errorCode)
-  {
-    const std::string errorMessage = glz::format_error(errorCode, parameterObjectJson);
-    return errorMessage;
-  }
-
-  const auto numParameterMaps = wasmParameterMaps.size();
-  ParameterObjectType::ParameterMapVectorType parameterMaps;
-  parameterMaps.reserve(numParameterMaps);
-  for (const auto wasmParameterMap : wasmParameterMaps)
-  {
-    ParameterObjectType::ParameterMapType parameterMap;
-    for (const auto & parameter : wasmParameterMap)
-    {
-      ParameterObjectType::ParameterValueVectorType parameterValues;
-      for (const auto & value : parameter.second)
-      {
-        if (value.index() == 0)
-        {
-          const auto & valueString = std::get<std::string>(value);
-          parameterValues.push_back(valueString);
-        }
-        else if (value.index() == 1)
-        {
-          const auto & valueBool = std::get<bool>(value);
-          if (valueBool)
-          {
-            parameterValues.push_back("true");
-          }
-          else
-          {
-            parameterValues.push_back("false");
-          }
-        }
-        else if (value.index() == 2)
-        {
-          const auto & valueInt = std::get<int64_t>(value);
-          parameterValues.push_back(std::to_string(valueInt));
-        }
-        else if (value.index() == 3)
-        {
-          const auto & valueDouble = std::get<double>(value);
-          parameterValues.push_back(std::to_string(valueDouble));
-        }
-      }
-      parameterMap[parameter.first] = parameterValues;
-    }
-
-    parameterObject->AddParameterMap(parameterMap);
-  }
-
-  return {};
-}
-
 template <typename TImage>
 class PipelineFunctor
 {
@@ -174,7 +114,7 @@ public:
     const auto parameterObject = ParameterObjectType::New();
     std::stringstream   ss;
     ss << parameterObjectJson.Get().rdbuf();
-    const std::string errorMessage = readParameterObject(ss.str(), parameterObject);
+    const std::string errorMessage = itk::wasm::ReadParameterObject(ss.str(), parameterObject);
     if (!errorMessage.empty())
     {
       std::cerr << "Error reading parameter object JSON: " << errorMessage << std::endl;
@@ -198,7 +138,7 @@ public:
       const auto initialTransformParameterObject = ParameterObjectType::New();
       std::stringstream   ss;
       ss << initialTransformParameterObjectJson.Get().rdbuf();
-      const std::string errorMessage = readParameterObject(ss.str(), initialTransformParameterObject);
+      const std::string errorMessage = itk::wasm::ReadParameterObject(ss.str(), initialTransformParameterObject);
       if (!errorMessage.empty())
       {
         std::cerr << "Error reading transform parameter object JSON: " << errorMessage << std::endl;
@@ -247,35 +187,12 @@ public:
     }
 
     const auto transformParameterObject = registration->GetTransformParameterObject();
-    itk::wasm::ParameterMapVector transformParameterMaps;
-
-    const auto numParameterMaps = parameterObject->GetNumberOfParameterMaps();
-    for (unsigned int i = 0; i < numParameterMaps; ++i)
-    {
-      const auto &     parameterMap = parameterObject->GetParameterMap(i);
-      itk::wasm::ParameterMap wasmParameterMap;
-      for (const auto & parameter : parameterMap)
-      {
-        const auto & parameterValueVector = parameter.second;
-
-        auto & wasmValues = wasmParameterMap[parameter.first];
-        wasmValues.reserve(parameterValueVector.size());
-
-        // Convert each string into the variant
-        for (const auto & val : parameterValueVector)
-        {
-          wasmValues.emplace_back(val);
-        }
-      }
-      transformParameterMaps.push_back(wasmParameterMap);
-    }
 
     std::string serialized{};
-    auto errorCode = glz::write<glz::opts{ .prettify = true }>(transformParameterMaps, serialized);
-    if (errorCode)
+    const std::string writeErrorMessage = itk::wasm::WriteParameterObject(transformParameterObject, serialized);
+    if (!writeErrorMessage.empty())
     {
-      const std::string errorMessage = glz::format_error(errorCode, serialized);
-      std::cerr << "Error serializing parameter object: " << errorMessage << std::endl;
+      std::cerr << "Error serializing parameter object: " << writeErrorMessage << std::endl;
       return EXIT_FAILURE;
     }
 
