@@ -22,9 +22,9 @@
 #include "itkInputTextStream.h"
 #include "itkOutputTextStream.h"
 #include "itkSupportInputImageTypes.h"
+#include "itkOutputTransform.h"
 
 #include "itkImage.h"
-#include "itkTransformFileWriter.h"
 #include "itkTransformFileReader.h"
 #include "itkIdentityTransform.h"
 #include "itkCompositeTransform.h"
@@ -105,6 +105,9 @@ public:
   {
     using ImageType = TImage;
     using ParametersValueType = double;
+    using FloatImageType = itk::Image<float, ImageType::ImageDimension>;
+    using RegistrationType = itk::ElastixRegistrationMethod<FloatImageType, FloatImageType>;
+    using TransformType = typename RegistrationType::TransformType;
 
     using InputImageType = itk::wasm::InputImage<ImageType>;
     InputImageType fixedImage;
@@ -136,10 +139,11 @@ public:
     OutputImageType resultImage;
     pipeline.add_option("result", resultImage, "Resampled moving image")->required()->type_name("OUTPUT_IMAGE");
 
-    std::string outputTransform;
+    using OutputTransformType = itk::wasm::OutputTransform<TransformType>;
+    OutputTransformType outputTransform;
     pipeline.add_option("transform", outputTransform, "Fixed-to-moving transform file")
       ->required()
-      ->type_name("OUTPUT_BINARY_FILE");
+      ->type_name("OUTPUT_TRANSFORM");
 
     itk::wasm::OutputTextStream transformParameterObjectJson;
     pipeline
@@ -151,7 +155,6 @@ public:
 
     ITK_WASM_PARSE(pipeline);
 
-    using FloatImageType = itk::Image<float, ImageType::ImageDimension>;
     using CasterType = itk::CastImageFilter<ImageType, FloatImageType>;
 
     typename CasterType::Pointer fixedCaster = CasterType::New();
@@ -162,7 +165,6 @@ public:
     movingCaster->SetInput(movingImage.Get());
     ITK_WASM_CATCH_EXCEPTION(pipeline, movingCaster->Update());
 
-    using RegistrationType = itk::ElastixRegistrationMethod<FloatImageType, FloatImageType>;
     typename RegistrationType::Pointer registration = RegistrationType::New();
 
     using ParameterObjectType = elastix::ParameterObject;
@@ -243,15 +245,11 @@ public:
     typename ImageType::ConstPointer result = resultCaster->GetOutput();
     resultImage.Set(result);
 
-    const auto writer = itk::TransformFileWriter::New();
-
     if (registration->GetNumberOfTransforms() == 0)
     {
       using IdentityTransformType = itk::IdentityTransform<double, ImageType::ImageDimension>;
       typename IdentityTransformType::ConstPointer identity = IdentityTransformType::New();
-      writer->SetInput(identity);
-      writer->SetFileName(outputTransform);
-      ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
+      outputTransform.Set(identity);
     }
     // Reasonable to enable once we support injecting as an initial transform
     // else if (!initialTransform.GetPointer() && registration->GetNumberOfTransforms() == 1)
@@ -271,9 +269,7 @@ public:
         static_cast<CompositeTransformType *>(registration->ConvertToItkTransform(*combinationTransform).GetPointer());
       registeredCompositeTransform->FlattenTransformQueue();
       registeredCompositeTransform->SetAllTransformsToOptimizeOff();
-      writer->SetInput(registeredCompositeTransform);
-      writer->SetFileName(outputTransform);
-      ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
+      outputTransform.Set(registeredCompositeTransform);
     }
 
     const auto transformParameterObject = registration->GetTransformParameterObject();
