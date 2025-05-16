@@ -31,12 +31,71 @@
 #include "itkCompositeTransformIOHelper.h"
 #include "itkCastImageFilter.h"
 
-#include "rapidjson/document.h"
-#include "rapidjson/prettywriter.h"
-#include "rapidjson/stringbuffer.h"
-
 #include <sstream>
 
+#include "itkElastixWasmParameterObject.h"
+
+std::string readParameterObject(const std::string & parameterObjectJson, elastix::ParameterObject * parameterObject)
+{
+  using ParameterObjectType = elastix::ParameterObject;
+
+  itk::wasm::ParameterMapVector wasmParameterMaps;
+  auto errorCode = glz::read_json<itk::wasm::ParameterMapVector>(wasmParameterMaps, parameterObjectJson);
+  if (errorCode)
+  {
+    const std::string errorMessage = glz::format_error(errorCode, parameterObjectJson);
+    return errorMessage;
+  }
+
+  const auto numParameterMaps = wasmParameterMaps.size();
+  ParameterObjectType::ParameterMapVectorType parameterMaps;
+  parameterMaps.reserve(numParameterMaps);
+  for (const auto wasmParameterMap : wasmParameterMaps)
+  {
+    ParameterObjectType::ParameterMapType parameterMap;
+    for (const auto & parameter : wasmParameterMap)
+    {
+      ParameterObjectType::ParameterValueVectorType parameterValues;
+      for (const auto & value : parameter.second)
+      {
+        if (value.index() == 0)
+        {
+          const auto & valueString = std::get<std::string>(value);
+          parameterValues.push_back(valueString);
+        }
+        else if (value.index() == 1)
+        {
+          const auto & valueBool = std::get<bool>(value);
+          if (valueBool)
+          {
+            parameterValues.push_back("true");
+          }
+          else
+          {
+            parameterValues.push_back("false");
+          }
+        }
+        else if (value.index() == 2)
+        {
+          const auto & valueInt = std::get<int64_t>(value);
+          parameterValues.push_back(std::to_string(valueInt));
+        }
+        else if (value.index() == 3)
+        {
+          const auto & valueDouble = std::get<double>(value);
+          parameterValues.push_back(std::to_string(valueDouble));
+        }
+      }
+      parameterMap[parameter.first] = parameterValues;
+    }
+
+    parameterObject->AddParameterMap(parameterMap);
+  }
+
+  return {};
+}
+
+#include "glaze/glaze.hpp"
 template <typename TImage>
 class PipelineFunctor
 {
@@ -106,33 +165,15 @@ public:
     using RegistrationType = itk::ElastixRegistrationMethod<FloatImageType, FloatImageType>;
     typename RegistrationType::Pointer registration = RegistrationType::New();
 
-    rapidjson::Document document;
-    std::stringstream   ss;
-    ss << parameterObjectJson.Get().rdbuf();
-    document.Parse(ss.str().c_str());
-
     using ParameterObjectType = elastix::ParameterObject;
     const auto parameterObject = ParameterObjectType::New();
-    const auto numParameterMaps = document.Size();
-    using ParameterMapType = std::map<std::string, std::vector<std::string>>;
-    std::vector<ParameterMapType> parameterMaps;
-    for (unsigned int i = 0; i < numParameterMaps; ++i)
+    std::stringstream   ss;
+    ss << parameterObjectJson.Get().rdbuf();
+    const std::string errorMessage = readParameterObject(ss.str(), parameterObject);
+    if (!errorMessage.empty())
     {
-      const auto &     parameterMapJson = document[i];
-      ParameterMapType parameterMap;
-      for (auto it = parameterMapJson.MemberBegin(); it != parameterMapJson.MemberEnd(); ++it)
-      {
-        const auto &             key = it->name.GetString();
-        const auto &             valueJson = it->value;
-        std::vector<std::string> value;
-        for (auto it2 = valueJson.Begin(); it2 != valueJson.End(); ++it2)
-        {
-          const auto & valueElement = it2->GetString();
-          value.push_back(valueElement);
-        }
-        parameterMap[key] = value;
-      }
-      parameterObject->AddParameterMap(parameterMap);
+      std::cerr << "Error reading parameter object JSON: " << errorMessage << std::endl;
+      return EXIT_FAILURE;
     }
 
     auto fixed = const_cast<ImageType *>(fixedImage.Get());
@@ -177,33 +218,15 @@ public:
     }
     else if (!initialTransformParameterObjectOption->empty())
     {
-      rapidjson::Document initialDocument;
-      std::stringstream   ss;
-      ss << initialTransformParameterObjectJson.Get().rdbuf();
-      initialDocument.Parse(ss.str().c_str());
-
       using ParameterObjectType = elastix::ParameterObject;
       const auto initialTransformParameterObject = ParameterObjectType::New();
-      const auto numTransformParameterMaps = initialDocument.Size();
-      using ParameterMapType = std::map<std::string, std::vector<std::string>>;
-      std::vector<ParameterMapType> transformParameterMaps;
-      for (unsigned int i = 0; i < numTransformParameterMaps; ++i)
+      std::stringstream   ss;
+      ss << initialTransformParameterObjectJson.Get().rdbuf();
+      const std::string errorMessage = readParameterObject(ss.str(), initialTransformParameterObject);
+      if (!errorMessage.empty())
       {
-        const auto &     parameterMapJson = initialDocument[i];
-        ParameterMapType parameterMap;
-        for (auto it = parameterMapJson.MemberBegin(); it != parameterMapJson.MemberEnd(); ++it)
-        {
-          const auto &             key = it->name.GetString();
-          const auto &             valueJson = it->value;
-          std::vector<std::string> value;
-          for (auto it2 = valueJson.Begin(); it2 != valueJson.End(); ++it2)
-          {
-            const auto & valueElement = it2->GetString();
-            value.push_back(valueElement);
-          }
-          parameterMap[key] = value;
-        }
-        initialTransformParameterObject->AddParameterMap(parameterMap);
+        std::cerr << "Error reading transform parameter object JSON: " << errorMessage << std::endl;
+        return EXIT_FAILURE;
       }
 
       registration->SetInitialTransformParameterObject(initialTransformParameterObject);
@@ -253,35 +276,40 @@ public:
       ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
     }
 
-    const auto          transformParameterObject = registration->GetTransformParameterObject();
-    rapidjson::Document transformDocument;
-    transformDocument.SetArray();
-    rapidjson::Document::AllocatorType & allocator = transformDocument.GetAllocator();
+    const auto transformParameterObject = registration->GetTransformParameterObject();
+    itk::wasm::ParameterMapVector transformParameterMaps;
 
-    const auto numTransformParameterMaps = transformParameterObject->GetNumberOfParameterMaps();
-    for (unsigned int i = 0; i < numTransformParameterMaps; ++i)
+    const auto numParameterMaps = parameterObject->GetNumberOfParameterMaps();
+    for (unsigned int i = 0; i < numParameterMaps; ++i)
     {
-      const auto &     parameterMap = transformParameterObject->GetParameterMap(i);
-      rapidjson::Value parameterMapJson(rapidjson::kObjectType);
+      const auto &     parameterMap = parameterObject->GetParameterMap(i);
+      itk::wasm::ParameterMap wasmParameterMap;
       for (const auto & parameter : parameterMap)
       {
-        const auto &     key = parameter.first;
-        const auto &     value = parameter.second;
-        rapidjson::Value valueJson(rapidjson::kArrayType);
-        for (const auto & valueElement : value)
+        const auto & parameterValueVector = parameter.second;
+
+        auto & wasmValues = wasmParameterMap[parameter.first];
+        wasmValues.reserve(parameterValueVector.size());
+
+        // Convert each string into the variant
+        for (const auto & val : parameterValueVector)
         {
-          valueJson.PushBack(rapidjson::Value(valueElement.c_str(), allocator).Move(), allocator);
+          wasmValues.emplace_back(val);
         }
-        parameterMapJson.AddMember(rapidjson::Value(key.c_str(), allocator).Move(), valueJson, allocator);
       }
-      transformDocument.PushBack(parameterMapJson, allocator);
+      transformParameterMaps.push_back(wasmParameterMap);
     }
 
-    rapidjson::StringBuffer                          buffer;
-    rapidjson::PrettyWriter<rapidjson::StringBuffer> transformParamWriter(buffer);
-    transformDocument.Accept(transformParamWriter);
+    std::string serialized{};
+    auto errorCode = glz::write<glz::opts{ .prettify = true }>(transformParameterMaps, serialized);
+    if (errorCode)
+    {
+      const std::string errorMessage = glz::format_error(errorCode, serialized);
+      std::cerr << "Error serializing parameter object: " << errorMessage << std::endl;
+      return EXIT_FAILURE;
+    }
 
-    transformParameterObjectJson.Get() << buffer.GetString();
+    transformParameterObjectJson.Get() << serialized;
 
     return EXIT_SUCCESS;
   }
