@@ -22,6 +22,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 keywords = [
   "itkwasm",
@@ -32,7 +33,7 @@ keywords = [
 
 requires-python = ">=3.9"
 dependencies = [
-    "itkwasm >= 1.0.b178",
+    "itkwasm >= 1.0.b189",
     "itkwasm-elastix-wasi; sys_platform != \"emscripten\"",
     "itkwasm-elastix-emscripten; sys_platform == \"emscripten\"",
 
