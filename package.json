@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "npm scripts to generate itk-wasm artifacts.",
   "private": true,
-  "packageManager": "pnpm@10.7.1",
+  "packageManager": "pnpm@10.12.3",
   "type": "module",
   "itk-wasm": {
     "description": "A toolbox for rigid and nonrigid registration of images.",
