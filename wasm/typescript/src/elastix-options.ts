@@ -1,6 +1,6 @@
 // Generated file. To retain edits, remove this comment.
 
-import { Image,BinaryFile,JsonCompatible, WorkerPoolFunctionOption } from 'itk-wasm'
+import { Image,TransformList,JsonCompatible, WorkerPoolFunctionOption } from 'itk-wasm'
 
 interface ElastixOptions extends WorkerPoolFunctionOption {
   /** Fixed image */
@@ -10,7 +10,7 @@ interface ElastixOptions extends WorkerPoolFunctionOption {
   moving?: Image
 
   /** Initial transform to apply before registration */
-  initialTransform?: string | File | BinaryFile
+  initialTransform?: TransformList
 
   /** Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform. */
   initialTransformParameterObject?: JsonCompatible
