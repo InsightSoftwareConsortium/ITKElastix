@@ -29,12 +29,12 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2024a-h0c530f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xz-5.2.6-h166bdaf_0.tar.bz2
       - pypi: https://files.pythonhosted.org/packages/75/06/4df55e1b7b112d183f65db9503bff189e97179b256e1ea450a3c365241e0/importlib_resources-6.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/bf/7d/a16029720cfa5a3a19e44cdeabc96c078555890a6ffd08fdc0e8f96b77c5/itkwasm-1.0b178-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/fc/54/0fc399d374f1ee6e8494548419fe924188c7c7a04b646018c9818a6509e1/itkwasm-1.0b189-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2c/f3/61eeef119beb37decb58e7cb29940f19a1464b8608f2cab8a8616aba75fd/numpy-2.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/68/13/2aa1f0e1364feb2c9ef45302f387ac0bd81484e9c9a4c5688a322fbdfd08/platformdirs-4.2.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/26/9f/ad63fc0248c5379346306f8668cda6e2e2e9c95e01216d2b8ffd9ff037d0/typing_extensions-4.12.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/cf/cc/3af9cf587abab041fc757c8b2cce40381512d600900f30c017cc6ed58327/wasmtime-23.0.0-py3-none-manylinux1_x86_64.whl
-      - pypi: .
+      - pypi: https://files.pythonhosted.org/packages/02/49/91feda2f5a0c69a80fa0b72d47493316b3c11bc9b840c50288ab762facf5/wasmtime-34.0.0-py3-none-manylinux1_x86_64.whl
+      - pypi: ./
   test:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -95,7 +95,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/e5/3e/741d8c82801c347547f8a2a06aa57dbb1992be9e948df2ea0eda2c8b79e8/idna-3.7-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/75/06/4df55e1b7b112d183f65db9503bff189e97179b256e1ea450a3c365241e0/importlib_resources-6.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/a6/62565a6e1cf69e10f5727360368e451d4b7f58beeac6173dc9db836a5b46/iniconfig-2.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/bf/7d/a16029720cfa5a3a19e44cdeabc96c078555890a6ffd08fdc0e8f96b77c5/itkwasm-1.0b178-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/fc/54/0fc399d374f1ee6e8494548419fe924188c7c7a04b646018c9818a6509e1/itkwasm-1.0b189-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7f/66/b15ce62552d84bbfcec9a4873ab79d993a1dd4edb922cbfccae192bd5b5f/jaraco.classes-3.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d2/40/11b7bc1898cf1dcb87ccbe09b39f5088634ac78bb25f3383ff541c2b40aa/jaraco.context-5.3.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/b1/54/7623e24ffc63730c3a619101361b08860c6b7c7cfc1aef6edb66d80ed708/jaraco.functools-4.0.2-py3-none-any.whl
@@ -138,11 +138,11 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/43/99/3ec6335ded5b88c2f7ed25c56ffd952546f7ed007ffb1e1539dc3b57015a/userpath-1.9.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/de/c5/e018b4a5348be5c573d0ceda2fb224632a67919dfb12b4d08fe120998a1c/uv-0.2.35-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/07/4d/410156100224c5e2f0011d435e477b57aed9576fc7fe137abcf14ec16e11/virtualenv-20.26.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/cf/cc/3af9cf587abab041fc757c8b2cce40381512d600900f30c017cc6ed58327/wasmtime-23.0.0-py3-none-manylinux1_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/02/49/91feda2f5a0c69a80fa0b72d47493316b3c11bc9b840c50288ab762facf5/wasmtime-34.0.0-py3-none-manylinux1_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/5a/84/44687a29792a70e111c5c477230a72c4b957d88d16141199bf9acb7537a3/websocket_client-1.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/78/58/e860788190eba3bcce367f74d29c4675466ce8dddfba85f7827588416f01/wsproto-1.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fc/79/edeb217c57fe1bf16d890aa91a1c2c96b28c07b46afed54a5dcf310c3f6f/zstandard-0.23.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-      - pypi: .
+      - pypi: ./
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
   sha256: fe51de6107f9edc7aa4f786a70f4a883943bc9d39b3bb7307c04c41410990726
@@ -516,23 +516,23 @@ packages:
   version: 2.0.0
   sha256: b6a85871a79d2e3b22d2d1b94ac2824226a63c6b741c88f7ae975f18b6778374
   requires_python: '>=3.7'
-- pypi: https://files.pythonhosted.org/packages/bf/7d/a16029720cfa5a3a19e44cdeabc96c078555890a6ffd08fdc0e8f96b77c5/itkwasm-1.0b178-py3-none-any.whl
+- pypi: https://files.pythonhosted.org/packages/fc/54/0fc399d374f1ee6e8494548419fe924188c7c7a04b646018c9818a6509e1/itkwasm-1.0b189-py3-none-any.whl
   name: itkwasm
-  version: 1.0b178
-  sha256: c6e77b76492ef5d6d20fc822934aee230a438ab752b8ebc93fd63944e7832915
+  version: 1.0b189
+  sha256: 2ae8d05bfb4e4d86edc73887fa03503e20cc5f24287284cc65e493eefe987828
   requires_dist:
   - importlib-metadata ; python_full_version < '3.10'
   - numpy
   - platformdirs ; sys_platform != 'emscripten'
   - typing-extensions
-  - wasmtime>=13.0.2 ; sys_platform != 'emscripten'
-  requires_python: '>=3.8'
-- pypi: .
+  - wasmtime>=28.0.0 ; sys_platform != 'emscripten'
+  requires_python: '>=3.9'
+- pypi: ./
   name: itkwasm-elastix-emscripten
-  version: 0.3.1
-  sha256: 4b287b0f048d0e4ed69f372c204f5145021bfcfc5e01dcccc2c76c037407f4e0
+  version: 1.0.0
+  sha256: 0abbb9c8283d4ba8ba2e87f118bf18fe6c4b94bb9f7ecd98a11e4bb3cd356bb3
   requires_dist:
-  - itkwasm>=1.0b178
+  - itkwasm>=1.0b189
   - hatch>=1.12.0,<2 ; extra == 'test'
   - pyodide-py>=0.26.2,<0.27 ; extra == 'test'
   - pytest ; extra == 'test'
@@ -1290,18 +1290,18 @@ packages:
   - setuptools>=68 ; extra == 'test'
   - time-machine>=2.10 ; platform_python_implementation == 'CPython' and extra == 'test'
   requires_python: '>=3.7'
-- pypi: https://files.pythonhosted.org/packages/cf/cc/3af9cf587abab041fc757c8b2cce40381512d600900f30c017cc6ed58327/wasmtime-23.0.0-py3-none-manylinux1_x86_64.whl
+- pypi: https://files.pythonhosted.org/packages/02/49/91feda2f5a0c69a80fa0b72d47493316b3c11bc9b840c50288ab762facf5/wasmtime-34.0.0-py3-none-manylinux1_x86_64.whl
   name: wasmtime
-  version: 23.0.0
-  sha256: 4144847d89a133a25783e9ee11126dd3e1accea52ee20ed91e2d0315fda3abf2
+  version: 34.0.0
+  sha256: 735a30599f98d92d9d631615651ef4b964f3e32f5f0ab80e4e68c00633789726
   requires_dist:
   - importlib-resources>=5.10
   - coverage ; extra == 'testing'
-  - pytest ; extra == 'testing'
   - pycparser ; extra == 'testing'
   - pytest-mypy ; extra == 'testing'
-  - componentize-py ; extra == 'testing'
-  requires_python: '>=3.8'
+  - pytest ; extra == 'testing'
+  - componentize-py ; (sys_platform != 'win32' and extra == 'testing') or (platform_machine == 'AMD64' and extra == 'testing')
+  requires_python: '>=3.9'
 - pypi: https://files.pythonhosted.org/packages/5a/84/44687a29792a70e111c5c477230a72c4b957d88d16141199bf9acb7537a3/websocket_client-1.8.0-py3-none-any.whl
   name: websocket-client
   version: 1.8.0

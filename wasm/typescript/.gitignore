@@ -1,2 +1,4 @@
 demo-app/
 test/browser-demo-app/public/
+playwright-report/
+test-results/
