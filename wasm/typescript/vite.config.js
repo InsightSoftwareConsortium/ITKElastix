@@ -6,6 +6,10 @@ const base = process.env.VITE_BASE_URL || '/'
 
 export default defineConfig({
   root: path.join('test', 'browser', 'demo-app'),
+  server: {
+    port: 5188,
+    strictPort: true,
+  },
   base,
   build: {
     outDir: '../../../demo-app',

@@ -15,7 +15,7 @@
   },
   "scripts": {
     "start": "pnpm copyDemoAppAssets && vite",
-    "test": "npm run test:node && npm run test:browser",
+    "test": "pnpm run test:node && pnpm run test:browser",
     "test:node": "ava --timeout 10m test/node/*.js",
     "test:browser": "pnpm exec playwright test",
     "copyDemoAppAssets": "shx mkdir -p test/browser/demo-app/public/shoelace && shx cp -r node_modules/@itk-wasm/demo-app/dist/assets test/browser/demo-app/public/",

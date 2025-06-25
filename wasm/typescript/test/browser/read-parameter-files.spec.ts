@@ -1,9 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { demoServer } from "./common";
 
 test.describe("readParameterFiles", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(demoServer);
+    await page.goto("/");
   });
 
   test("Reads parameter files into a parameter object representation", async ({

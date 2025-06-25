@@ -1,9 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { demoServer } from "./common";
 
 test.describe("defaultParameterMap", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(demoServer);
+    await page.goto("/");
   });
 
   test("Provides the affine default parameter map", async ({ page }) => {
