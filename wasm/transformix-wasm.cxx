@@ -36,7 +36,8 @@
 // Workaround function to check if a parameter exists in the parameter object
 // since elx::ParameterObject doesn't have a HasParameter method, yet, added in
 // https://github.com/SuperElastix/elastix/pull/1338
-bool HasParameterWorkaround(const elastix::ParameterObject* parameterObject, const std::string& key)
+bool
+HasParameterWorkaround(const elastix::ParameterObject * parameterObject, const std::string & key)
 {
   if (!parameterObject || parameterObject->GetNumberOfParameterMaps() == 0)
   {
@@ -46,7 +47,7 @@ bool HasParameterWorkaround(const elastix::ParameterObject* parameterObject, con
   // Check if the key exists in any of the parameter maps
   for (unsigned int i = 0; i < parameterObject->GetNumberOfParameterMaps(); ++i)
   {
-    const auto& parameterMap = parameterObject->GetParameterMap(i);
+    const auto & parameterMap = parameterObject->GetParameterMap(i);
     if (parameterMap.find(key) != parameterMap.end())
     {
       return true;
@@ -77,24 +78,18 @@ public:
                     transformParameterObjectJson,
                     "Elastix transform parameter object to apply. Only provide this or an "
                     "initial transform.")
-        ->required()->type_name("INPUT_JSON");
+        ->required()
+        ->type_name("INPUT_JSON");
 
     std::vector<double> outputOrigin(ImageDimension, 0.0);
-    auto outputOriginOption = pipeline.add_option("-o,--output-origin",
-                        outputOrigin,
-                        "Output image origin.");
+    auto outputOriginOption = pipeline.add_option("-o,--output-origin", outputOrigin, "Output image origin.");
     std::vector<double> outputSpacing(ImageDimension, 1.0);
-    auto outputSpacingOption = pipeline.add_option("-s,--output-spacing",
-                        outputSpacing,
-                        "Output image spacing.");
+    auto outputSpacingOption = pipeline.add_option("-s,--output-spacing", outputSpacing, "Output image spacing.");
     std::vector<uint64_t> outputSize(ImageDimension, 0);
-    auto outputSizeOption = pipeline.add_option("-z,--output-size",
-                        outputSize,
-                        "Output image size.");
-    std::vector<double> outputDirection;
-    auto outputDirectionOption = pipeline.add_option("-d,--output-direction",
-                        outputDirection,
-                        "Output image orientation direction matrix.");
+    auto                  outputSizeOption = pipeline.add_option("-z,--output-size", outputSize, "Output image size.");
+    std::vector<double>   outputDirection;
+    auto                  outputDirectionOption =
+      pipeline.add_option("-d,--output-direction", outputDirection, "Output image orientation direction matrix.");
 
     using OutputImageType = itk::wasm::OutputImage<ImageType>;
     OutputImageType resultImage;
@@ -106,8 +101,8 @@ public:
     typename TransformixType::Pointer transformix = TransformixType::New();
 
     using ParameterObjectType = elastix::ParameterObject;
-    const auto transformParameterObject = ParameterObjectType::New();
-    std::stringstream   ss;
+    const auto        transformParameterObject = ParameterObjectType::New();
+    std::stringstream ss;
     ss << transformParameterObjectJson.Get().rdbuf();
     const std::string errorMessage = itk::wasm::ReadParameterObject(ss.str(), transformParameterObject);
     if (!errorMessage.empty())
@@ -170,7 +165,8 @@ public:
       transformParameterObject->SetParameter("Size", outputSizeStr);
     }
 
-    if (outputDirectionOption->count() != 0 || !HasParameterWorkaround(transformParameterObject.GetPointer(), "Direction"))
+    if (outputDirectionOption->count() != 0 ||
+        !HasParameterWorkaround(transformParameterObject.GetPointer(), "Direction"))
     {
       if (!outputDirection.empty())
       {
@@ -184,7 +180,7 @@ public:
       else
       {
         // If no output direction is provided, use the moving image's direction
-        const auto & movingDirection = movingImage.Get()->GetDirection();
+        const auto &             movingDirection = movingImage.Get()->GetDirection();
         std::vector<std::string> outputDirectionStr;
         for (unsigned int i = 0; i < ImageDimension; ++i)
         {

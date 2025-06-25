@@ -49,10 +49,10 @@ main(int argc, char * argv[])
 
   ITK_WASM_PARSE(pipeline);
 
-  std::stringstream   ss;
+  std::stringstream ss;
   ss << parameterObjectJson.Get().rdbuf();
   itk::wasm::ParameterMapVector wasmParameterMaps;
-  auto errorCode = glz::read_json<itk::wasm::ParameterMapVector>(wasmParameterMaps, ss.str());
+  auto                          errorCode = glz::read_json<itk::wasm::ParameterMapVector>(wasmParameterMaps, ss.str());
   if (errorCode)
   {
     const std::string errorMessage = glz::format_error(errorCode, ss.str());
@@ -61,7 +61,7 @@ main(int argc, char * argv[])
   }
 
   using ParameterObjectType = elastix::ParameterObject;
-  const auto numParameterMaps = wasmParameterMaps.size();
+  const auto                                  numParameterMaps = wasmParameterMaps.size();
   ParameterObjectType::ParameterMapVectorType parameterMaps;
   parameterMaps.reserve(numParameterMaps);
   for (const auto wasmParameterMap : wasmParameterMaps)

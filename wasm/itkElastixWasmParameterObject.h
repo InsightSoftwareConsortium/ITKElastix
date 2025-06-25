@@ -28,10 +28,10 @@
 #include "elxParameterObject.h"
 
 #include "itkNumberToString.h"
- namespace itk
- {
- namespace wasm
- {
+namespace itk
+{
+namespace wasm
+{
 
 /**
  * @brief Type used to represent an elastix ParameterKey in ITK-Wasm pipelines
@@ -64,13 +64,15 @@ using ParameterMap = std::map<ParameterKey, ParameterValueVector>;
 using ParameterMapVector = std::vector<ParameterMap>;
 
 /**
- * @brief Read an itk::wasm::ParameterMapVector elastix parameter object JSON representation into an elastix::ParameterObject.
+ * @brief Read an itk::wasm::ParameterMapVector elastix parameter object JSON representation into an
+ * elastix::ParameterObject.
  *
  * @param parameterObjectJson JSON representation of the elastix parameter object
  * @param parameterObject Pointer to the elastix::ParameterObject to populate
  * @return std::string Error message if reading the parameter object fails, empty string otherwise.
  */
-std::string ReadParameterObject(const std::string & parameterObjectJson, elastix::ParameterObject * parameterObject)
+std::string
+ReadParameterObject(const std::string & parameterObjectJson, elastix::ParameterObject * parameterObject)
 {
   using ParameterObjectType = elastix::ParameterObject;
 
@@ -82,7 +84,7 @@ std::string ReadParameterObject(const std::string & parameterObjectJson, elastix
     return errorMessage;
   }
 
-  const auto numParameterMaps = wasmParameterMaps.size();
+  const auto                                  numParameterMaps = wasmParameterMaps.size();
   ParameterObjectType::ParameterMapVectorType parameterMaps;
   parameterMaps.reserve(numParameterMaps);
   for (const auto wasmParameterMap : wasmParameterMaps)
@@ -137,7 +139,8 @@ std::string ReadParameterObject(const std::string & parameterObjectJson, elastix
  * @param parameterObjectJson JSON representation of the elastix parameter object (output)
  * @return std::string Error message if writing the parameter object fails, empty string otherwise.
  */
-std::string WriteParameterObject(const elastix::ParameterObject * parameterObject, std::string & parameterObjectJson)
+std::string
+WriteParameterObject(const elastix::ParameterObject * parameterObject, std::string & parameterObjectJson)
 {
   using ParameterObjectType = elastix::ParameterObject;
 
@@ -148,13 +151,13 @@ std::string WriteParameterObject(const elastix::ParameterObject * parameterObjec
 
   for (unsigned int i = 0; i < numParameterMaps; ++i)
   {
-    const auto & parameterMap = parameterObject->GetParameterMap(i);
+    const auto &            parameterMap = parameterObject->GetParameterMap(i);
     itk::wasm::ParameterMap wasmParameterMap;
 
     for (const auto & parameter : parameterMap)
     {
       const auto & parameterValueVector = parameter.second;
-      auto & wasmValues = wasmParameterMap[parameter.first];
+      auto &       wasmValues = wasmParameterMap[parameter.first];
       wasmValues.reserve(parameterValueVector.size());
 
       // Convert each string into the variant
@@ -177,8 +180,7 @@ std::string WriteParameterObject(const elastix::ParameterObject * parameterObjec
 }
 
 
-
 } // namespace wasm
 } // namespace itk
 
- #endif // itkElastixWasmParameterObject_h
+#endif // itkElastixWasmParameterObject_h

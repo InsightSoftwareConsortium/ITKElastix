@@ -50,7 +50,7 @@ main(int argc, char * argv[])
   const auto numParameterMaps = parameterObject->GetNumberOfParameterMaps();
   for (unsigned int i = 0; i < numParameterMaps; ++i)
   {
-    const auto &     parameterMap = parameterObject->GetParameterMap(i);
+    const auto &            parameterMap = parameterObject->GetParameterMap(i);
     itk::wasm::ParameterMap wasmParameterMap;
     for (const auto & parameter : parameterMap)
     {
@@ -69,7 +69,7 @@ main(int argc, char * argv[])
   }
 
   std::string serialized{};
-  auto errorCode = glz::write<glz::opts{ .prettify = true }>(parameterMaps, serialized);
+  auto        errorCode = glz::write<glz::opts{ .prettify = true }>(parameterMaps, serialized);
   if (errorCode)
   {
     const std::string errorMessage = glz::format_error(errorCode, serialized);

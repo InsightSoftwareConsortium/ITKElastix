@@ -60,8 +60,7 @@ public:
 
     using InputTransformType = itk::wasm::InputTransform<CompositeTransformType>;
     InputTransformType initialTransform;
-    pipeline
-      .add_option("-i,--initial-transform", initialTransform, "Initial transform to apply before registration")
+    pipeline.add_option("-i,--initial-transform", initialTransform, "Initial transform to apply before registration")
       ->type_name("INPUT_TRANSFORM");
 
     itk::wasm::InputTextStream initialTransformParameterObjectJson;
@@ -111,8 +110,8 @@ public:
     typename RegistrationType::Pointer registration = RegistrationType::New();
 
     using ParameterObjectType = elastix::ParameterObject;
-    const auto parameterObject = ParameterObjectType::New();
-    std::stringstream   ss;
+    const auto        parameterObject = ParameterObjectType::New();
+    std::stringstream ss;
     ss << parameterObjectJson.Get().rdbuf();
     const std::string errorMessage = itk::wasm::ReadParameterObject(ss.str(), parameterObject);
     if (!errorMessage.empty())
@@ -135,8 +134,8 @@ public:
     else if (!initialTransformParameterObjectOption->empty())
     {
       using ParameterObjectType = elastix::ParameterObject;
-      const auto initialTransformParameterObject = ParameterObjectType::New();
-      std::stringstream   ss;
+      const auto        initialTransformParameterObject = ParameterObjectType::New();
+      std::stringstream ss;
       ss << initialTransformParameterObjectJson.Get().rdbuf();
       const std::string errorMessage = itk::wasm::ReadParameterObject(ss.str(), initialTransformParameterObject);
       if (!errorMessage.empty())
@@ -188,7 +187,7 @@ public:
 
     const auto transformParameterObject = registration->GetTransformParameterObject();
 
-    std::string serialized{};
+    std::string       serialized{};
     const std::string writeErrorMessage = itk::wasm::WriteParameterObject(transformParameterObject, serialized);
     if (!writeErrorMessage.empty())
     {
