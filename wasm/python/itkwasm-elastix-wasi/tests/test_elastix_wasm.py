@@ -17,7 +17,6 @@ def test_elastix_wasm():
 
     test_data_output_dir = Path(__file__).parent.parent.parent.parent / 'test' / 'data' / 'output'
     test_data_output_dir.mkdir(parents=True, exist_ok=True)
-    transform = test_data_output_dir / 'transform.txt'
 
     fixed_filename = 'CT_2D_head_fixed.mha'
     fixed_filepath = Path(__file__).parent.parent.parent.parent / 'test' / 'data' / 'input' / fixed_filename
@@ -27,7 +26,7 @@ def test_elastix_wasm():
     moving_filepath = Path(__file__).parent.parent.parent.parent / 'test' / 'data' / 'input' / moving_filename
     moving_image = imread(moving_filepath)
 
-    result_image, transform_parameter_object = elastix(parameter_object, transform, fixed_image, moving_image)
+    result_image, _transform, _transform_parameter_object = elastix(parameter_object, fixed_image, moving_image)
 
     output_dir = Path(__file__).parent.parent.parent.parent  / 'test' / 'data' / 'output'
     output_dir.mkdir(parents=True, exist_ok=True)

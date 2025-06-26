@@ -3,7 +3,7 @@
 import {
   JsonCompatible,
   Image,
-  BinaryFile,
+  TransformList,
   InterfaceTypes,
   PipelineOutput,
   PipelineInput,
@@ -22,20 +22,18 @@ import { getDefaultWebWorker } from './default-web-worker.js'
  * Rigid and non-rigid registration of images.
  *
  * @param {JsonCompatible} parameterObject - Elastix parameter object representation
- * @param {string} transform - Fixed-to-moving transform file
  * @param {ElastixOptions} options - options object
  *
  * @returns {Promise<ElastixResult>} - result object
  */
 async function elastix(
   parameterObject: JsonCompatible,
-  transform: string,
   options: ElastixOptions = {}
 ) : Promise<ElastixResult> {
 
   const desiredOutputs: Array<PipelineOutput> = [
     { type: InterfaceTypes.Image },
-    { type: InterfaceTypes.BinaryFile, data: { path: transform, data: new Uint8Array() }},
+    { type: InterfaceTypes.TransformList },
     { type: InterfaceTypes.JsonCompatible },
   ]
 
@@ -52,7 +50,7 @@ async function elastix(
   const resultName = '0'
   args.push(resultName)
 
-  const transformName = transform
+  const transformName = '1'
   args.push(transformName)
 
   const transformParameterObjectName = '2'
@@ -73,17 +71,9 @@ async function elastix(
 
   }
   if (options.initialTransform) {
-    const initialTransform = options.initialTransform
-    let initialTransformFile = initialTransform
-    if (initialTransform instanceof File) {
-      const initialTransformBuffer = await initialTransform.arrayBuffer()
-      initialTransformFile = { path: initialTransform.name, data: new Uint8Array(initialTransformBuffer) }
-    }
-    args.push('--initial-transform')
-
-    inputs.push({ type: InterfaceTypes.BinaryFile, data: initialTransformFile as BinaryFile })
-    const name = initialTransform instanceof File ? initialTransform.name : (initialTransform as BinaryFile).path
-    args.push(name)
+    const inputCountString = inputs.length.toString()
+    inputs.push({ type: InterfaceTypes.TransformList, data: options.initialTransform as TransformList })
+    args.push('--initial-transform', inputCountString)
 
   }
   if (options.initialTransformParameterObject) {
@@ -112,7 +102,7 @@ async function elastix(
   const result = {
     webWorker: usedWebWorker as Worker,
     result: outputs[0]?.data as Image,
-    transform: outputs[1]?.data as BinaryFile,
+    transform: outputs[1]?.data as TransformList,
     transformParameterObject: outputs[2]?.data as JsonCompatible,
   }
   return result
