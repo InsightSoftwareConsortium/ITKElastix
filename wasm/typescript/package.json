@@ -1,6 +1,6 @@
 {
   "name": "@itk-wasm/elastix",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A toolbox for rigid and nonrigid registration of images.",
   "type": "module",
   "module": "./dist/index.js",
@@ -34,7 +34,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "itk-wasm": "^1.0.0-b.188"
+    "itk-wasm": "^1.0.0-b.192"
   },
   "devDependencies": {
     "@itk-wasm/demo-app": "^0.2.0",

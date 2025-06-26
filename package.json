@@ -8,7 +8,7 @@
   "itk-wasm": {
     "description": "A toolbox for rigid and nonrigid registration of images.",
     "repository": "https://github.com/InsightSoftwareConsortium/ITKElastix",
-    "package-version": "1.0.0",
+    "package-version": "1.0.1",
     "test-data-hash": "bafybeie7oon27usqjgrtxodzkbd4i6sanfwobv26c3tf7adhxop46o2f3q",
     "test-data-urls": [
       "https://data.kitware.com/api/v1/file/65196dede7f0366cdfec199e/download",
@@ -25,6 +25,6 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@itk-wasm/dam": "^1.1.1",
-    "itk-wasm": "^1.0.0-b.188"
+    "itk-wasm": "^1.0.0-b.192"
   }
 }
