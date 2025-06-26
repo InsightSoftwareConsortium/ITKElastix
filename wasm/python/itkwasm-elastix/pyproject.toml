@@ -33,7 +33,7 @@ keywords = [
 
 requires-python = ">=3.9"
 dependencies = [
-    "itkwasm >= 1.0.b191",
+    "itkwasm >= 1.0.b192",
     "itkwasm-elastix-wasi; sys_platform != \"emscripten\"",
     "itkwasm-elastix-emscripten; sys_platform == \"emscripten\"",
 
