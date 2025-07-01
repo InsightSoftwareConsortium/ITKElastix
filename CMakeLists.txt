@@ -59,11 +59,9 @@ if(WASI OR EMSCRIPTEN)
   option(ELASTIX_NO_INSTALL_EXECUTABLES "Do not install executables" ON)
 endif()
 
-# set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-set(elastix_GIT_REPOSITORY "https://github.com/thewtex/elastix.git")
-# Upstream + wasm patches
-# Branch: ITKElastix-2025-04-08-fb1daee6eec
-set(elastix_GIT_TAG "7552d0b76820f51fe0c7c156198847603c5ada70")
+set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
+# Upstream main branch, 2025-07-16
+set(elastix_GIT_TAG "8c4f3470ccc6cee999d7194abc3265f0f7fcaa88")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
