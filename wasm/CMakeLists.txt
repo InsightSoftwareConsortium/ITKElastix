@@ -122,5 +122,5 @@ add_test(NAME write-parameter-files-multiple-test
 add_test(NAME default-parameter-map-test
   COMMAND default-parameter-map
     affine
-    ${CMAKE_CURRENT_BINARY_DIR}/affine_default_parameters.json
+    ${CMAKE_CURRENT_BINARY_DIR}/affine_default_parameters.toml
   )
