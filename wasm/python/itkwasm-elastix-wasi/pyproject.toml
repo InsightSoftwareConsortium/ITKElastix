@@ -32,7 +32,7 @@ keywords = [
 
 requires-python = ">=3.9"
 dependencies = [
-    "itkwasm >= 1.0.b192",
+    "itkwasm >= 1.0.b195",
     "importlib_resources",
 ]
 

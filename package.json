@@ -14,8 +14,8 @@
       "https://data.kitware.com/api/v1/file/65196dede7f0366cdfec199e/download",
       "https://bafybeid5dvqt2z4uhyal7fws5sai7vc6vgrlicknr5tdqi2phx5q7vl3qm.ipfs.w3s.link/ipfs/bafybeid5dvqt2z4uhyal7fws5sai7vc6vgrlicknr5tdqi2phx5q7vl3qm/data.tar.gz"
     ],
-    "emscripten-docker-image": "quay.io/itkwasm/emscripten:20250319-964fe20b",
-    "wasi-docker-image": "quay.io/itkwasm/wasi:20250319-964fe20b",
+    "emscripten-docker-image": "docker.io/itkwasm/emscripten:20250902-fb36664b",
+    "wasi-docker-image": "docker.io/itkwasm/wasi:20250902-fb36664b",
     "typescript-package-name": "@itk-wasm/elastix",
     "typescript-output-dir": "wasm/typescript",
     "python-package-name": "itkwasm-elastix",
@@ -25,6 +25,6 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@itk-wasm/dam": "^1.1.1",
-    "itk-wasm": "^1.0.0-b.192"
+    "itk-wasm": "^1.0.0-b.196"
   }
 }
