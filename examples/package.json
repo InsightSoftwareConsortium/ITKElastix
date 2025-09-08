@@ -24,7 +24,7 @@
   "homepage": "https://github.com/InsightSoftwareConsortium/ITKElastix#readme",
   "dependencies": {
     "@itk-wasm/downsample": "^1.6.0",
-    "@itk-wasm/elastix": "^1.0.0",
+    "@itk-wasm/elastix": "^1.0.2",
     "@itk-wasm/image-io": "^1.6.0"
   }
 }
