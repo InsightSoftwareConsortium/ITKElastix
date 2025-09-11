@@ -31,8 +31,10 @@ jobs:
       with:
         node-version: '22'
         cache: pnpm
+
     - name: Install Playwright Browsers
-      run: pnpx playwright install --with-deps
+      working_directory: wasm/typescript
+      run: pnpm exec playwright install --with-deps
 
     - name: Build Typescript
       run: |
