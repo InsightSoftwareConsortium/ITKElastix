@@ -46,7 +46,7 @@
     "esbuild": "^0.25.0",
     "shx": "^0.3.4",
     "typescript": "^5.5.4",
-    "vite": "^4.5.13",
+    "vite": "^5.4.20",
     "vite-plugin-static-copy": "^0.17.0"
   },
   "repository": {
