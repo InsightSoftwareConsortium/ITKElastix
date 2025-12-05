@@ -14,24 +14,20 @@ from itkwasm.pyodide import (
 from itkwasm import (
     InterfaceTypes,
     Image,
-    BinaryFile,
+    TransformList,
 )
 
 async def elastix_async(
     parameter_object: Any,
-    transform: str,
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
-    initial_transform: Optional[os.PathLike] = None,
+    initial_transform: Optional[TransformList] = None,
     initial_transform_parameter_object: Optional[Any] = None,
-) -> Tuple[Image, Any]:
+) -> Tuple[Image, TransformList, Any]:
     """Rigid and non-rigid registration of images.
 
     :param parameter_object: Elastix parameter object representation
     :type  parameter_object: Any
-
-    :param transform: Fixed-to-moving transform file
-    :type  transform: str
 
     :param fixed: Fixed image
     :type  fixed: Image
@@ -40,13 +36,16 @@ async def elastix_async(
     :type  moving: Image
 
     :param initial_transform: Initial transform to apply before registration
-    :type  initial_transform: os.PathLike
+    :type  initial_transform: TransformList
 
     :param initial_transform_parameter_object: Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform.
     :type  initial_transform_parameter_object: Any
 
     :return: Resampled moving image
     :rtype:  Image
+
+    :return: Fixed-to-moving transform file
+    :rtype:  TransformList
 
     :return: Elastix optimized transform parameter object representation
     :rtype:  Any
@@ -60,11 +59,11 @@ async def elastix_async(
     if moving is not None:
         kwargs["moving"] = to_js(moving)
     if initial_transform is not None:
-        kwargs["initialTransform"] = to_js(BinaryFile(initial_transform))
+        kwargs["initialTransform"] = to_js(initial_transform)
     if initial_transform_parameter_object is not None:
         kwargs["initialTransformParameterObject"] = to_js(initial_transform_parameter_object)
 
-    outputs = await js_module.elastix(to_js(parameter_object), to_js(transform), webWorker=web_worker, noCopy=True, **kwargs)
+    outputs = await js_module.elastix(to_js(parameter_object), webWorker=web_worker, noCopy=True, **kwargs)
 
     output_web_worker = None
     output_list = []
