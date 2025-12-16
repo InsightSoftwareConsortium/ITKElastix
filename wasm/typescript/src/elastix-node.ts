@@ -3,6 +3,7 @@
 import {
   JsonCompatible,
   Image,
+  TransformList,
   InterfaceTypes,
   PipelineOutput,
   PipelineInput,
@@ -19,21 +20,18 @@ import { fileURLToPath } from 'url'
  * Rigid and non-rigid registration of images.
  *
  * @param {JsonCompatible} parameterObject - Elastix parameter object representation
- * @param {string} transform - Fixed-to-moving transform file
  * @param {ElastixNodeOptions} options - options object
  *
  * @returns {Promise<ElastixNodeResult>} - result object
  */
 async function elastixNode(
   parameterObject: JsonCompatible,
-  transform: string,
   options: ElastixNodeOptions = {}
 ) : Promise<ElastixNodeResult> {
 
-  const mountDirs: Set<string> = new Set()
-
   const desiredOutputs: Array<PipelineOutput> = [
     { type: InterfaceTypes.Image },
+    { type: InterfaceTypes.TransformList },
     { type: InterfaceTypes.JsonCompatible },
   ]
 
@@ -50,11 +48,10 @@ async function elastixNode(
   const resultName = '0'
   args.push(resultName)
 
-  const transformName = transform
+  const transformName = '1'
   args.push(transformName)
-  mountDirs.add(path.dirname(transformName))
 
-  const transformParameterObjectName = '1'
+  const transformParameterObjectName = '2'
   args.push(transformParameterObjectName)
 
   // Options
@@ -72,12 +69,9 @@ async function elastixNode(
 
   }
   if (options.initialTransform) {
-    const initialTransform = options.initialTransform
-    mountDirs.add(path.dirname(initialTransform as string))
-    args.push('--initial-transform')
-
-    const name = initialTransform as string
-    args.push(name)
+    const inputCountString = inputs.length.toString()
+    inputs.push({ type: InterfaceTypes.TransformList, data: options.initialTransform as TransformList })
+    args.push('--initial-transform', inputCountString)
 
   }
   if (options.initialTransformParameterObject) {
@@ -93,14 +87,15 @@ async function elastixNode(
     returnValue,
     stderr,
     outputs
-  } = await runPipelineNode(pipelinePath, args, desiredOutputs, inputs, mountDirs)
+  } = await runPipelineNode(pipelinePath, args, desiredOutputs, inputs)
   if (returnValue !== 0 && stderr !== "") {
     throw new Error(stderr)
   }
 
   const result = {
     result: outputs[0]?.data as Image,
-    transformParameterObject: outputs[1]?.data as JsonCompatible,
+    transform: outputs[1]?.data as TransformList,
+    transformParameterObject: outputs[2]?.data as JsonCompatible,
   }
   return result
 }
