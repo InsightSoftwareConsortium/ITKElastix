@@ -18,10 +18,7 @@
 #include "elxParameterObject.h"
 #include "itkPipeline.h"
 #include "itkOutputTextStream.h"
-
-#include "rapidjson/document.h"
-#include "rapidjson/prettywriter.h"
-#include "rapidjson/stringbuffer.h"
+#include "Install/elxConversion.h"
 
 int
 main(int argc, char * argv[])
@@ -44,10 +41,10 @@ main(int argc, char * argv[])
                       finalGridSpacingInPhysicalUnits,
                       "Final grid spacing in physical units for bspline transforms.");
 
-  itk::wasm::OutputTextStream parameterMapJson;
-  pipeline.add_option("parameter-map", parameterMapJson, "Elastix parameter map representation")
+  itk::wasm::OutputTextStream outputTextStream;
+  pipeline.add_option("parameter-map", outputTextStream, "Elastix parameter map representation")
     ->required()
-    ->type_name("OUTPUT_JSON");
+    ->type_name("OUTPUT_TEXT_STREAM");
 
   ITK_WASM_PARSE(pipeline);
 
@@ -55,27 +52,7 @@ main(int argc, char * argv[])
   auto parameterMap =
     ParameterObjectType::GetDefaultParameterMap(transformName, numberOfResolutions, finalGridSpacingInPhysicalUnits);
 
-  rapidjson::Document document;
-  document.SetObject();
-  rapidjson::Document::AllocatorType & allocator = document.GetAllocator();
-
-  for (const auto & parameter : parameterMap)
-  {
-    const auto &     key = parameter.first;
-    const auto &     value = parameter.second;
-    rapidjson::Value valueJson(rapidjson::kArrayType);
-    for (const auto & valueElement : value)
-    {
-      valueJson.PushBack(rapidjson::Value(valueElement.c_str(), allocator).Move(), allocator);
-    }
-    document.AddMember(rapidjson::Value(key.c_str(), allocator).Move(), valueJson, allocator);
-  }
-
-  rapidjson::StringBuffer                          buffer;
-  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
-  document.Accept(writer);
-
-  parameterMapJson.Get() << buffer.GetString();
-
+  outputTextStream.Get() << elastix::Conversion::ParameterMapToString(parameterMap,
+                                                                      elastix::ParameterMapStringFormat::Toml);
   return EXIT_SUCCESS;
 }
