@@ -60,8 +60,8 @@ if(WASI OR EMSCRIPTEN)
 endif()
 
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-# Upstream main branch, 2025-07-16
-set(elastix_GIT_TAG "8c4f3470ccc6cee999d7194abc3265f0f7fcaa88")
+# Upstream tag 5.3.0, 2026-02-03
+set(elastix_GIT_TAG "e2ed0c367e1907af0e932ea2059e856c5203c0f7")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
