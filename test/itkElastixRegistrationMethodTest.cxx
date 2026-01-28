@@ -76,6 +76,33 @@ itkElastixRegistrationMethodTest(int argc, char * argv[])
   using FilterType = itk::ElastixRegistrationMethod<ImageType, ImageType>;
   FilterType::Pointer filter = FilterType::New();
 
+  // Adjust the default parameter object in order to have the values for "GridSpacingSchedule" from before
+  // pull request https://github.com/SuperElastix/elastix/pull/1361
+  // commit https://github.com/SuperElastix/elastix/commit/6f031a56718344543527de7b7a2453a63831619c
+  // "ENH: Reduce rounding errors "GridSpacingSchedule" GetDefaultParameterMap", Sep 12, 2025
+  if (elx::ParameterObject * const parameterObject = filter->GetParameterObject())
+  {
+    const unsigned int numberOfParameterMaps{ parameterObject->GetNumberOfParameterMaps() };
+    const std::string  gridSpacingScheduleKey = "GridSpacingSchedule";
+
+    for (unsigned int i{}; i < numberOfParameterMaps; ++i)
+    {
+      if (parameterObject->HasParameter(i, gridSpacingScheduleKey))
+      {
+        const std::vector<std::string> & gridSpacingSchedule = parameterObject->GetParameter(i, gridSpacingScheduleKey);
+
+        if (gridSpacingSchedule.size() == 4 && gridSpacingSchedule[1] == "2" && gridSpacingSchedule.back() == "1")
+        {
+          // Assuming the parameter values are the new default values for "GridSpacingSchedule", for 4 resolutions:
+          //   { "2.8284271247461903", "2", "1.4142135623730951", "1" }
+          // Replace them with the old default values:
+          parameterObject->SetParameter(
+            i, gridSpacingScheduleKey, std::vector<std::string>{ "2.803221", "1.988100", "1.410000", "1.000000" });
+        }
+      }
+    }
+  }
+
   using ReaderType = itk::ImageFileReader<ImageType>;
   ReaderType::Pointer fixedImageReader = ReaderType::New();
   fixedImageReader->SetFileName(fixedImageFileName);
