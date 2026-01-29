@@ -19,11 +19,13 @@
 #include "itkPipeline.h"
 #include "itkInputTextStream.h"
 
-#include "rapidjson/document.h"
-#include "rapidjson/prettywriter.h"
-#include "rapidjson/stringbuffer.h"
-
 #include <sstream>
+
+#include "itkElastixWasmParameterObject.h"
+
+#include "glaze/glaze.hpp"
+
+#include "itkNumberToString.h"
 
 int
 main(int argc, char * argv[])
@@ -47,31 +49,60 @@ main(int argc, char * argv[])
 
   ITK_WASM_PARSE(pipeline);
 
-  rapidjson::Document document;
-  std::stringstream   ss;
+  std::stringstream ss;
   ss << parameterObjectJson.Get().rdbuf();
-  document.Parse(ss.str().c_str());
+  itk::wasm::ParameterMapVector wasmParameterMaps;
+  auto                          errorCode = glz::read_json<itk::wasm::ParameterMapVector>(wasmParameterMaps, ss.str());
+  if (errorCode)
+  {
+    const std::string errorMessage = glz::format_error(errorCode, ss.str());
+    std::cerr << "Error reading parameter object JSON: " << errorMessage << std::endl;
+    return EXIT_FAILURE;
+  }
 
   using ParameterObjectType = elastix::ParameterObject;
-  const auto numParameterMaps = document.Size();
-  using ParameterMapType = std::map<std::string, std::vector<std::string>>;
-  std::vector<ParameterMapType> parameterMaps;
-  for (unsigned int i = 0; i < numParameterMaps; ++i)
+  const auto                                  numParameterMaps = wasmParameterMaps.size();
+  ParameterObjectType::ParameterMapVectorType parameterMaps;
+  parameterMaps.reserve(numParameterMaps);
+  for (const auto wasmParameterMap : wasmParameterMaps)
   {
-    const auto &     parameterMapJson = document[i];
-    ParameterMapType parameterMap;
-    for (auto it = parameterMapJson.MemberBegin(); it != parameterMapJson.MemberEnd(); ++it)
+    ParameterObjectType::ParameterMapType parameterMap;
+    for (const auto & parameter : wasmParameterMap)
     {
-      const auto &             key = it->name.GetString();
-      const auto &             valueJson = it->value;
-      std::vector<std::string> value;
-      for (auto it2 = valueJson.Begin(); it2 != valueJson.End(); ++it2)
+      ParameterObjectType::ParameterValueVectorType parameterValues;
+      for (const auto & value : parameter.second)
       {
-        const auto & valueElement = it2->GetString();
-        value.push_back(valueElement);
+        if (value.index() == 0)
+        {
+          const auto & valueString = std::get<std::string>(value);
+          parameterValues.push_back(valueString);
+        }
+        else if (value.index() == 1)
+        {
+          const auto & valueBool = std::get<bool>(value);
+          if (valueBool)
+          {
+            parameterValues.push_back("true");
+          }
+          else
+          {
+            parameterValues.push_back("false");
+          }
+        }
+        else if (value.index() == 2)
+        {
+          const auto & valueInt = std::get<int64_t>(value);
+          parameterValues.push_back(itk::ConvertNumberToString(valueInt));
+        }
+        else if (value.index() == 3)
+        {
+          const auto & valueDouble = std::get<double>(value);
+          parameterValues.push_back(itk::ConvertNumberToString(valueDouble));
+        }
       }
-      parameterMap[key] = value;
+      parameterMap[parameter.first] = parameterValues;
     }
+
     parameterMaps.push_back(parameterMap);
   }
 

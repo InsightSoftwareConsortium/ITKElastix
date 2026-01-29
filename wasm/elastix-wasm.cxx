@@ -22,20 +22,19 @@
 #include "itkInputTextStream.h"
 #include "itkOutputTextStream.h"
 #include "itkSupportInputImageTypes.h"
+#include "itkOutputTransform.h"
+#include "itkInputTransform.h"
 
 #include "itkImage.h"
-#include "itkTransformFileWriter.h"
-#include "itkTransformFileReader.h"
 #include "itkIdentityTransform.h"
 #include "itkCompositeTransform.h"
 #include "itkCompositeTransformIOHelper.h"
 #include "itkCastImageFilter.h"
 
-#include "rapidjson/document.h"
-#include "rapidjson/prettywriter.h"
-#include "rapidjson/stringbuffer.h"
-
 #include <sstream>
+
+#include "itkElastixWasmParameterObject.h"
+#include "glaze/glaze.hpp"
 
 template <typename TImage>
 class PipelineFunctor
@@ -46,6 +45,11 @@ public:
   {
     using ImageType = TImage;
     using ParametersValueType = double;
+    using FloatImageType = itk::Image<float, ImageType::ImageDimension>;
+    using RegistrationType = itk::ElastixRegistrationMethod<FloatImageType, FloatImageType>;
+    using TransformType = typename RegistrationType::TransformType;
+    using CompositeTransformType = itk::CompositeTransform<ParametersValueType, ImageType::ImageDimension>;
+    using CompositeHelperType = itk::CompositeTransformIOHelperTemplate<ParametersValueType>;
 
     using InputImageType = itk::wasm::InputImage<ImageType>;
     InputImageType fixedImage;
@@ -54,10 +58,10 @@ public:
     InputImageType movingImage;
     pipeline.add_option("-m,--moving", movingImage, "Moving image")->type_name("INPUT_IMAGE");
 
-    std::string initialTransformFile;
-    pipeline
-      .add_option("-i,--initial-transform", initialTransformFile, "Initial transform to apply before registration")
-      ->type_name("INPUT_BINARY_FILE");
+    using InputTransformType = itk::wasm::InputTransform<CompositeTransformType>;
+    InputTransformType initialTransform;
+    pipeline.add_option("-i,--initial-transform", initialTransform, "Initial transform to apply before registration")
+      ->type_name("INPUT_TRANSFORM");
 
     itk::wasm::InputTextStream initialTransformParameterObjectJson;
     auto                       initialTransformParameterObjectOption =
@@ -77,10 +81,11 @@ public:
     OutputImageType resultImage;
     pipeline.add_option("result", resultImage, "Resampled moving image")->required()->type_name("OUTPUT_IMAGE");
 
-    std::string outputTransform;
+    using OutputTransformType = itk::wasm::OutputTransform<TransformType>;
+    OutputTransformType outputTransform;
     pipeline.add_option("transform", outputTransform, "Fixed-to-moving transform file")
       ->required()
-      ->type_name("OUTPUT_BINARY_FILE");
+      ->type_name("OUTPUT_TRANSFORM");
 
     itk::wasm::OutputTextStream transformParameterObjectJson;
     pipeline
@@ -92,7 +97,6 @@ public:
 
     ITK_WASM_PARSE(pipeline);
 
-    using FloatImageType = itk::Image<float, ImageType::ImageDimension>;
     using CasterType = itk::CastImageFilter<ImageType, FloatImageType>;
 
     typename CasterType::Pointer fixedCaster = CasterType::New();
@@ -103,36 +107,17 @@ public:
     movingCaster->SetInput(movingImage.Get());
     ITK_WASM_CATCH_EXCEPTION(pipeline, movingCaster->Update());
 
-    using RegistrationType = itk::ElastixRegistrationMethod<FloatImageType, FloatImageType>;
     typename RegistrationType::Pointer registration = RegistrationType::New();
 
-    rapidjson::Document document;
-    std::stringstream   ss;
-    ss << parameterObjectJson.Get().rdbuf();
-    document.Parse(ss.str().c_str());
-
     using ParameterObjectType = elastix::ParameterObject;
-    const auto parameterObject = ParameterObjectType::New();
-    const auto numParameterMaps = document.Size();
-    using ParameterMapType = std::map<std::string, std::vector<std::string>>;
-    std::vector<ParameterMapType> parameterMaps;
-    for (unsigned int i = 0; i < numParameterMaps; ++i)
+    const auto        parameterObject = ParameterObjectType::New();
+    std::stringstream ss;
+    ss << parameterObjectJson.Get().rdbuf();
+    const std::string errorMessage = itk::wasm::ReadParameterObject(ss.str(), parameterObject);
+    if (!errorMessage.empty())
     {
-      const auto &     parameterMapJson = document[i];
-      ParameterMapType parameterMap;
-      for (auto it = parameterMapJson.MemberBegin(); it != parameterMapJson.MemberEnd(); ++it)
-      {
-        const auto &             key = it->name.GetString();
-        const auto &             valueJson = it->value;
-        std::vector<std::string> value;
-        for (auto it2 = valueJson.Begin(); it2 != valueJson.End(); ++it2)
-        {
-          const auto & valueElement = it2->GetString();
-          value.push_back(valueElement);
-        }
-        parameterMap[key] = value;
-      }
-      parameterObject->AddParameterMap(parameterMap);
+      std::cerr << "Error reading parameter object JSON: " << errorMessage << std::endl;
+      return EXIT_FAILURE;
     }
 
     auto fixed = const_cast<ImageType *>(fixedImage.Get());
@@ -141,69 +126,22 @@ public:
     registration->SetMovingImage(movingCaster->GetOutput());
     registration->SetParameterObject(parameterObject);
 
-    typename RegistrationType::TransformType::Pointer initialTransform;
-    using CompositeTransformType = itk::CompositeTransform<ParametersValueType, ImageType::ImageDimension>;
-    using CompositeHelperType = itk::CompositeTransformIOHelperTemplate<ParametersValueType>;
-    using TransformReaderType = itk::TransformFileReaderTemplate<ParametersValueType>;
-    typename TransformReaderType::Pointer transformReader = TransformReaderType::New();
-    if (!initialTransformFile.empty())
+    typename RegistrationType::TransformType::Pointer externalInitialTransform;
+    if (initialTransform.Get())
     {
-      transformReader->SetFileName(initialTransformFile);
-      ITK_WASM_CATCH_EXCEPTION(pipeline, transformReader->Update());
-
-      if (transformReader->GetTransformList()->size() == 1)
-      {
-        auto firstTransform = transformReader->GetModifiableTransformList()->front();
-        if (!strcmp(firstTransform->GetNameOfClass(), "CompositeTransform"))
-        {
-          initialTransform = static_cast<CompositeTransformType *>(firstTransform.GetPointer());
-          registration->SetExternalInitialTransform(initialTransform);
-        }
-        // We could add support for other initial transform types here
-        else
-        {
-          std::cerr << "Initial transform is not a composite transform, which is not currently supported." << std::endl;
-          return EXIT_FAILURE;
-        }
-      }
-      else if (transformReader->GetTransformList()->size() > 1)
-      {
-        CompositeHelperType                      helper;
-        typename CompositeTransformType::Pointer compositeTransform = CompositeTransformType::New();
-        helper.SetTransformList(compositeTransform, *transformReader->GetModifiableTransformList());
-        initialTransform = compositeTransform;
-        registration->SetExternalInitialTransform(initialTransform);
-      }
+      registration->SetExternalInitialTransform(const_cast<CompositeTransformType *>(initialTransform.Get()));
     }
     else if (!initialTransformParameterObjectOption->empty())
     {
-      rapidjson::Document initialDocument;
-      std::stringstream   ss;
-      ss << initialTransformParameterObjectJson.Get().rdbuf();
-      initialDocument.Parse(ss.str().c_str());
-
       using ParameterObjectType = elastix::ParameterObject;
-      const auto initialTransformParameterObject = ParameterObjectType::New();
-      const auto numTransformParameterMaps = initialDocument.Size();
-      using ParameterMapType = std::map<std::string, std::vector<std::string>>;
-      std::vector<ParameterMapType> transformParameterMaps;
-      for (unsigned int i = 0; i < numTransformParameterMaps; ++i)
+      const auto        initialTransformParameterObject = ParameterObjectType::New();
+      std::stringstream ss;
+      ss << initialTransformParameterObjectJson.Get().rdbuf();
+      const std::string errorMessage = itk::wasm::ReadParameterObject(ss.str(), initialTransformParameterObject);
+      if (!errorMessage.empty())
       {
-        const auto &     parameterMapJson = initialDocument[i];
-        ParameterMapType parameterMap;
-        for (auto it = parameterMapJson.MemberBegin(); it != parameterMapJson.MemberEnd(); ++it)
-        {
-          const auto &             key = it->name.GetString();
-          const auto &             valueJson = it->value;
-          std::vector<std::string> value;
-          for (auto it2 = valueJson.Begin(); it2 != valueJson.End(); ++it2)
-          {
-            const auto & valueElement = it2->GetString();
-            value.push_back(valueElement);
-          }
-          parameterMap[key] = value;
-        }
-        initialTransformParameterObject->AddParameterMap(parameterMap);
+        std::cerr << "Error reading transform parameter object JSON: " << errorMessage << std::endl;
+        return EXIT_FAILURE;
       }
 
       registration->SetInitialTransformParameterObject(initialTransformParameterObject);
@@ -220,15 +158,11 @@ public:
     typename ImageType::ConstPointer result = resultCaster->GetOutput();
     resultImage.Set(result);
 
-    const auto writer = itk::TransformFileWriter::New();
-
     if (registration->GetNumberOfTransforms() == 0)
     {
       using IdentityTransformType = itk::IdentityTransform<double, ImageType::ImageDimension>;
       typename IdentityTransformType::ConstPointer identity = IdentityTransformType::New();
-      writer->SetInput(identity);
-      writer->SetFileName(outputTransform);
-      ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
+      outputTransform.Set(identity);
     }
     // Reasonable to enable once we support injecting as an initial transform
     // else if (!initialTransform.GetPointer() && registration->GetNumberOfTransforms() == 1)
@@ -248,40 +182,20 @@ public:
         static_cast<CompositeTransformType *>(registration->ConvertToItkTransform(*combinationTransform).GetPointer());
       registeredCompositeTransform->FlattenTransformQueue();
       registeredCompositeTransform->SetAllTransformsToOptimizeOff();
-      writer->SetInput(registeredCompositeTransform);
-      writer->SetFileName(outputTransform);
-      ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
+      outputTransform.Set(registeredCompositeTransform);
     }
 
-    const auto          transformParameterObject = registration->GetTransformParameterObject();
-    rapidjson::Document transformDocument;
-    transformDocument.SetArray();
-    rapidjson::Document::AllocatorType & allocator = transformDocument.GetAllocator();
+    const auto transformParameterObject = registration->GetTransformParameterObject();
 
-    const auto numTransformParameterMaps = transformParameterObject->GetNumberOfParameterMaps();
-    for (unsigned int i = 0; i < numTransformParameterMaps; ++i)
+    std::string       serialized{};
+    const std::string writeErrorMessage = itk::wasm::WriteParameterObject(transformParameterObject, serialized);
+    if (!writeErrorMessage.empty())
     {
-      const auto &     parameterMap = transformParameterObject->GetParameterMap(i);
-      rapidjson::Value parameterMapJson(rapidjson::kObjectType);
-      for (const auto & parameter : parameterMap)
-      {
-        const auto &     key = parameter.first;
-        const auto &     value = parameter.second;
-        rapidjson::Value valueJson(rapidjson::kArrayType);
-        for (const auto & valueElement : value)
-        {
-          valueJson.PushBack(rapidjson::Value(valueElement.c_str(), allocator).Move(), allocator);
-        }
-        parameterMapJson.AddMember(rapidjson::Value(key.c_str(), allocator).Move(), valueJson, allocator);
-      }
-      transformDocument.PushBack(parameterMapJson, allocator);
+      std::cerr << "Error serializing parameter object: " << writeErrorMessage << std::endl;
+      return EXIT_FAILURE;
     }
 
-    rapidjson::StringBuffer                          buffer;
-    rapidjson::PrettyWriter<rapidjson::StringBuffer> transformParamWriter(buffer);
-    transformDocument.Accept(transformParamWriter);
-
-    transformParameterObjectJson.Get() << buffer.GetString();
+    transformParameterObjectJson.Get() << serialized;
 
     return EXIT_SUCCESS;
   }

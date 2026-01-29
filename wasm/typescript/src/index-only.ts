@@ -35,6 +35,16 @@ import readParameterFiles from './read-parameter-files.js'
 export { readParameterFiles }
 
 
+import TransformixResult from './transformix-result.js'
+export type { TransformixResult }
+
+import TransformixOptions from './transformix-options.js'
+export type { TransformixOptions }
+
+import transformix from './transformix.js'
+export { transformix }
+
+
 import WriteParameterFilesResult from './write-parameter-files-result.js'
 export type { WriteParameterFilesResult }
 

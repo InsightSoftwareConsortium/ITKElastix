@@ -1,21 +1,21 @@
 {
   "name": "itk-elastix-build",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "npm scripts to generate itk-wasm artifacts.",
   "private": true,
-  "packageManager": "pnpm@10.7.1",
+  "packageManager": "pnpm@10.12.3",
   "type": "module",
   "itk-wasm": {
     "description": "A toolbox for rigid and nonrigid registration of images.",
     "repository": "https://github.com/InsightSoftwareConsortium/ITKElastix",
-    "package-version": "0.4.0",
+    "package-version": "1.0.2",
     "test-data-hash": "bafybeie7oon27usqjgrtxodzkbd4i6sanfwobv26c3tf7adhxop46o2f3q",
     "test-data-urls": [
       "https://data.kitware.com/api/v1/file/65196dede7f0366cdfec199e/download",
       "https://bafybeid5dvqt2z4uhyal7fws5sai7vc6vgrlicknr5tdqi2phx5q7vl3qm.ipfs.w3s.link/ipfs/bafybeid5dvqt2z4uhyal7fws5sai7vc6vgrlicknr5tdqi2phx5q7vl3qm/data.tar.gz"
     ],
-    "emscripten-docker-image": "itkwasm/emscripten:20250319-964fe20b",
-    "wasi-docker-image": "itkwasm/wasi:20250319-964fe20b",
+    "emscripten-docker-image": "docker.io/itkwasm/emscripten:20250902-fb36664b",
+    "wasi-docker-image": "docker.io/itkwasm/wasi:20250902-fb36664b",
     "typescript-package-name": "@itk-wasm/elastix",
     "typescript-output-dir": "wasm/typescript",
     "python-package-name": "itkwasm-elastix",
@@ -25,6 +25,6 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@itk-wasm/dam": "^1.1.1",
-    "itk-wasm": "^1.0.0-b.188"
+    "itk-wasm": "^1.0.0-b.196"
   }
 }

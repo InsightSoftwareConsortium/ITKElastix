@@ -32,6 +32,16 @@ import readParameterFilesNode from './read-parameter-files-node.js'
 export { readParameterFilesNode }
 
 
+import TransformixNodeResult from './transformix-node-result.js'
+export type { TransformixNodeResult }
+
+import TransformixNodeOptions from './transformix-node-options.js'
+export type { TransformixNodeOptions }
+
+import transformixNode from './transformix-node.js'
+export { transformixNode }
+
+
 import WriteParameterFilesNodeResult from './write-parameter-files-node-result.js'
 export type { WriteParameterFilesNodeResult }
 

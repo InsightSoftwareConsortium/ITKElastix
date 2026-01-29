@@ -19,9 +19,9 @@
 #include "itkPipeline.h"
 #include "itkOutputTextStream.h"
 
-#include "rapidjson/document.h"
-#include "rapidjson/prettywriter.h"
-#include "rapidjson/stringbuffer.h"
+#include "itkElastixWasmParameterObject.h"
+
+#include "glaze/glaze.hpp"
 
 int
 main(int argc, char * argv[])
@@ -45,34 +45,39 @@ main(int argc, char * argv[])
   auto parameterObject = ParameterObjectType::New();
   ITK_WASM_CATCH_EXCEPTION(pipeline, parameterObject->ReadParameterFiles(parameterFiles));
 
-  rapidjson::Document document;
-  document.SetArray();
-  rapidjson::Document::AllocatorType & allocator = document.GetAllocator();
+  itk::wasm::ParameterMapVector parameterMaps;
 
   const auto numParameterMaps = parameterObject->GetNumberOfParameterMaps();
   for (unsigned int i = 0; i < numParameterMaps; ++i)
   {
-    const auto &     parameterMap = parameterObject->GetParameterMap(i);
-    rapidjson::Value parameterMapJson(rapidjson::kObjectType);
+    const auto &            parameterMap = parameterObject->GetParameterMap(i);
+    itk::wasm::ParameterMap wasmParameterMap;
     for (const auto & parameter : parameterMap)
     {
-      const auto &     key = parameter.first;
-      const auto &     value = parameter.second;
-      rapidjson::Value valueJson(rapidjson::kArrayType);
-      for (const auto & valueElement : value)
+      const auto & parameterValueVector = parameter.second;
+
+      auto & wasmValues = wasmParameterMap[parameter.first];
+      wasmValues.reserve(parameterValueVector.size());
+
+      // Convert each string into the variant
+      for (const auto & val : parameterValueVector)
       {
-        valueJson.PushBack(rapidjson::Value(valueElement.c_str(), allocator).Move(), allocator);
+        wasmValues.emplace_back(val);
       }
-      parameterMapJson.AddMember(rapidjson::Value(key.c_str(), allocator).Move(), valueJson, allocator);
     }
-    document.PushBack(parameterMapJson, allocator);
+    parameterMaps.push_back(wasmParameterMap);
   }
 
-  rapidjson::StringBuffer                          buffer;
-  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
-  document.Accept(writer);
+  std::string serialized{};
+  auto        errorCode = glz::write<glz::opts{ .prettify = true }>(parameterMaps, serialized);
+  if (errorCode)
+  {
+    const std::string errorMessage = glz::format_error(errorCode, serialized);
+    std::cerr << "Error serializing parameter object: " << errorMessage << std::endl;
+    return EXIT_FAILURE;
+  }
 
-  parameterObjectJson.Get() << buffer.GetString();
+  parameterObjectJson.Get() << serialized;
 
   return EXIT_SUCCESS;
 }

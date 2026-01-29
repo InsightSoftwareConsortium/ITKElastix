@@ -14,24 +14,20 @@ from itkwasm import (
     PipelineInput,
     Pipeline,
     Image,
-    BinaryFile,
+    TransformList,
 )
 
 def elastix(
     parameter_object: Any,
-    transform: str,
     fixed: Optional[Image] = None,
     moving: Optional[Image] = None,
-    initial_transform: Optional[os.PathLike] = None,
+    initial_transform: Optional[TransformList] = None,
     initial_transform_parameter_object: Optional[Any] = None,
-) -> Tuple[Image, Any]:
+) -> Tuple[Image, TransformList, Any]:
     """Rigid and non-rigid registration of images.
 
     :param parameter_object: Elastix parameter object representation
     :type  parameter_object: Any
-
-    :param transform: Fixed-to-moving transform file
-    :type  transform: str
 
     :param fixed: Fixed image
     :type  fixed: Image
@@ -40,13 +36,16 @@ def elastix(
     :type  moving: Image
 
     :param initial_transform: Initial transform to apply before registration
-    :type  initial_transform: os.PathLike
+    :type  initial_transform: TransformList
 
     :param initial_transform_parameter_object: Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform.
     :type  initial_transform_parameter_object: Any
 
     :return: Resampled moving image
     :rtype:  Image
+
+    :return: Fixed-to-moving transform file
+    :rtype:  TransformList
 
     :return: Elastix optimized transform parameter object representation
     :rtype:  Any
@@ -57,7 +56,7 @@ def elastix(
 
     pipeline_outputs: List[PipelineOutput] = [
         PipelineOutput(InterfaceTypes.Image),
-        PipelineOutput(InterfaceTypes.BinaryFile, BinaryFile(PurePosixPath(transform))),
+        PipelineOutput(InterfaceTypes.TransformList),
         PipelineOutput(InterfaceTypes.JsonCompatible),
     ]
 
@@ -72,7 +71,7 @@ def elastix(
     result_name = '0'
     args.append(result_name)
 
-    transform_name = str(PurePosixPath(transform))
+    transform_name = '1'
     args.append(transform_name)
 
     transform_parameter_object_name = '2'
@@ -93,10 +92,10 @@ def elastix(
         input_count += 1
 
     if initial_transform is not None:
-        input_file = str(PurePosixPath(initial_transform))
-        pipeline_inputs.append(PipelineInput(InterfaceTypes.BinaryFile, BinaryFile(initial_transform)))
+        pipeline_inputs.append(PipelineInput(InterfaceTypes.TransformList, initial_transform))
         args.append('--initial-transform')
-        args.append(input_file)
+        args.append(str(input_count))
+        input_count += 1
 
     if initial_transform_parameter_object is not None:
         pipeline_inputs.append(PipelineInput(InterfaceTypes.JsonCompatible, initial_transform_parameter_object))
@@ -109,6 +108,7 @@ def elastix(
 
     result = (
         outputs[0].data,
+        outputs[1].data,
         outputs[2].data,
     )
     return result

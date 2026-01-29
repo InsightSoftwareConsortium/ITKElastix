@@ -5,6 +5,7 @@
 from .default_parameter_map_async import default_parameter_map_async
 from .elastix_async import elastix_async
 from .read_parameter_files_async import read_parameter_files_async
+from .transformix_async import transformix_async
 from .write_parameter_files_async import write_parameter_files_async
 
 from ._version import __version__
