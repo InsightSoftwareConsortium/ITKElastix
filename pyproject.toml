@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "itk-elastix"
-version = "0.23.0"
+version = "0.24.0"
 description = "Provides an ITK Python interface to elastix, a toolbox for rigid and nonrigid registration of images"
 readme = "README.md"
 license = {file = "LICENSE"}
