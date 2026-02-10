@@ -1,4 +1,4 @@
-itk-elastix>=0.23.0
+itk-elastix>=0.24.0
 itkwidgets>=0.32.0
 jupyterlab>=2.2.0
 imageio
