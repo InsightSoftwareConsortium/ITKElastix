@@ -3,7 +3,7 @@ import itk
 import os
 
 
-def _convert_to_parameter_value(value):
+def convert_to_parameter_value(value):
     """Convert a single value to an elastix parameter string.
 
     Handles str, bool, int, and float types.  Note that bool must be
@@ -16,7 +16,7 @@ def _convert_to_parameter_value(value):
     return str(value)
 
 
-def _convert_to_parameter_map(d):
+def convert_to_parameter_map(d):
     """Convert a dict to an elastix-compatible parameter map.
 
     The input dict may have values of type str, bool, int, float,
@@ -28,13 +28,13 @@ def _convert_to_parameter_map(d):
     result = {}
     for key, value in d.items():
         if isinstance(value, (list, tuple)):
-            result[key] = tuple(_convert_to_parameter_value(item) for item in value)
+            result[key] = tuple(convert_to_parameter_value(item) for item in value)
         else:
-            result[key] = (_convert_to_parameter_value(value),)
+            result[key] = (convert_to_parameter_value(value),)
     return result
 
 
-def _dict_to_parameter_object(d):
+def dict_to_parameter_object(d):
     """Create a ParameterObject from a dict or list of dicts.
 
     If *d* is a single dict it is treated as one parameter map.
@@ -46,16 +46,31 @@ def _dict_to_parameter_object(d):
         return d
     parameter_object = itk.ParameterObject.New()
     if isinstance(d, dict):
-        parameter_object.SetParameterMap(_convert_to_parameter_map(d))
+        parameter_object.SetParameterMap(convert_to_parameter_map(d))
     elif isinstance(d, (list, tuple)):
         for i, item in enumerate(d):
             if isinstance(item, dict):
-                item = _convert_to_parameter_map(item)
+                item = convert_to_parameter_map(item)
             if i == 0:
                 parameter_object.SetParameterMap(item)
             else:
                 parameter_object.AddParameterMap(item)
     return parameter_object
+
+
+# Satisfy itk package lazy loading
+def convert_to_parameter_value_init_docstring():
+    pass
+
+
+# Satisfy itk package lazy loading
+def convert_to_parameter_map_init_docstring():
+    pass
+
+
+# Satisfy itk package lazy loading
+def dict_to_parameter_object_init_docstring():
+    pass
 
 
 def _preprocess_parameter_args(args, kwargs, parameter_keys=None):
@@ -72,23 +87,23 @@ def _preprocess_parameter_args(args, kwargs, parameter_keys=None):
     new_args = list(args)
     for i, arg in enumerate(new_args):
         if isinstance(arg, dict):
-            new_args[i] = _dict_to_parameter_object(arg)
+            new_args[i] = dict_to_parameter_object(arg)
         elif (
             isinstance(arg, (list, tuple)) and len(arg) > 0 and isinstance(arg[0], dict)
         ):
-            new_args[i] = _dict_to_parameter_object(arg)
+            new_args[i] = dict_to_parameter_object(arg)
 
     for key in parameter_keys:
         if key in kwargs:
             val = kwargs[key]
             if isinstance(val, dict):
-                kwargs[key] = _dict_to_parameter_object(val)
+                kwargs[key] = dict_to_parameter_object(val)
             elif (
                 isinstance(val, (list, tuple))
                 and len(val) > 0
                 and isinstance(val[0], dict)
             ):
-                kwargs[key] = _dict_to_parameter_object(val)
+                kwargs[key] = dict_to_parameter_object(val)
 
     return tuple(new_args), kwargs
 
