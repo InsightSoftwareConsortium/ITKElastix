@@ -5,6 +5,7 @@ imageio
 ipywidgets>=7.5.1
 ipympl>=0.5.7
 numpy
+ngff-zarr
 torch>=2.0
 monai>=1.3.0
 matplotlib>=3.5.0
