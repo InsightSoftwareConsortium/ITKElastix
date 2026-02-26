@@ -9,7 +9,7 @@ description = "Provides an ITK Python interface to elastix, a toolbox for rigid 
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    { name = "Matthew M. McCormick", email = "matt.mccormick@kitware.com" },
+    { name = "Matthew M. McCormick", email = "matt@fideus.io" },
     { name = "ViktorvdValk", email = "viktorvandervalk@gmail.com" },
     { name = "Niels Dekker", email = "N.Dekker@lumc.nl" },
     { name = "Tom Birdsong" },
