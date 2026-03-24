@@ -12,22 +12,20 @@ on:
 
 jobs:
   cxx:
-    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-cxx.yml@v5.4.5
+    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-cxx.yml@v6.0b02
 
   py-dev:
     if: github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags')
-    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.5
+    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v6.0b02
     with:
-      python3-minor-versions: '["10","11"]'
       test-notebooks: true
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
 
   py-main:
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags')
-    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.5
+    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v6.0b02
     with:
-      python3-minor-versions: '["10","11"]'
       test-notebooks: true
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
