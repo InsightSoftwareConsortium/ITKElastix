@@ -60,8 +60,8 @@ if(WASI OR EMSCRIPTEN)
 endif()
 
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-# Upstream "PERF: Preallocate Parzen PDF values outside of for-each-sample loops", 2026-05-15
-set(elastix_GIT_TAG "77c726adda9bbc12d9996f493ebe73f3e26b6b97")
+# Upstream "COMP: Use itk::Math::MatrixExponential instead of removed vnl_matrix_exp", 2026-06-23
+set(elastix_GIT_TAG "b554847140dee197d0a06c37203025d9dcc50936")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
