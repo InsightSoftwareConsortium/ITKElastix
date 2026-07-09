@@ -60,8 +60,8 @@ if(WASI OR EMSCRIPTEN)
 endif()
 
 set(elastix_GIT_REPOSITORY "https://github.com/SuperElastix/elastix.git")
-# Upstream "COMP: Use itk::Math::MatrixExponential instead of removed vnl_matrix_exp", 2026-06-23
-set(elastix_GIT_TAG "b554847140dee197d0a06c37203025d9dcc50936")
+# Upstream "STYLE: Add PUBLIC to target_link_libraries and elastix_link_itk calls", 2026-07-09
+set(elastix_GIT_TAG "5c71a233ffebfb52e80945dae1bc07db0290be3c")
 FetchContent_Declare(
   elx
   GIT_REPOSITORY ${elastix_GIT_REPOSITORY}
