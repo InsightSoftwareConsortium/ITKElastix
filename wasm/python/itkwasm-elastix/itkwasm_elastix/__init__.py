@@ -8,6 +8,8 @@ from .elastix_async import elastix_async
 from .elastix import elastix
 from .read_parameter_files_async import read_parameter_files_async
 from .read_parameter_files import read_parameter_files
+from .transformix_async import transformix_async
+from .transformix import transformix
 from .write_parameter_files_async import write_parameter_files_async
 from .write_parameter_files import write_parameter_files
 

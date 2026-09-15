@@ -24,3 +24,4 @@ wasm/typescript/demo/
 wasm/test
 micromamba/
 .pixi/
+.vscode/

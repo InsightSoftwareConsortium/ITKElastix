@@ -25,11 +25,8 @@ test("Default 2D registration", async (t) => {
   const parameterObject = JSON.parse(
     fs.readFileSync(path.join(testDataInputDirectory, "parameters_single.json"))
   );
-  const transform = path.join(
-    testDataOutputDirectory,
-    "CT_2D_head_node_transform.txt"
-  );
-  const { result } = await elastixNode(parameterObject, transform, {
+
+  const { result } = await elastixNode(parameterObject, {
     fixed: fixedImage,
     moving: movingImage,
   });

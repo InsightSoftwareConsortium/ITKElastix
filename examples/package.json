@@ -1,0 +1,30 @@
+{
+  "name": "itk-elastix-examples",
+  "version": "0.1.0",
+  "description": "Examples for @itk-wasm/elastix",
+  "main": "\"\"",
+  "scripts": {
+    "test": "npm run downsample-register",
+    "downsample-register": "node ./downsample-register.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/InsightSoftwareConsortium/ITKElastix.git"
+  },
+  "keywords": [
+    "registration",
+    "imaging",
+    "science"
+  ],
+  "author": "Matt McCormick",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/InsightSoftwareConsortium/ITKElastix/issues"
+  },
+  "homepage": "https://github.com/InsightSoftwareConsortium/ITKElastix#readme",
+  "dependencies": {
+    "@itk-wasm/downsample": "^1.6.0",
+    "@itk-wasm/elastix": "^1.0.2",
+    "@itk-wasm/image-io": "^1.6.0"
+  }
+}

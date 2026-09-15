@@ -29,7 +29,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2024a-h0c530f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xz-5.2.6-h166bdaf_0.tar.bz2
       - pypi: https://files.pythonhosted.org/packages/75/06/4df55e1b7b112d183f65db9503bff189e97179b256e1ea450a3c365241e0/importlib_resources-6.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/fc/54/0fc399d374f1ee6e8494548419fe924188c7c7a04b646018c9818a6509e1/itkwasm-1.0b189-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d5/b4/a033892666fdafb6f7b054249abc6c3b1b093697a36b47be252677d99525/itkwasm-1.0b191-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2c/f3/61eeef119beb37decb58e7cb29940f19a1464b8608f2cab8a8616aba75fd/numpy-2.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/68/13/2aa1f0e1364feb2c9ef45302f387ac0bd81484e9c9a4c5688a322fbdfd08/platformdirs-4.2.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/26/9f/ad63fc0248c5379346306f8668cda6e2e2e9c95e01216d2b8ffd9ff037d0/typing_extensions-4.12.2-py3-none-any.whl
@@ -69,11 +69,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.1-h4ab18f5_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.5-h59595ed_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.3.1-h4bc722e_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pip-25.1.1-pyh8b19718_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.12.5-h2ad013b_0_cpython.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.2-h8228510_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-80.9.0-pyhff2d567_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tar-1.34-hb2e2bae_1.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h4845f30_101.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2024a-h0c530f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/wheel-0.45.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xz-5.2.6-h166bdaf_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.6-ha6fb4c9_0.conda
       - pypi: https://files.pythonhosted.org/packages/7b/a2/10639a79341f6c019dedc95bd48a4928eed9f1d1197f4c04f546fc7ae0ff/anyio-4.4.0-py3-none-any.whl
@@ -95,7 +98,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/e5/3e/741d8c82801c347547f8a2a06aa57dbb1992be9e948df2ea0eda2c8b79e8/idna-3.7-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/75/06/4df55e1b7b112d183f65db9503bff189e97179b256e1ea450a3c365241e0/importlib_resources-6.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/a6/62565a6e1cf69e10f5727360368e451d4b7f58beeac6173dc9db836a5b46/iniconfig-2.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/fc/54/0fc399d374f1ee6e8494548419fe924188c7c7a04b646018c9818a6509e1/itkwasm-1.0b189-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d5/b4/a033892666fdafb6f7b054249abc6c3b1b093697a36b47be252677d99525/itkwasm-1.0b191-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7f/66/b15ce62552d84bbfcec9a4873ab79d993a1dd4edb922cbfccae192bd5b5f/jaraco.classes-3.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d2/40/11b7bc1898cf1dcb87ccbe09b39f5088634ac78bb25f3383ff541c2b40aa/jaraco.context-5.3.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/b1/54/7623e24ffc63730c3a619101361b08860c6b7c7cfc1aef6edb66d80ed708/jaraco.functools-4.0.2-py3-none-any.whl
@@ -516,10 +519,10 @@ packages:
   version: 2.0.0
   sha256: b6a85871a79d2e3b22d2d1b94ac2824226a63c6b741c88f7ae975f18b6778374
   requires_python: '>=3.7'
-- pypi: https://files.pythonhosted.org/packages/fc/54/0fc399d374f1ee6e8494548419fe924188c7c7a04b646018c9818a6509e1/itkwasm-1.0b189-py3-none-any.whl
+- pypi: https://files.pythonhosted.org/packages/d5/b4/a033892666fdafb6f7b054249abc6c3b1b093697a36b47be252677d99525/itkwasm-1.0b191-py3-none-any.whl
   name: itkwasm
-  version: 1.0b189
-  sha256: 2ae8d05bfb4e4d86edc73887fa03503e20cc5f24287284cc65e493eefe987828
+  version: 1.0b191
+  sha256: 99c085683f0e53f5474b2c861f5446447299bf52a14cdabdf0b24e93a8d4d525
   requires_dist:
   - importlib-metadata ; python_full_version < '3.10'
   - numpy
@@ -530,9 +533,9 @@ packages:
 - pypi: ./
   name: itkwasm-elastix-emscripten
   version: 1.0.0
-  sha256: 0abbb9c8283d4ba8ba2e87f118bf18fe6c4b94bb9f7ecd98a11e4bb3cd356bb3
+  sha256: 5554202d376003169833504e9ff583cfce632d5ff6d347e23eac0fb9a1efba66
   requires_dist:
-  - itkwasm>=1.0b189
+  - itkwasm>=1.0b191
   - hatch>=1.12.0,<2 ; extra == 'test'
   - pyodide-py>=0.26.2,<0.27 ; extra == 'test'
   - pytest ; extra == 'test'
@@ -946,6 +949,19 @@ packages:
   sha256: 7236d1e080e4936be2dc3e326cec0af72acf9212a7e1d060210e70a47e253523
   requires_dist:
   - ptyprocess>=0.5
+- conda: https://conda.anaconda.org/conda-forge/noarch/pip-25.1.1-pyh8b19718_0.conda
+  sha256: ebfa591d39092b111b9ebb3210eb42251be6da89e26c823ee03e5e838655a43e
+  md5: 32d0781ace05105cc99af55d36cbec7c
+  depends:
+  - python >=3.9,<3.13.0a0
+  - setuptools
+  - wheel
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/pip?source=hash-mapping
+  size: 1242995
+  timestamp: 1746249983238
 - pypi: https://files.pythonhosted.org/packages/68/13/2aa1f0e1364feb2c9ef45302f387ac0bd81484e9c9a4c5688a322fbdfd08/platformdirs-4.2.2-py3-none-any.whl
   name: platformdirs
   version: 4.2.2
@@ -1149,6 +1165,17 @@ packages:
   - typing-extensions~=4.9
   - websocket-client~=1.8
   requires_python: '>=3.8'
+- conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-80.9.0-pyhff2d567_0.conda
+  sha256: 972560fcf9657058e3e1f97186cc94389144b46dbdf58c807ce62e83f977e863
+  md5: 4de79c071274a53dcaf2a8c749d1499e
+  depends:
+  - python >=3.9
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/setuptools?source=hash-mapping
+  size: 748788
+  timestamp: 1748804951958
 - pypi: https://files.pythonhosted.org/packages/e0/f9/0595336914c5619e5f28a1fb793285925a8cd4b432c9da0a987836c7f822/shellingham-1.5.4-py2.py3-none-any.whl
   name: shellingham
   version: 1.5.4
@@ -1314,6 +1341,17 @@ packages:
   - wsaccel ; extra == 'optional'
   - websockets ; extra == 'test'
   requires_python: '>=3.8'
+- conda: https://conda.anaconda.org/conda-forge/noarch/wheel-0.45.1-pyhd8ed1ab_1.conda
+  sha256: 1b34021e815ff89a4d902d879c3bd2040bc1bd6169b32e9427497fa05c55f1ce
+  md5: 75cb7132eb58d97896e173ef12ac9986
+  depends:
+  - python >=3.9
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/wheel?source=hash-mapping
+  size: 62931
+  timestamp: 1733130309598
 - pypi: https://files.pythonhosted.org/packages/78/58/e860788190eba3bcce367f74d29c4675466ce8dddfba85f7827588416f01/wsproto-1.2.0-py3-none-any.whl
   name: wsproto
   version: 1.2.0
