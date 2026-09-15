@@ -94,7 +94,7 @@ If you use this software anywhere we would appreciate if you cite the following 
 
 This ITK module is based on [SimpleElastix](https://simpleelastix.github.io/), created by [Kasper Marstal](https://github.com/kaspermarstal). For more information, see:
 
--   Kasper Marstal, Floris Berendsen, Marius Staring and Stefajkn Klein,
+-   Kasper Marstal, Floris Berendsen, Marius Staring and Stefan Klein,
     \"SimpleElastix: A user-friendly, multi-lingual library for medical
     image registration\", International Workshop on Biomedical Image
     Registration (WBIR), Las Vegas, Nevada, USA, 2016
