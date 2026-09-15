@@ -25,9 +25,8 @@ export default defineConfig({
     // put lazy loaded JavaScript and Wasm bundles in dist directory
     viteStaticCopy({
       targets: [
-        { src: '../../../dist/pipelines/*', dest: 'pipelines' },
-        { src: '../../../node_modules/@itk-wasm/image-io/dist/pipelines/*.{js,wasm,wasm.zst}', dest: 'pipelines' },
-        { src: '../../../node_modules/@itk-wasm/mesh-io/dist/pipelines/*.{js,wasm,wasm.zst}', dest: 'pipelines' },
+        { src: '../../../dist/pipelines/*', dest: 'pipelines', rename: { stripBase: true } },
+        { src: '../../../node_modules/@itk-wasm/image-io/dist/pipelines/*.{js,wasm,wasm.zst}', dest: 'pipelines', rename: { stripBase: true } },
       ],
     })
   ],
