@@ -55,7 +55,7 @@ async function transformix(
 
   // Options
   args.push('--memory-io')
-  if (options.outputOrigin) {
+  if (typeof options.outputOrigin !== "undefined") {
     if(options.outputOrigin.length < 1) {
       throw new Error('"output-origin" option must have a length > 1')
     }
@@ -65,7 +65,7 @@ async function transformix(
       args.push(value.toString())
     }))
   }
-  if (options.outputSpacing) {
+  if (typeof options.outputSpacing !== "undefined") {
     if(options.outputSpacing.length < 1) {
       throw new Error('"output-spacing" option must have a length > 1')
     }
@@ -75,7 +75,7 @@ async function transformix(
       args.push(value.toString())
     }))
   }
-  if (options.outputSize) {
+  if (typeof options.outputSize !== "undefined") {
     if(options.outputSize.length < 1) {
       throw new Error('"output-size" option must have a length > 1')
     }
@@ -85,7 +85,7 @@ async function transformix(
       args.push(value.toString())
     }))
   }
-  if (options.outputDirection) {
+  if (typeof options.outputDirection !== "undefined") {
     if(options.outputDirection.length < 1) {
       throw new Error('"output-direction" option must have a length > 1')
     }

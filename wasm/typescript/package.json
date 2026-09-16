@@ -39,6 +39,7 @@
   "devDependencies": {
     "@itk-wasm/demo-app": "^0.2.0",
     "@itk-wasm/image-io": "^1.6.1",
+    "@itk-wasm/transform-io": "^1.1.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.3",
     "ava": "^8.0.1",

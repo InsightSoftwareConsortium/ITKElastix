@@ -27,6 +27,9 @@ importers:
       '@itk-wasm/image-io':
         specifier: ^1.6.1
         version: 1.6.1(debug@4.4.3)
+      '@itk-wasm/transform-io':
+        specifier: ^1.1.0
+        version: 1.1.0(debug@4.4.3)
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -808,6 +811,9 @@ packages:
 
   '@itk-wasm/image-io@1.6.1':
     resolution: {integrity: sha512-WAQSlC018JDJ0YNDnJcIox0F/lN/LkkxovtAulGdwXUiRsW1bBm6NPUNBYMCeU0iT1FpU2CBiZdJysYGTgVQbg==}
+
+  '@itk-wasm/transform-io@1.1.0':
+    resolution: {integrity: sha512-EszkRbFTzpkyZVzIksEoaEe9pLV/mE1ygdx8u8pYuJxU10EICYeJ6vekq4hebDuUlEpDyq5h123zFz/W2nLMkA==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -4253,6 +4259,14 @@ snapshots:
   '@itk-wasm/image-io@1.6.1(debug@4.4.3)':
     dependencies:
       axios: 1.20.0(debug@4.4.3)
+      itk-wasm: 1.0.0-b.201(debug@4.4.3)
+      mime-types: 2.1.35
+    transitivePeerDependencies:
+      - debug
+      - supports-color
+
+  '@itk-wasm/transform-io@1.1.0(debug@4.4.3)':
+    dependencies:
       itk-wasm: 1.0.0-b.201(debug@4.4.3)
       mime-types: 2.1.35
     transitivePeerDependencies:

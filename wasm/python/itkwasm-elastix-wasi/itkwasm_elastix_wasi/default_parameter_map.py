@@ -54,11 +54,11 @@ def default_parameter_map(
 
     # Options
     input_count = len(pipeline_inputs)
-    if number_of_resolutions:
+    if number_of_resolutions is not None:
         args.append('--number-of-resolutions')
         args.append(str(number_of_resolutions))
 
-    if final_grid_spacing:
+    if final_grid_spacing is not None:
         args.append('--final-grid-spacing')
         args.append(str(final_grid_spacing))
 

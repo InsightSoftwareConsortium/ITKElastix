@@ -4,8 +4,8 @@ project(ElastixWasm)
 set(CMAKE_CXX_STANDARD 20)
 
 if(EMSCRIPTEN)
-  set(io_components
-    )
+  # Transforms are passed through memory in the browser, so no transform file IO is needed.
+  set(io_components)
 elseif(WASI)
   set(io_components
     ITKIOMeta
@@ -63,16 +63,16 @@ add_test(NAME elastix-wasm-2d-test
     -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_moving.iwi.cbor
   )
 
-#add_test(NAME elastix-wasm-2d-initial-transform-test
-  #COMMAND elastix
-    #${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_single.json
-    #${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_registered_initial.iwi.cbor
-    #${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_initial.h5
-    #${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_initial.json
-    #-f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_fixed.iwi.cbor
-    #-m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_moving.iwi.cbor
-    #-i ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_translation.h5
-  #)
+add_test(NAME elastix-wasm-2d-initial-transform-test
+  COMMAND elastix
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_single.json
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_registered_initial.iwi.cbor
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_initial.h5
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_2D_head_initial.json
+    -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_fixed.iwi.cbor
+    -m ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_moving.iwi.cbor
+    -i ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_2D_head_translation.h5
+  )
 
 add_test(NAME elastix-wasm-2d-initial-transform-parameter-object-test
   COMMAND elastix

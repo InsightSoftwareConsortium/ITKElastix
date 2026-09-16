@@ -46,11 +46,11 @@ async function defaultParameterMap(
 
   // Options
   args.push('--memory-io')
-  if (options.numberOfResolutions) {
+  if (typeof options.numberOfResolutions !== "undefined") {
     args.push('--number-of-resolutions', options.numberOfResolutions.toString())
 
   }
-  if (options.finalGridSpacing) {
+  if (typeof options.finalGridSpacing !== "undefined") {
     args.push('--final-grid-spacing', options.finalGridSpacing.toString())
 
   }
