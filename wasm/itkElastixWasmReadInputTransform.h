@@ -15,12 +15,13 @@
  *  limitations under the License.
  *
  *=========================================================================*/
-#ifndef elastixReadInputTransform_h
-#define elastixReadInputTransform_h
+#ifndef itkElastixWasmReadInputTransform_h
+#define itkElastixWasmReadInputTransform_h
 
 // Read an ITK-Wasm INPUT_TRANSFORM pipeline argument -- a single transform, a transform chain, or a
 // composite transform -- into the abstract itk::Transform<double, Dim, Dim> base that
-// itk::ElastixRegistrationMethod::SetExternalInitialTransform() accepts.
+// itk::ElastixRegistrationMethod::SetExternalInitialTransform() and
+// itk::TransformixFilter::SetExternalTransform() accept.
 //
 // itk::wasm::InputTransform<T> cannot read a generic transform: it hard-codes a concrete T and, on the
 // in-memory path, copies the JSON's parameter array into that T after checking only precision and
@@ -88,7 +89,7 @@ reconstructTransformEntry(const itk::TransformJSON & transformJSON)
   if (transformJSON.transformType.inputDimension != VDimension ||
       transformJSON.transformType.outputDimension != VDimension)
   {
-    itkGenericExceptionMacro(<< "The initial transform dimension does not match the image dimension.");
+    itkGenericExceptionMacro(<< "The input transform dimension does not match the image dimension.");
   }
 
   // Construct the concrete, double-precision transform by name via the ITK object factory. The factory
@@ -100,7 +101,7 @@ reconstructTransformEntry(const itk::TransformJSON & transformJSON)
   typename TransformType::Pointer transform = dynamic_cast<TransformType *>(instance.GetPointer());
   if (transform.IsNull())
   {
-    itkGenericExceptionMacro(<< "Could not construct the initial transform type: " << typeString);
+    itkGenericExceptionMacro(<< "Could not construct the input transform type: " << typeString);
   }
   instance->UnRegister(); // correct the extra reference from CreateInstance()
 
@@ -147,7 +148,7 @@ reconstructTransformEntry(const itk::TransformJSON & transformJSON)
     }
     if (parameters.Size() != transform->GetNumberOfParameters())
     {
-      itkGenericExceptionMacro(<< "The initial transform carries " << std::to_string(parameters.Size())
+      itkGenericExceptionMacro(<< "The input transform carries " << std::to_string(parameters.Size())
                                << " parameters but " << typeString << " expects "
                                << std::to_string(transform->GetNumberOfParameters()) << ".");
     }
@@ -167,7 +168,7 @@ readInputTransform(const std::string & transformArg)
 
   if (transformArg.empty())
   {
-    itkGenericExceptionMacro(<< "The initial transform argument is empty.");
+    itkGenericExceptionMacro(<< "The input transform argument is empty.");
   }
 
   if (itk::wasm::Pipeline::get_use_memory_io())
@@ -180,13 +181,13 @@ readInputTransform(const std::string & transformArg)
     auto deserialized = glz::read_json<itk::TransformListJSON>(json);
     if (!deserialized)
     {
-      itkGenericExceptionMacro(<< "Failed to parse the initial transform JSON: "
+      itkGenericExceptionMacro(<< "Failed to parse the input transform JSON: "
                                << glz::format_error(deserialized, json));
     }
     const itk::TransformListJSON transformListJSON = deserialized.value();
     if (transformListJSON.empty())
     {
-      itkGenericExceptionMacro(<< "The initial transform list is empty.");
+      itkGenericExceptionMacro(<< "The input transform list is empty.");
     }
 
     // Composite entries are markers with no parameters of their own -- their components follow in the
@@ -202,7 +203,7 @@ readInputTransform(const std::string & transformArg)
     }
     if (components.empty())
     {
-      itkGenericExceptionMacro(<< "The initial composite transform list contains no component transforms.");
+      itkGenericExceptionMacro(<< "The input composite transform list contains no component transforms.");
     }
     if (components.size() == 1)
     {
@@ -229,7 +230,7 @@ readInputTransform(const std::string & transformArg)
   const auto transformList = reader->GetTransformList();
   if (transformList == nullptr || transformList->empty())
   {
-    itkGenericExceptionMacro(<< "No transform found in the initial transform file.");
+    itkGenericExceptionMacro(<< "No transform found in the input transform file.");
   }
 
   // A file holding a composite transform is returned by ITK's reader as the fully-populated
@@ -245,7 +246,7 @@ readInputTransform(const std::string & transformArg)
     typename TransformType::Pointer transform = dynamic_cast<TransformType *>(transformList->front().GetPointer());
     if (transform.IsNull())
     {
-      itkGenericExceptionMacro(<< "The initial transform dimension or scalar type is not supported.");
+      itkGenericExceptionMacro(<< "The input transform dimension or scalar type is not supported.");
     }
     return transform;
   }
@@ -258,7 +259,7 @@ readInputTransform(const std::string & transformArg)
     auto * component = dynamic_cast<TransformType *>(entry.GetPointer());
     if (component == nullptr)
     {
-      itkGenericExceptionMacro(<< "The initial transform dimension or scalar type is not supported.");
+      itkGenericExceptionMacro(<< "The input transform dimension or scalar type is not supported.");
     }
     compositeTransform->AddTransform(component);
   }
@@ -270,4 +271,4 @@ readInputTransform(const std::string & transformArg)
 
 } // namespace
 
-#endif // elastixReadInputTransform_h
+#endif // itkElastixWasmReadInputTransform_h

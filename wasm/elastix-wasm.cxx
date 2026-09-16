@@ -32,7 +32,7 @@
 #include <sstream>
 
 #include "itkElastixWasmParameterObject.h"
-#include "elastixReadInputTransform.h"
+#include "itkElastixWasmReadInputTransform.h"
 #include "glaze/glaze.hpp"
 
 template <typename TImage>

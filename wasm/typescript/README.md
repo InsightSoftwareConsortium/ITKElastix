@@ -128,31 +128,31 @@ async function readParameterFiles(
 
 #### transformix
 
-*Apply an elastix transform parameter object to an image.*
+*Apply an elastix transform parameter object or an ITK transform to an image.*
 
 ```ts
 async function transformix(
   moving: Image,
-  transformParameterObject: JsonCompatible,
   options: TransformixOptions = {}
 ) : Promise<TransformixResult>
 ```
 
-|          Parameter         |       Type       | Description                                                                             |
-| :------------------------: | :--------------: | :-------------------------------------------------------------------------------------- |
-|          `moving`          |      *Image*     | Moving image                                                                            |
-| `transformParameterObject` | *JsonCompatible* | Elastix transform parameter object to apply. Only provide this or an initial transform. |
+| Parameter |   Type  | Description  |
+| :-------: | :-----: | :----------- |
+|  `moving` | *Image* | Moving image |
 
 **`TransformixOptions` interface:**
 
-|      Property     |             Type            | Description                                                                                                                                           |
-| :---------------: | :-------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   `outputOrigin`  |          *number[]*         | Output image origin.                                                                                                                                  |
-|  `outputSpacing`  |          *number[]*         | Output image spacing.                                                                                                                                 |
-|    `outputSize`   |          *number[]*         | Output image size.                                                                                                                                    |
-| `outputDirection` |          *number[]*         | Output image orientation direction matrix.                                                                                                            |
-|    `webWorker`    | *null or Worker or boolean* | WebWorker for computation. Set to null to create a new worker. Or, pass an existing worker. Or, set to `false` to run in the current thread / worker. |
-|      `noCopy`     |          *boolean*          | When SharedArrayBuffer's are not available, do not copy inputs.                                                                                       |
+|          Property          |             Type            | Description                                                                                                                                                                 |
+| :------------------------: | :-------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `transformParameterObject` |       *JsonCompatible*      | Elastix transform parameter object to apply. Provide this and/or an ITK transform. When both are provided, only its output image domain and resample interpolator are used. |
+|         `transform`        |       *TransformList*       | ITK transform to apply. Provide this and/or a transform parameter object. The output image domain defaults to the moving image domain.                                      |
+|       `outputOrigin`       |          *number[]*         | Output image origin.                                                                                                                                                        |
+|       `outputSpacing`      |          *number[]*         | Output image spacing.                                                                                                                                                       |
+|        `outputSize`        |          *number[]*         | Output image size.                                                                                                                                                          |
+|      `outputDirection`     |          *number[]*         | Output image orientation direction matrix.                                                                                                                                  |
+|         `webWorker`        | *null or Worker or boolean* | WebWorker for computation. Set to null to create a new worker. Or, pass an existing worker. Or, set to `false` to run in the current thread / worker.                       |
+|          `noCopy`          |          *boolean*          | When SharedArrayBuffer's are not available, do not copy inputs.                                                                                                             |
 
 **`TransformixResult` interface:**
 
@@ -312,29 +312,29 @@ async function readParameterFilesNode(
 
 #### transformixNode
 
-*Apply an elastix transform parameter object to an image.*
+*Apply an elastix transform parameter object or an ITK transform to an image.*
 
 ```ts
 async function transformixNode(
   moving: Image,
-  transformParameterObject: JsonCompatible,
   options: TransformixNodeOptions = {}
 ) : Promise<TransformixNodeResult>
 ```
 
-|          Parameter         |       Type       | Description                                                                             |
-| :------------------------: | :--------------: | :-------------------------------------------------------------------------------------- |
-|          `moving`          |      *Image*     | Moving image                                                                            |
-| `transformParameterObject` | *JsonCompatible* | Elastix transform parameter object to apply. Only provide this or an initial transform. |
+| Parameter |   Type  | Description  |
+| :-------: | :-----: | :----------- |
+|  `moving` | *Image* | Moving image |
 
 **`TransformixNodeOptions` interface:**
 
-|      Property     |    Type    | Description                                |
-| :---------------: | :--------: | :----------------------------------------- |
-|   `outputOrigin`  | *number[]* | Output image origin.                       |
-|  `outputSpacing`  | *number[]* | Output image spacing.                      |
-|    `outputSize`   | *number[]* | Output image size.                         |
-| `outputDirection` | *number[]* | Output image orientation direction matrix. |
+|          Property          |       Type       | Description                                                                                                                                                                 |
+| :------------------------: | :--------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `transformParameterObject` | *JsonCompatible* | Elastix transform parameter object to apply. Provide this and/or an ITK transform. When both are provided, only its output image domain and resample interpolator are used. |
+|         `transform`        |  *TransformList* | ITK transform to apply. Provide this and/or a transform parameter object. The output image domain defaults to the moving image domain.                                      |
+|       `outputOrigin`       |    *number[]*    | Output image origin.                                                                                                                                                        |
+|       `outputSpacing`      |    *number[]*    | Output image spacing.                                                                                                                                                       |
+|        `outputSize`        |    *number[]*    | Output image size.                                                                                                                                                          |
+|      `outputDirection`     |    *number[]*    | Output image orientation direction matrix.                                                                                                                                  |
 
 **`TransformixNodeResult` interface:**
 

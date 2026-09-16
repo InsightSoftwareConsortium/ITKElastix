@@ -98,10 +98,18 @@ add_test(NAME elastix-wasm-2d-multiple-test
 add_test(NAME transformix-wasm-test
   COMMAND transformix
     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_moving.iwi.cbor
-    ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung.json
     ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung_transformix.iwi.cbor
+    -p ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung.json
   )
 set_tests_properties(transformix-wasm-test PROPERTIES DEPENDS elastix-wasm-test)
+
+add_test(NAME transformix-wasm-transform-test
+  COMMAND transformix
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_moving.iwi.cbor
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung_transformix_transform.iwi.cbor
+    -t ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung.h5
+  )
+set_tests_properties(transformix-wasm-transform-test PROPERTIES DEPENDS elastix-wasm-test)
 
 # add_test(NAME elastix-wasm-2d-test
 #   COMMAND elastix

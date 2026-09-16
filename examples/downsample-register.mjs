@@ -67,10 +67,9 @@ await writeImageNode(result, "result.mha");
 
 // ------------------------------------------------------------------
 // Use the transform to resample the moving image
-const { result: resampledMovingImage } = await transformixNode(
-  movingImage,
-  transformParameterObject
-);
+const { result: resampledMovingImage } = await transformixNode(movingImage, {
+  transformParameterObject,
+});
 // Same as result.mha
 await writeImageNode(resampledMovingImage, "resampled-moving.mha");
 
@@ -106,7 +105,8 @@ await writeImageNode(resultDownsampled, "result-downsampled.mha");
 // ------------------------------------------------------------------
 // Use the transform to resample the moving image at its original resolution
 const { result: resampledMovingImageViaDownsampleTransform } =
-  await transformixNode(movingImage, transformParameterObjectDownsampled, {
+  await transformixNode(movingImage, {
+    transformParameterObject: transformParameterObjectDownsampled,
     outputOrigin: fixedImage.origin,
     outputSpacing: fixedImage.spacing,
     outputDirection: fixedImage.direction,

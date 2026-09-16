@@ -29,9 +29,11 @@
 #include "itkCompositeTransformIOHelper.h"
 #include "itkNumberToString.h"
 
+#include <set>
 #include <sstream>
 
 #include "itkElastixWasmParameterObject.h"
+#include "itkElastixWasmReadInputTransform.h"
 
 // Workaround function to check if a parameter exists in the parameter object
 // since elx::ParameterObject doesn't have a HasParameter method, yet, added in
@@ -74,12 +76,19 @@ public:
     itk::wasm::InputTextStream transformParameterObjectJson;
     auto                       transformParameterObjectOption =
       pipeline
-        .add_option("transform-parameter-object",
+        .add_option("-p,--transform-parameter-object",
                     transformParameterObjectJson,
-                    "Elastix transform parameter object to apply. Only provide this or an "
-                    "initial transform.")
-        ->required()
+                    "Elastix transform parameter object to apply. Provide this and/or an ITK transform. When both are "
+                    "provided, only its output image domain and resample interpolator are used.")
         ->type_name("INPUT_JSON");
+
+    std::string transformArg;
+    pipeline
+      .add_option("-t,--transform",
+                  transformArg,
+                  "ITK transform to apply. Provide this and/or a transform parameter object. The output image domain "
+                  "defaults to the moving image domain.")
+      ->type_name("INPUT_TRANSFORM");
 
     std::vector<double> outputOrigin(ImageDimension, 0.0);
     auto outputOriginOption = pipeline.add_option("-o,--output-origin", outputOrigin, "Output image origin.");
@@ -97,28 +106,96 @@ public:
 
     ITK_WASM_PARSE(pipeline);
 
+    if (transformParameterObjectOption->empty() && transformArg.empty())
+    {
+      std::cerr << "Error: Provide a transform parameter object, an ITK transform, or both." << std::endl;
+      return EXIT_FAILURE;
+    }
+
     using TransformixType = itk::TransformixFilter<ImageType>;
     typename TransformixType::Pointer transformix = TransformixType::New();
 
     using ParameterObjectType = elastix::ParameterObject;
-    const auto        transformParameterObject = ParameterObjectType::New();
-    std::stringstream ss;
-    ss << transformParameterObjectJson.Get().rdbuf();
-    const std::string errorMessage = itk::wasm::ReadParameterObject(ss.str(), transformParameterObject);
-    if (!errorMessage.empty())
+    const auto transformParameterObject = ParameterObjectType::New();
+    if (!transformParameterObjectOption->empty())
     {
-      std::cerr << "Error reading transform parameter object JSON: " << errorMessage << std::endl;
-      return EXIT_FAILURE;
+      std::stringstream ss;
+      ss << transformParameterObjectJson.Get().rdbuf();
+      const std::string errorMessage = itk::wasm::ReadParameterObject(ss.str(), transformParameterObject);
+      if (!errorMessage.empty())
+      {
+        std::cerr << "Error reading transform parameter object JSON: " << errorMessage << std::endl;
+        return EXIT_FAILURE;
+      }
+      if (transformParameterObject->GetNumberOfParameterMaps() == 0)
+      {
+        transformParameterObject->AddParameterMap(typename ParameterObjectType::ParameterMapType());
+      }
+      else if (!transformArg.empty())
+      {
+        // The transform itself comes from the ITK transform: keep only the output image domain and
+        // resampling parameters of the last parameter map, so that elastix does not try to apply the
+        // map's own transform parameters to the external transform.
+        static const std::set<std::string> domainAndResamplingKeys{ "Size",
+                                                                    "Spacing",
+                                                                    "Origin",
+                                                                    "Index",
+                                                                    "Direction",
+                                                                    "UseDirectionCosines",
+                                                                    "ResampleInterpolator",
+                                                                    "FinalBSplineInterpolationOrder",
+                                                                    "DefaultPixelValue",
+                                                                    "Resampler",
+                                                                    "ResultImagePixelType",
+                                                                    "ResultImageFormat",
+                                                                    "CompressResultImage" };
+        const auto &                       lastParameterMap =
+          transformParameterObject->GetParameterMap(transformParameterObject->GetNumberOfParameterMaps() - 1);
+        typename ParameterObjectType::ParameterMapType domainParameterMap;
+        for (const auto & parameter : lastParameterMap)
+        {
+          if (domainAndResamplingKeys.count(parameter.first) != 0)
+          {
+            domainParameterMap.insert(parameter);
+          }
+        }
+        transformParameterObject->SetParameterMap(domainParameterMap);
+      }
+    }
+    else
+    {
+      // Only an ITK transform was provided: a single parameter map carries the output image domain and
+      // the resample interpolator, which are filled in below.
+      transformParameterObject->AddParameterMap(typename ParameterObjectType::ParameterMapType());
     }
 
     transformix->SetMovingImage(const_cast<ImageType *>(movingImage.Get()));
 
+    // The ITK transform is applied through elastix's external transform support. When a transform
+    // parameter object is also provided, only its output image domain and resample interpolator are used.
+    using TransformType = typename TransformixType::TransformType;
+    typename TransformType::Pointer transform;
+    if (!transformArg.empty())
+    {
+      ITK_WASM_CATCH_EXCEPTION(pipeline, transform = readInputTransform<ImageDimension>(transformArg));
+      transformix->SetExternalTransform(transform);
+    }
+
+    // Output image domain: explicit options win, then the transform parameter object, then the moving
+    // image domain.
     if (outputOriginOption->count() != 0 || !HasParameterWorkaround(transformParameterObject.GetPointer(), "Origin"))
     {
       if (outputOrigin.size() != ImageDimension)
       {
         std::cerr << "Error: Output origin size does not match image dimension." << std::endl;
         return EXIT_FAILURE;
+      }
+      if (outputOriginOption->count() == 0)
+      {
+        for (unsigned int i = 0; i < ImageDimension; ++i)
+        {
+          outputOrigin[i] = movingImage.Get()->GetOrigin()[i];
+        }
       }
       std::vector<std::string> outputOriginStr(outputOrigin.size());
       for (size_t i = 0; i < outputOrigin.size(); ++i)
@@ -134,6 +211,13 @@ public:
       {
         std::cerr << "Error: Output spacing size does not match image dimension." << std::endl;
         return EXIT_FAILURE;
+      }
+      if (outputSpacingOption->count() == 0)
+      {
+        for (unsigned int i = 0; i < ImageDimension; ++i)
+        {
+          outputSpacing[i] = movingImage.Get()->GetSpacing()[i];
+        }
       }
       std::vector<std::string> outputSpacingStr(outputSpacing.size());
       for (size_t i = 0; i < outputSpacing.size(); ++i)
@@ -204,6 +288,15 @@ public:
       transformParameterObject->SetParameter("Index", outputIndexStr);
     }
 
+    if (!HasParameterWorkaround(transformParameterObject.GetPointer(), "ResampleInterpolator"))
+    {
+      transformParameterObject->SetParameter("ResampleInterpolator", "FinalBSplineInterpolator");
+    }
+    if (!HasParameterWorkaround(transformParameterObject.GetPointer(), "FinalBSplineInterpolationOrder"))
+    {
+      transformParameterObject->SetParameter("FinalBSplineInterpolationOrder", "3");
+    }
+
     transformix->SetTransformParameterObject(transformParameterObject);
     transformix->LogToConsoleOff();
 
@@ -219,7 +312,8 @@ public:
 int
 main(int argc, char * argv[])
 {
-  itk::wasm::Pipeline pipeline("transformix", "Apply an elastix transform parameter object to an image.", argc, argv);
+  itk::wasm::Pipeline pipeline(
+    "transformix", "Apply an elastix transform parameter object or an ITK transform to an image.", argc, argv);
 
   return itk::wasm::SupportInputImageTypes<PipelineFunctor, uint8_t, uint16_t, int16_t, double, float>::
     Dimensions<2U, 3U, 4U>("moving", pipeline);
