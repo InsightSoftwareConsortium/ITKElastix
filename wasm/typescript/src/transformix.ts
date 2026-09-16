@@ -3,6 +3,7 @@
 import {
   Image,
   JsonCompatible,
+  TransformList,
   InterfaceTypes,
   PipelineOutput,
   PipelineInput,
@@ -18,17 +19,15 @@ import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
 import { getDefaultWebWorker } from './default-web-worker.js'
 
 /**
- * Apply an elastix transform parameter object to an image.
+ * Apply an elastix transform parameter object or an ITK transform to an image.
  *
  * @param {Image} moving - Moving image
- * @param {JsonCompatible} transformParameterObject - Elastix transform parameter object to apply. Only provide this or an initial transform.
  * @param {TransformixOptions} options - options object
  *
  * @returns {Promise<TransformixResult>} - result object
  */
 async function transformix(
   moving: Image,
-  transformParameterObject: JsonCompatible,
   options: TransformixOptions = {}
 ) : Promise<TransformixResult> {
 
@@ -38,7 +37,6 @@ async function transformix(
 
   const inputs: Array<PipelineInput> = [
     { type: InterfaceTypes.Image, data: moving },
-    { type: InterfaceTypes.JsonCompatible, data: transformParameterObject as JsonCompatible  },
   ]
 
   const args = []
@@ -46,15 +44,24 @@ async function transformix(
   const movingName = '0'
   args.push(movingName)
 
-  const transformParameterObjectName = '1'
-  args.push(transformParameterObjectName)
-
   // Outputs
   const resultName = '0'
   args.push(resultName)
 
   // Options
   args.push('--memory-io')
+  if (typeof options.transformParameterObject !== "undefined") {
+    const inputCountString = inputs.length.toString()
+    inputs.push({ type: InterfaceTypes.JsonCompatible, data: options.transformParameterObject as JsonCompatible })
+    args.push('--transform-parameter-object', inputCountString)
+
+  }
+  if (typeof options.transform !== "undefined") {
+    const inputCountString = inputs.length.toString()
+    inputs.push({ type: InterfaceTypes.TransformList, data: options.transform as TransformList })
+    args.push('--transform', inputCountString)
+
+  }
   if (typeof options.outputOrigin !== "undefined") {
     if(options.outputOrigin.length < 1) {
       throw new Error('"output-origin" option must have a length > 1')

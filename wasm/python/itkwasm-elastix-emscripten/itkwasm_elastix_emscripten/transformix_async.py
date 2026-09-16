@@ -14,23 +14,28 @@ from itkwasm.pyodide import (
 from itkwasm import (
     InterfaceTypes,
     Image,
+    TransformList,
 )
 
 async def transformix_async(
     moving: Image,
-    transform_parameter_object: Any,
+    transform_parameter_object: Optional[Any] = None,
+    transform: Optional[TransformList] = None,
     output_origin: Optional[List[float]] = None,
     output_spacing: Optional[List[float]] = None,
     output_size: Optional[List[int]] = None,
     output_direction: Optional[List[float]] = None,
 ) -> Image:
-    """Apply an elastix transform parameter object to an image.
+    """Apply an elastix transform parameter object or an ITK transform to an image.
 
     :param moving: Moving image
     :type  moving: Image
 
-    :param transform_parameter_object: Elastix transform parameter object to apply. Only provide this or an initial transform.
+    :param transform_parameter_object: Elastix transform parameter object to apply. Provide this and/or an ITK transform. When both are provided, only its output image domain and resample interpolator are used.
     :type  transform_parameter_object: Any
+
+    :param transform: ITK transform to apply. Provide this and/or a transform parameter object. The output image domain defaults to the moving image domain.
+    :type  transform: TransformList
 
     :param output_origin: Output image origin.
     :type  output_origin: float
@@ -51,6 +56,10 @@ async def transformix_async(
     web_worker = js_resources.web_worker
 
     kwargs = {}
+    if transform_parameter_object is not None:
+        kwargs["transformParameterObject"] = to_js(transform_parameter_object)
+    if transform is not None:
+        kwargs["transform"] = to_js(transform)
     if output_origin:
         kwargs["outputOrigin"] = to_js(output_origin)
     if output_spacing:
@@ -60,7 +69,7 @@ async def transformix_async(
     if output_direction:
         kwargs["outputDirection"] = to_js(output_direction)
 
-    outputs = await js_module.transformix(to_js(moving), to_js(transform_parameter_object), webWorker=web_worker, noCopy=True, **kwargs)
+    outputs = await js_module.transformix(to_js(moving), webWorker=web_worker, noCopy=True, **kwargs)
 
     output_web_worker = None
     output_list = []

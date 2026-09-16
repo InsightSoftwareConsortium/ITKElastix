@@ -3,6 +3,12 @@ project(ElastixWasm)
 
 set(CMAKE_CXX_STANDARD 20)
 
+# Link the wasm modules one at a time. The link-time-optimized links of the elastix and transformix
+# modules each need several gigabytes of memory, and linking them concurrently exhausts the memory of
+# CI runners. Only the Ninja generator honors job pools; others ignore this.
+set_property(GLOBAL PROPERTY JOB_POOLS link_pool=1)
+set(CMAKE_JOB_POOL_LINK link_pool)
+
 if(EMSCRIPTEN)
   # Transforms are passed through memory in the browser, so no transform file IO is needed.
   set(io_components)
@@ -98,10 +104,18 @@ add_test(NAME elastix-wasm-2d-multiple-test
 add_test(NAME transformix-wasm-test
   COMMAND transformix
     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_moving.iwi.cbor
-    ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung.json
     ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung_transformix.iwi.cbor
+    -p ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung.json
   )
 set_tests_properties(transformix-wasm-test PROPERTIES DEPENDS elastix-wasm-test)
+
+add_test(NAME transformix-wasm-transform-test
+  COMMAND transformix
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/CT_3D_lung_moving.iwi.cbor
+    ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung_transformix_transform.iwi.cbor
+    -t ${CMAKE_CURRENT_BINARY_DIR}/CT_3D_lung.h5
+  )
+set_tests_properties(transformix-wasm-transform-test PROPERTIES DEPENDS elastix-wasm-test)
 
 # add_test(NAME elastix-wasm-2d-test
 #   COMMAND elastix
