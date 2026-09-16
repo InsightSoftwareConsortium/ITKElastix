@@ -3,6 +3,12 @@ project(ElastixWasm)
 
 set(CMAKE_CXX_STANDARD 20)
 
+# Link the wasm modules one at a time. The link-time-optimized links of the elastix and transformix
+# modules each need several gigabytes of memory, and linking them concurrently exhausts the memory of
+# CI runners. Only the Ninja generator honors job pools; others ignore this.
+set_property(GLOBAL PROPERTY JOB_POOLS link_pool=1)
+set(CMAKE_JOB_POOL_LINK link_pool)
+
 if(EMSCRIPTEN)
   # Transforms are passed through memory in the browser, so no transform file IO is needed.
   set(io_components)
