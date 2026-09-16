@@ -38,9 +38,9 @@ async def default_parameter_map_async(
     web_worker = js_resources.web_worker
 
     kwargs = {}
-    if number_of_resolutions:
+    if number_of_resolutions is not None:
         kwargs["numberOfResolutions"] = to_js(number_of_resolutions)
-    if final_grid_spacing:
+    if final_grid_spacing is not None:
         kwargs["finalGridSpacing"] = to_js(final_grid_spacing)
 
     outputs = await js_module.defaultParameterMap(to_js(transform_name), webWorker=web_worker, noCopy=True, **kwargs)

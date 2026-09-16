@@ -1,5 +1,6 @@
 import { readImage } from "@itk-wasm/image-io";
 import { writeImage } from "@itk-wasm/image-io";
+import { writeTransform } from "@itk-wasm/transform-io";
 import { copyImage } from "itk-wasm";
 import * as elastix from "../../../dist/index.js";
 import elastixLoadSampleInputs, {
@@ -112,12 +113,6 @@ class ElastixController {
     //     details.disabled = false
     // })
 
-    // const transformElement = document.querySelector('#elastixInputs sl-input[name=transform]')
-    // transformElement.addEventListener('sl-change', (event) => {
-    //     model.inputs.set("transform", transformElement.value)
-    // })
-    model.inputs.set("transform", "transform.h5");
-
     // ----------------------------------------------
     // Outputs
     const resultOutputDownload = document.querySelector(
@@ -147,14 +142,22 @@ class ElastixController {
       "#elastixOutputs sl-button[name=transform-download]"
     );
     this.transformOutputDownload = transformOutputDownload;
-    transformOutputDownload.addEventListener("click", (event) => {
+    transformOutputDownload.addEventListener("click", async (event) => {
       event.preventDefault();
       event.stopPropagation();
       if (model.outputs.has("transform")) {
-        globalThis.downloadFile(
-          model.outputs.get("transform").data,
-          model.outputs.get("transform").path
+        const transformDownloadFormat = document.getElementById(
+          "elastix-transform-output-format"
         );
+        const downloadFormat = transformDownloadFormat.value || "h5";
+        const fileName = `transform.${downloadFormat}`;
+        const { webWorker, serializedTransform } = await writeTransform(
+          model.outputs.get("transform"),
+          fileName
+        );
+
+        webWorker.terminate();
+        globalThis.downloadFile(serializedTransform.data, fileName);
       }
     });
 
@@ -236,18 +239,7 @@ class ElastixController {
         model.outputs.set("transformParameterObject", transformParameterObject);
         transformOutputDownload.variant = "success";
         transformOutputDownload.disabled = false;
-        const transformOutput = document.getElementById(
-          "elastix-transform-details"
-        );
-        transformOutput.innerHTML = `<pre>${globalThis.escapeHtml(
-          JSON.stringify(
-            transformParameterObject,
-            globalThis.interfaceTypeJsonReplacer,
-            2
-          )
-        )}</pre>`;
-        // transformOutput.innerHTML = `<pre>${globalThis.escapeHtml(transform.data.subarray(0, 1024).toString() + ' ...')}</pre>`
-        transformOutput.disabled = false;
+        this.showTransformOutputs(transform, transformParameterObject);
       } catch (error) {
         globalThis.notify(
           "Error while running pipeline",
@@ -260,6 +252,30 @@ class ElastixController {
         runButton.loading = false;
       }
     });
+  }
+
+  // Render the fixed-to-moving ITK TransformList and the elastix transform
+  // parameter object in their output details panels.
+  showTransformOutputs(transform, transformParameterObject) {
+    const transformOutput = document.getElementById(
+      "elastix-transform-details"
+    );
+    transformOutput.innerHTML = `<pre>${globalThis.escapeHtml(
+      JSON.stringify(transform, globalThis.interfaceTypeJsonReplacer, 2)
+    )}</pre>`;
+    transformOutput.disabled = false;
+
+    const transformParameterObjectOutput = document.getElementById(
+      "elastix-transform-parameter-object-details"
+    );
+    transformParameterObjectOutput.innerHTML = `<pre>${globalThis.escapeHtml(
+      JSON.stringify(
+        transformParameterObject,
+        globalThis.interfaceTypeJsonReplacer,
+        2
+      )
+    )}</pre>`;
+    transformParameterObjectOutput.disabled = false;
   }
 
   async run(preRun) {
@@ -368,7 +384,7 @@ class ElastixController {
       console.log(stage);
       const map = [parameterObject[idx]];
       const { webWorker, result, transform, transformParameterObject } =
-        await elastix.elastix(map, this.model.inputs.get("transform"), {
+        await elastix.elastix(map, {
           fixed: copyImage(fixed),
           moving: copyImage(moving),
           initialTransformParameterObject: previousTransform,
@@ -396,30 +412,11 @@ class ElastixController {
       resultDetails.disabled = false;
 
       this.model.outputs.set("transform", transform);
+      this.model.outputs.set("transformParameterObject", transformParameterObject);
       this.transformOutputDownload.variant = "success";
       this.transformOutputDownload.disabled = false;
-      const transformOutput = document.getElementById(
-        "elastix-transform-details"
-      );
-      transformOutput.innerHTML = `<pre>${globalThis.escapeHtml(
-        JSON.stringify(
-          transformParameterObject,
-          globalThis.interfaceTypeJsonReplacer,
-          2
-        )
-      )}</pre>`;
-      transformOutput.disabled = false;
+      this.showTransformOutputs(transform, transformParameterObject);
     }
-    // const { webWorker, result, transform, transformParameterObject } = await elastix.elastix(this.webWorker,
-    //   this.model.inputs.get('parameterObject'),
-    //   this.model.inputs.get('transform'),
-    //   {
-    //     fixed: copyImage(fixed),
-    //     moving: copyImage(moving),
-    //     initialTransform: previousTransform,
-    //   },
-    // )
-    // this.webWorker = webWorker
     progressBar.setAttribute("style", "display: none;");
 
     return {

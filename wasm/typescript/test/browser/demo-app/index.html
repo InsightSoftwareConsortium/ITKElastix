@@ -56,8 +56,6 @@
       <!-- <sl-tooltip content="Use the Upload button to provide the initialTransform"><sl-details id="elastix-initial-transform-details" summary="initialTransform: Initial transform to apply before registration" disabled></sl-details></sl-tooltip>
       <label for="initial-transform-file"><sl-button name="initial-transform-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sl-button></label><input type="file"  name="initial-transform-file" style="display: none"/>
 <br /><br /> -->
-      <!-- <sl-input required name="transform" type="text" label="transform" help-text="Fixed-to-moving transform"></sl-input> -->
-
       <!-- <sl-tooltip content="Use the Upload button to provide the parameterObject"><sl-details id="elastix-parameter-object-details" summary="parameterObject: Elastix parameter object representation" disabled></sl-details></sl-tooltip>
       <label for="parameter-object-file"><sl-button name="parameter-object-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" name="parameter-object-file" style="display: none"/>
 <br /><br /> -->
@@ -106,8 +104,16 @@
       </sl-select>
       <sl-button variant="neutral" outline name="result-download" disabled>Download</sl-button>
 <br /><br />
-      <sl-details disabled id="elastix-transform-details" summary="transform: Fixed-to-moving transform"></sl-details>
+      <sl-details disabled id="elastix-transform-details" summary="transform: Fixed-to-moving ITK transform"></sl-details>
+      <sl-select id="elastix-transform-output-format" placeholder="Format">
+        <sl-option value="h5">h5</sl-option>
+        <sl-option value="txt">txt</sl-option>
+        <sl-option value="mat">mat</sl-option>
+        <sl-option value="xfm">xfm</sl-option>
+      </sl-select>
       <sl-button variant="neutral" outline name="transform-download" disabled>Download</sl-button>
+<br /><br />
+      <sl-details disabled id="elastix-transform-parameter-object-details" summary="transformParameterObject: Elastix optimized transform parameter object representation"></sl-details>
 <br /><br />
     </div>
 

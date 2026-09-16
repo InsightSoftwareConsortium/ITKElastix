@@ -9,7 +9,7 @@ interface ElastixNodeOptions {
   /** Moving image */
   moving?: Image
 
-  /** Initial transform to apply before registration */
+  /** Initial ITK transform to apply before registration. Only provide this or an initial transform parameter object. */
   initialTransform?: TransformList
 
   /** Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform. */

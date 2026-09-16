@@ -23,17 +23,16 @@
 #include "itkOutputTextStream.h"
 #include "itkSupportInputImageTypes.h"
 #include "itkOutputTransform.h"
-#include "itkInputTransform.h"
 
 #include "itkImage.h"
 #include "itkIdentityTransform.h"
 #include "itkCompositeTransform.h"
-#include "itkCompositeTransformIOHelper.h"
 #include "itkCastImageFilter.h"
 
 #include <sstream>
 
 #include "itkElastixWasmParameterObject.h"
+#include "elastixReadInputTransform.h"
 #include "glaze/glaze.hpp"
 
 template <typename TImage>
@@ -49,7 +48,11 @@ public:
     using RegistrationType = itk::ElastixRegistrationMethod<FloatImageType, FloatImageType>;
     using TransformType = typename RegistrationType::TransformType;
     using CompositeTransformType = itk::CompositeTransform<ParametersValueType, ImageType::ImageDimension>;
-    using CompositeHelperType = itk::CompositeTransformIOHelperTemplate<ParametersValueType>;
+
+    // Declared before the pipeline outputs so that the registration outlives them: the outputs are
+    // written when they go out of scope, and this ordering writes them while the registration that
+    // produced them is still alive.
+    typename RegistrationType::Pointer registration;
 
     using InputImageType = itk::wasm::InputImage<ImageType>;
     InputImageType fixedImage;
@@ -58,9 +61,12 @@ public:
     InputImageType movingImage;
     pipeline.add_option("-m,--moving", movingImage, "Moving image")->type_name("INPUT_IMAGE");
 
-    using InputTransformType = itk::wasm::InputTransform<CompositeTransformType>;
-    InputTransformType initialTransform;
-    pipeline.add_option("-i,--initial-transform", initialTransform, "Initial transform to apply before registration")
+    std::string initialTransformArg;
+    pipeline
+      .add_option("-i,--initial-transform",
+                  initialTransformArg,
+                  "Initial ITK transform to apply before registration. Only provide this or an initial transform "
+                  "parameter object.")
       ->type_name("INPUT_TRANSFORM");
 
     itk::wasm::InputTextStream initialTransformParameterObjectJson;
@@ -83,7 +89,7 @@ public:
 
     using OutputTransformType = itk::wasm::OutputTransform<TransformType>;
     OutputTransformType outputTransform;
-    pipeline.add_option("transform", outputTransform, "Fixed-to-moving transform file")
+    pipeline.add_option("transform", outputTransform, "Fixed-to-moving ITK transform")
       ->required()
       ->type_name("OUTPUT_TRANSFORM");
 
@@ -107,7 +113,7 @@ public:
     movingCaster->SetInput(movingImage.Get());
     ITK_WASM_CATCH_EXCEPTION(pipeline, movingCaster->Update());
 
-    typename RegistrationType::Pointer registration = RegistrationType::New();
+    registration = RegistrationType::New();
 
     using ParameterObjectType = elastix::ParameterObject;
     const auto        parameterObject = ParameterObjectType::New();
@@ -126,10 +132,14 @@ public:
     registration->SetMovingImage(movingCaster->GetOutput());
     registration->SetParameterObject(parameterObject);
 
-    typename RegistrationType::TransformType::Pointer externalInitialTransform;
-    if (initialTransform.Get())
+    // Any ITK transform parameterization is accepted as the external initial transform: a single
+    // transform, a transform chain, or a composite transform, from the wasm memory store or a file.
+    typename TransformType::Pointer initialTransform;
+    if (!initialTransformArg.empty())
     {
-      registration->SetExternalInitialTransform(const_cast<CompositeTransformType *>(initialTransform.Get()));
+      ITK_WASM_CATCH_EXCEPTION(pipeline,
+                               initialTransform = readInputTransform<ImageType::ImageDimension>(initialTransformArg));
+      registration->SetExternalInitialTransform(initialTransform);
     }
     else if (!initialTransformParameterObjectOption->empty())
     {
@@ -158,22 +168,15 @@ public:
     typename ImageType::ConstPointer result = resultCaster->GetOutput();
     resultImage.Set(result);
 
+    // The fixed-to-moving transform is emitted as an itk-wasm TransformList: a composite of the ITK
+    // transforms converted from the optimized elastix transforms, or an identity transform when the
+    // registration produced no transform.
     if (registration->GetNumberOfTransforms() == 0)
     {
-      using IdentityTransformType = itk::IdentityTransform<double, ImageType::ImageDimension>;
-      typename IdentityTransformType::ConstPointer identity = IdentityTransformType::New();
+      using IdentityTransformType = itk::IdentityTransform<ParametersValueType, ImageType::ImageDimension>;
+      typename IdentityTransformType::Pointer identity = IdentityTransformType::New();
       outputTransform.Set(identity);
     }
-    // Reasonable to enable once we support injecting as an initial transform
-    // else if (!initialTransform.GetPointer() && registration->GetNumberOfTransforms() == 1)
-    // {
-    //   auto transform = registration->GetNthTransform(0);
-    //   typename RegistrationType::TransformType::ConstPointer registeredTransform =
-    //     registration->ConvertToItkTransform(*transform);
-    //   writer->SetInput(registeredTransform);
-    //   writer->SetFileName(outputTransform);
-    //   ITK_WASM_CATCH_EXCEPTION(pipeline, writer->Update());
-    // }
     else
     {
       typename RegistrationType::TransformType::ConstPointer combinationTransform =

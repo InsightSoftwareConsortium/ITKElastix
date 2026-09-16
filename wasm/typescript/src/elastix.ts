@@ -58,25 +58,25 @@ async function elastix(
 
   // Options
   args.push('--memory-io')
-  if (options.fixed) {
+  if (typeof options.fixed !== "undefined") {
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.Image, data: options.fixed as Image })
     args.push('--fixed', inputCountString)
 
   }
-  if (options.moving) {
+  if (typeof options.moving !== "undefined") {
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.Image, data: options.moving as Image })
     args.push('--moving', inputCountString)
 
   }
-  if (options.initialTransform) {
+  if (typeof options.initialTransform !== "undefined") {
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.TransformList, data: options.initialTransform as TransformList })
     args.push('--initial-transform', inputCountString)
 
   }
-  if (options.initialTransformParameterObject) {
+  if (typeof options.initialTransformParameterObject !== "undefined") {
     const inputCountString = inputs.length.toString()
     inputs.push({ type: InterfaceTypes.JsonCompatible, data: options.initialTransformParameterObject as JsonCompatible })
     args.push('--initial-transform-parameter-object', inputCountString)

@@ -35,7 +35,7 @@ async def elastix_async(
     :param moving: Moving image
     :type  moving: Image
 
-    :param initial_transform: Initial transform to apply before registration
+    :param initial_transform: Initial ITK transform to apply before registration. Only provide this or an initial transform parameter object.
     :type  initial_transform: TransformList
 
     :param initial_transform_parameter_object: Initial elastix transform parameter object to apply before registration. Only provide this or an initial transform.
@@ -44,7 +44,7 @@ async def elastix_async(
     :return: Resampled moving image
     :rtype:  Image
 
-    :return: Fixed-to-moving transform file
+    :return: Fixed-to-moving ITK transform
     :rtype:  TransformList
 
     :return: Elastix optimized transform parameter object representation

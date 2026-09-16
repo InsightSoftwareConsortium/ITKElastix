@@ -6,7 +6,7 @@ interface ElastixNodeResult {
   /** Resampled moving image */
   result: Image
 
-  /** Fixed-to-moving transform file */
+  /** Fixed-to-moving ITK transform */
   transform: TransformList
 
   /** Elastix optimized transform parameter object representation */

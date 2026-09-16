@@ -43,7 +43,7 @@ async function readParameterFiles(
 
   // Options
   args.push('--memory-io')
-  if (options.parameterFiles) {
+  if (typeof options.parameterFiles !== "undefined") {
     if(options.parameterFiles.length < 1) {
       throw new Error('"parameter-files" option must have a length > 1')
     }
