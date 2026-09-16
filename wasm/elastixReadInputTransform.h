@@ -117,9 +117,8 @@ reconstructTransformEntry(const itk::TransformJSON & transformJSON)
     const double * fixedParametersPtr = reinterpret_cast<const double *>(
       std::strtoull(transformJSON.fixedParameters.substr(addressPrefixLength).c_str(), nullptr, 10));
     FixedParametersType fixedParameters(transformJSON.numberOfFixedParameters);
-    std::copy(fixedParametersPtr,
-              fixedParametersPtr + transformJSON.numberOfFixedParameters,
-              fixedParameters.data_block());
+    std::copy(
+      fixedParametersPtr, fixedParametersPtr + transformJSON.numberOfFixedParameters, fixedParameters.data_block());
     transform->SetFixedParameters(fixedParameters);
   }
 
@@ -148,7 +147,9 @@ reconstructTransformEntry(const itk::TransformJSON & transformJSON)
     }
     if (parameters.Size() != transform->GetNumberOfParameters())
     {
-      itkGenericExceptionMacro(<< "The initial transform carries " << std::to_string(parameters.Size()) << " parameters but " << typeString << " expects " << std::to_string(transform->GetNumberOfParameters()) << ".");
+      itkGenericExceptionMacro(<< "The initial transform carries " << std::to_string(parameters.Size())
+                               << " parameters but " << typeString << " expects "
+                               << std::to_string(transform->GetNumberOfParameters()) << ".");
     }
     transform->SetParametersByValue(parameters);
   }
@@ -179,7 +180,8 @@ readInputTransform(const std::string & transformArg)
     auto deserialized = glz::read_json<itk::TransformListJSON>(json);
     if (!deserialized)
     {
-      itkGenericExceptionMacro(<< "Failed to parse the initial transform JSON: " << glz::format_error(deserialized, json));
+      itkGenericExceptionMacro(<< "Failed to parse the initial transform JSON: "
+                               << glz::format_error(deserialized, json));
     }
     const itk::TransformListJSON transformListJSON = deserialized.value();
     if (transformListJSON.empty())
