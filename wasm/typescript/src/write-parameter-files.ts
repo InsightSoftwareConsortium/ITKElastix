@@ -18,10 +18,10 @@ import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
 import { getDefaultWebWorker } from './default-web-worker.js'
 
 /**
- * Write an elastix parameter text file from a parameter object.
+ * Write elastix parameter files, in the legacy text (.txt) or TOML (.toml) format, from a parameter object.
  *
  * @param {JsonCompatible} parameterObject - Elastix parameter object representation.
- * @param {string[]} parameterFiles - Elastix parameter files, must have the same length as the number of parameter maps in the parameter object.
+ * @param {string[]} parameterFiles - Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. The file extension selects the format: .txt for the legacy text format, .toml for TOML.
  * @param {WriteParameterFilesOptions} options - options object
  *
  * @returns {Promise<WriteParameterFilesResult>} - result object

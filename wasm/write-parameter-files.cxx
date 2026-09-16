@@ -31,7 +31,10 @@ int
 main(int argc, char * argv[])
 {
   itk::wasm::Pipeline pipeline(
-    "write-parameter-files", "Write an elastix parameter text file from a parameter object.", argc, argv);
+    "write-parameter-files",
+    "Write elastix parameter files, in the legacy text (.txt) or TOML (.toml) format, from a parameter object.",
+    argc,
+    argv);
 
   itk::wasm::InputTextStream parameterObjectJson;
   pipeline.add_option("parameter-object", parameterObjectJson, "Elastix parameter object representation.")
@@ -42,8 +45,8 @@ main(int argc, char * argv[])
   pipeline
     .add_option("parameter-files",
                 parameterFiles,
-                "Elastix parameter files, must have the same length as the "
-                "number of parameter maps in the parameter object.")
+                "Elastix parameter files, must have the same length as the number of parameter maps in the parameter "
+                "object. The file extension selects the format: .txt for the legacy text format, .toml for TOML.")
     ->required()
     ->type_name("OUTPUT_TEXT_FILE");
 

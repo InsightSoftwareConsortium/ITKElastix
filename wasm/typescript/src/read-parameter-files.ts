@@ -18,7 +18,7 @@ import { getPipelineWorkerUrl } from './pipeline-worker-url.js'
 import { getDefaultWebWorker } from './default-web-worker.js'
 
 /**
- * Read elastix parameter text files into a parameter object.
+ * Read elastix parameter files, in the legacy text (.txt) or TOML (.toml) format, into a parameter object.
  *
  * @param {ReadParameterFilesOptions} options - options object
  *

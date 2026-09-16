@@ -148,10 +148,10 @@
 
     <sl-tab-panel name="readParameterFiles-panel">
 
-    <small><i>Read an elastix parameter text file into a parameter object.</i></small><br /><br />
+    <small><i>Read elastix parameter files, in the legacy text (.txt) or TOML (.toml) format, into a parameter object.</i></small><br /><br />
 
     <div id="readParameterFilesInputs"><form action="">
-      <sl-tooltip content="Use the Upload button to provide the parameterFiles"><sl-details id="readParameterFiles-parameter-files-details"  summary="parameterFiles: Elastix parameter files" disabled></sl-details></sl-tooltip>
+      <sl-tooltip content="Use the Upload button to provide the parameterFiles"><sl-details id="readParameterFiles-parameter-files-details"  summary="parameterFiles: Elastix parameter files (.txt or .toml)" disabled></sl-details></sl-tooltip>
       <label for="parameter-files-file"><sl-button name="parameter-files-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" multiple  name="parameter-files-file" style="display: none"/>
 <br /><br />
     <sl-divider></sl-divider>
@@ -172,13 +172,13 @@
 
     <sl-tab-panel name="writeParameterFiles-panel">
 
-    <small><i>Write an elastix parameter text file from a parameter object.</i></small><br /><br />
+    <small><i>Write elastix parameter files, in the legacy text (.txt) or TOML (.toml) format, from a parameter object.</i></small><br /><br />
 
     <div id="writeParameterFilesInputs"><form action="">
       <sl-tooltip content="Use the Upload button to provide the parameterObject"><sl-details id="writeParameterFiles-parameter-object-details" summary="parameterObject: Elastix parameter object representation" disabled></sl-details></sl-tooltip>
       <label for="parameter-object-file"><sl-button name="parameter-object-file-button" variant="primary" outline onclick="this.parentElement.nextElementSibling.click()">Upload</sp-button></label><input type="file" name="parameter-object-file" style="display: none"/>
 <br /><br />
-      <sl-input required name="parameter-files" type="text" label="parameterFiles" help-text="Elastix parameter files"></sl-input>
+      <sl-input required name="parameter-files" type="text" label="parameterFiles" help-text="Comma-separated elastix parameter file names, one per parameter map. The file extension selects the format: .txt for the legacy text format, .toml for TOML."></sl-input>
     <sl-divider></sl-divider>
       <br /><sl-tooltip content="Load example input data. This will overwrite data any existing input data."><sl-button name="loadSampleInputs" variant="default" style="display: none;">Load sample inputs</sl-button></sl-tooltip>
       <sl-button type="button" variant="success" name="run">Run</sl-button><br /><br />
@@ -187,7 +187,7 @@
     <sl-divider></sl-divider>
 
     <div id="writeParameterFilesOutputs">
-      <sl-details disabled id="writeParameterFiles-parameter-files-details" summary="parameterFiles: Elastix parameter files"></sl-details>
+      <sl-details disabled id="writeParameterFiles-parameter-files-details" summary="parameterFiles: Elastix parameter files (.txt or .toml)"></sl-details>
       <sl-button variant="neutral" outline name="parameter-files-download" disabled>Download</sl-button>
 <br /><br />
     </div>

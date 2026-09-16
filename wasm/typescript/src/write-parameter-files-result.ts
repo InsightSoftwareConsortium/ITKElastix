@@ -3,7 +3,7 @@
 import { TextFile, WorkerPoolFunctionResult } from 'itk-wasm'
 
 interface WriteParameterFilesResult extends WorkerPoolFunctionResult {
-  /** Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. */
+  /** Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. The file extension selects the format: .txt for the legacy text format, .toml for TOML. */
   parameterFiles: TextFile[]
 
 }
