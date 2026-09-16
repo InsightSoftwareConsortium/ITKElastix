@@ -1,4 +1,4 @@
-[project]
+[workspace]
 name = "@itk-wasm/elastix"
 version = "1.0.0"
 authors = ["Matt McCormick <matt.mccormick@kitware.com>"]

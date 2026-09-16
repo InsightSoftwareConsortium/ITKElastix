@@ -78,7 +78,7 @@ exclude = [
   "/examples",
 ]
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64"]
 
