@@ -25,3 +25,4 @@ wasm/test
 micromamba/
 .pixi/
 .vscode/
+.serena/
