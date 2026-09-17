@@ -1,0 +1,46 @@
+# Example parameter file for affine registration, in the elastix TOML format.
+
+FixedInternalImagePixelType = "float"
+MovingInternalImagePixelType = "float"
+UseDirectionCosines = true
+
+# **************** Main Components **************************
+Registration = "MultiResolutionRegistration"
+Interpolator = "BSplineInterpolator"
+ResampleInterpolator = "FinalBSplineInterpolator"
+Resampler = "DefaultResampler"
+
+FixedImagePyramid = "FixedRecursiveImagePyramid"
+MovingImagePyramid = "MovingRecursiveImagePyramid"
+
+Optimizer = "AdaptiveStochasticGradientDescent"
+Transform = "AffineTransform"
+Metric = "AdvancedMattesMutualInformation"
+
+# ***************** Transformation **************************
+AutomaticScalesEstimation = true
+AutomaticTransformInitialization = true
+HowToCombineTransforms = "Compose"
+
+# ******************* Similarity measure *********************
+NumberOfHistogramBins = 32
+ErodeMask = false
+
+# ******************** Multiresolution **********************
+NumberOfResolutions = 4
+
+# ******************* Optimizer ****************************
+MaximumNumberOfIterations = 250
+
+# **************** Image sampling **********************
+NumberOfSpatialSamples = 2048
+NewSamplesEveryIteration = true
+ImageSampler = "Random"
+
+# ************* Interpolation and Resampling ****************
+BSplineInterpolationOrder = 1
+FinalBSplineInterpolationOrder = 3
+DefaultPixelValue = 0
+WriteResultImage = true
+ResultImagePixelType = "short"
+ResultImageFormat = "mhd"

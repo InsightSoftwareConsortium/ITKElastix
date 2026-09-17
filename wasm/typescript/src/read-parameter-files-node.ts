@@ -15,7 +15,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 /**
- * Read elastix parameter text files into a parameter object.
+ * Read elastix parameter files, in the legacy text (.txt) or TOML (.toml) format, into a parameter object.
  *
  * @param {ReadParameterFilesNodeOptions} options - options object
  *

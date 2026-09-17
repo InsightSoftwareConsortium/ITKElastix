@@ -1,4 +1,7 @@
 import { test, expect } from "@playwright/test";
+import path from "path";
+
+const testDataInputDirectory = path.resolve("..", "test", "data", "input");
 
 test.describe("readParameterFiles", () => {
   test.beforeEach(async ({ page }) => {
@@ -33,5 +36,39 @@ test.describe("readParameterFiles", () => {
 
     // Note: Actual file upload and processing test would require test data files
     // For now, we verify the UI components are working
+  });
+
+  test("Reads a TOML parameter file into a parameter object representation", async ({
+    page,
+  }) => {
+    // Click on the read parameter files tab
+    await page.click('sl-tab[panel="readParameterFiles-panel"]');
+
+    // Wait for the tab content to be loaded
+    await expect(page.locator("#readParameterFilesInputs")).toBeVisible();
+
+    // Upload the TOML parameter file. The .toml extension selects the TOML format.
+    await page.setInputFiles(
+      '#readParameterFilesInputs input[name="parameter-files-file"]',
+      path.join(testDataInputDirectory, "parameters_Translation.toml")
+    );
+    await expect(
+      page.locator("#readParameterFiles-parameter-files-details")
+    ).toContainText("parameters_Translation.toml");
+
+    // Click run button
+    await page.click('#readParameterFilesInputs sl-button[name="run"]');
+
+    // Check that the result contains the expected parameters with timeout
+    const parameterObjectDetails = page.locator(
+      "#readParameterFiles-parameter-object-details"
+    );
+    await expect(parameterObjectDetails).toContainText(
+      '"TranslationTransform"',
+      { timeout: 10000 }
+    );
+    // TOML integers and booleans are converted to elastix parameter value strings
+    await expect(parameterObjectDetails).toContainText('"4"');
+    await expect(parameterObjectDetails).toContainText('"true"');
   });
 });
