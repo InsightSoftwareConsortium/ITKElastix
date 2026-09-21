@@ -21,9 +21,12 @@ import '@awesome.me/webawesome/dist/components/tooltip/tooltip.js'
 
 import './style.css'
 
+import { downloadBytes } from './io/download'
+import { exportImage, exportTransform } from './io/export'
 import { registerAffine } from './registration/register'
 import { samples } from './samples'
 import { createStore, inputsLoaded } from './state'
+import { createDownloadFlow } from './ui/download-flow'
 import { createRegisterFlow } from './ui/register-flow'
 import { createShell } from './ui/shell'
 import { createSplash } from './ui/splash'
@@ -49,15 +52,22 @@ async function bootstrap(root: HTMLElement): Promise<void> {
   // publish) from window.__demo.
   exposeDemoGlobals({ state: store })
 
-  // `splash` and `runRegistration` are assigned below; the handlers only run
-  // on user clicks, long after bootstrap has finished.
+  // `splash`, `runRegistration`, and `downloads` are assigned below; the
+  // handlers only run on user clicks, long after bootstrap has finished.
   const shell = await createShell(root, store, {
     onLoadImages: () => splash.open(),
     onRegister: () => {
       void runRegistration()
     },
+    onDownloadImage: () => {
+      void downloads.downloadImage()
+    },
+    onDownloadTransform: () => {
+      void downloads.downloadTransform()
+    },
   })
   const runRegistration = createRegisterFlow(store, shell, { register: registerAffine })
+  const downloads = createDownloadFlow(store, shell, { exportImage, exportTransform, download: downloadBytes })
 
   const splash = createSplash(root, {
     store,
