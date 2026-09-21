@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { tmpdir } from 'os';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const samplesDir = path.join(__dirname, '..', 'public', 'samples');
@@ -25,6 +24,9 @@ const samples = [
   {
     name: 'tpl-MNI152NLin2009aSym_res-1_T2w.nii.gz',
     gateways: [
+      // TemplateFlow's own S3 bucket first: the public IPFS gateways below
+      // rate-limit (HTTP 429, Retry-After 900 s) after a few requests.
+      'https://templateflow.s3.amazonaws.com/tpl-MNI152NLin2009aSym',
       'https://w3s.link/ipfs/bafybeiabjayndqcwxyxymqg3766m57eikfcs42fyhp66vexsbrjecxmkry',
       'https://bafybeiabjayndqcwxyxymqg3766m57eikfcs42fyhp66vexsbrjecxmkry.ipfs.w3s.link',
       'https://ipfs.io/ipfs/bafybeiabjayndqcwxyxymqg3766m57eikfcs42fyhp66vexsbrjecxmkry',
@@ -33,6 +35,7 @@ const samples = [
   {
     name: 'tpl-MNI305_T1w.nii.gz',
     gateways: [
+      'https://templateflow.s3.amazonaws.com/tpl-MNI305',
       'https://w3s.link/ipfs/bafybeiabjayndqcwxyxymqg3766m57eikfcs42fyhp66vexsbrjecxmkry',
       'https://bafybeiabjayndqcwxyxymqg3766m57eikfcs42fyhp66vexsbrjecxmkry.ipfs.w3s.link',
       'https://ipfs.io/ipfs/bafybeiabjayndqcwxyxymqg3766m57eikfcs42fyhp66vexsbrjecxmkry',
@@ -72,6 +75,9 @@ async function downloadFile(name, gateways) {
 
         if (!response.ok) {
           lastError = new Error(`HTTP ${response.status}`);
+          // A rate-limited gateway will not recover within this run, so move
+          // on to the next one instead of retrying it immediately.
+          if (response.status === 429) break;
           continue;
         }
 
@@ -83,8 +89,10 @@ async function downloadFile(name, gateways) {
           continue;
         }
 
-        // Write atomically: temp file then rename
-        const tempPath = path.join(tmpdir(), `.fetch-samples-${Date.now()}-${Math.random()}`);
+        // Write atomically: temp file then rename. The temp file lives next to
+        // the target so the rename never crosses filesystems (os.tmpdir() is
+        // often a separate mount, which makes renameSync throw EXDEV).
+        const tempPath = `${targetPath}.download`;
         fs.writeFileSync(tempPath, bytes);
         fs.renameSync(tempPath, targetPath);
 
@@ -93,7 +101,7 @@ async function downloadFile(name, gateways) {
       } catch (err) {
         lastError = err;
         if (attempt === 0) {
-          console.log(`  Retry ${attempt + 1}...`);
+          console.log(`  Retry ${attempt + 1}... (${err?.message || err})`);
         }
       }
     }
