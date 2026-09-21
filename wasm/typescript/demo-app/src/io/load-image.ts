@@ -16,6 +16,7 @@ import {
   type Multiscales,
   type NgffImage,
 } from '@fideus-labs/ngff-zarr/browser'
+import { formatBytes } from '../format'
 import {
   PIXEL_BUDGET_BYTES,
   ngffImageBytes,
@@ -158,16 +159,6 @@ export async function fetchBytes(
     offset += chunk.byteLength
   }
   return bytes
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) {
-    return `${bytes} B`
-  }
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`
-  }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 async function readSourceBytes(

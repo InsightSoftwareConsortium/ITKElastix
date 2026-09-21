@@ -1,8 +1,17 @@
-// Shape of one elastix run's output. Defined here, apart from the runner in
-// src/registration/register.ts, so src/state.ts can type its `result` slot
-// without pulling the elastix pipeline (and its worker) into modules that
-// only read state, such as the node unit tests.
+// Types and constants shared by the elastix runner (src/registration/
+// register.ts) and the modules that only read state or drive the UI, such as
+// src/state.ts, src/ui/register-flow.ts, and the node unit tests. Nothing
+// here imports the elastix pipeline (and its web worker), so those modules
+// stay free of it.
 import type { Image, JsonCompatible, TransformList } from 'itk-wasm'
+
+/** Elastix transform stages, in the order they are optimized. */
+export const AFFINE_STAGES = ['translation', 'rigid', 'affine'] as const
+
+export type AffineStage = (typeof AFFINE_STAGES)[number]
+
+/** Label for the stage sequence, as shown in the status row. */
+export const AFFINE_STAGES_LABEL = 'translation → rigid → affine'
 
 export interface RegistrationResult {
   /** The moving image resampled onto the fixed image's grid. */
@@ -17,3 +26,45 @@ export interface RegistrationResult {
   /** Wall-clock duration of the elastix pipeline, in milliseconds. */
   elapsedMs: number
 }
+
+/**
+ * Coarse phases of one run. Elastix reports nothing while it optimizes, so
+ * the stages inside `'register'` cannot be told apart from outside.
+ */
+export type RegistrationStage = 'parameters' | 'register' | 'done'
+
+export interface RegistrationStatus {
+  stage: RegistrationStage
+  message: string
+  /** Milliseconds since the run started. */
+  elapsedMs: number
+}
+
+export type RegistrationStatusCallback = (status: RegistrationStatus) => void
+
+export interface AffineParameterOptions {
+  /** Multi-resolution pyramid levels per stage (elastix `NumberOfResolutions`). */
+  numberOfResolutions?: number
+}
+
+export interface RegisterAffineOptions extends AffineParameterOptions {
+  /**
+   * Parameter object to run instead of the default translation -> rigid ->
+   * affine maps, e.g. one loaded from parameter files.
+   */
+  parameterObject?: JsonCompatible
+  /**
+   * itk-wasm web worker to run the pipelines in. When omitted one is created
+   * for the run and terminated afterwards; a caller-supplied worker is left
+   * running.
+   */
+  webWorker?: Worker
+}
+
+/** Signature of {@link registerAffine}, for injecting a stand-in. */
+export type RegisterFunction = (
+  fixed: Image,
+  moving: Image,
+  options?: RegisterAffineOptions,
+  onStatus?: RegistrationStatusCallback,
+) => Promise<RegistrationResult>

@@ -21,8 +21,10 @@ import '@awesome.me/webawesome/dist/components/tooltip/tooltip.js'
 
 import './style.css'
 
+import { registerAffine } from './registration/register'
 import { samples } from './samples'
 import { createStore, inputsLoaded } from './state'
+import { createRegisterFlow } from './ui/register-flow'
 import { createShell } from './ui/shell'
 import { createSplash } from './ui/splash'
 import { exposeDemoGlobals } from './viewer/panel'
@@ -47,11 +49,15 @@ async function bootstrap(root: HTMLElement): Promise<void> {
   // publish) from window.__demo.
   exposeDemoGlobals({ state: store })
 
+  // `splash` and `runRegistration` are assigned below; the handlers only run
+  // on user clicks, long after bootstrap has finished.
   const shell = await createShell(root, store, {
     onLoadImages: () => splash.open(),
-    // Replaced once src/registration/register.ts exists.
-    onRegister: () => shell.setStatus({ message: 'Registration is not wired up yet.', variant: 'warning' }),
+    onRegister: () => {
+      void runRegistration()
+    },
   })
+  const runRegistration = createRegisterFlow(store, shell, { register: registerAffine })
 
   const splash = createSplash(root, {
     store,

@@ -10,6 +10,7 @@ import type WaSplitPanel from '@awesome.me/webawesome/dist/components/split-pane
 import type WaSwitch from '@awesome.me/webawesome/dist/components/switch/switch.js'
 
 import {
+  canLoadInputs,
   canRegister,
   fixedPanelContent,
   hasResult,
@@ -139,7 +140,9 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
 
   function renderControls(state: Readonly<AppState>): void {
     const resultAvailable = hasResult(state)
+    elements.loadImages.disabled = !canLoadInputs(state)
     elements.register.disabled = !canRegister(state)
+    elements.register.loading = state.registering
     elements.showResult.disabled = !resultAvailable
     elements.showResult.checked = isShowingResult(state)
     elements.downloadImage.disabled = !resultAvailable

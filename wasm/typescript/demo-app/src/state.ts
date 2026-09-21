@@ -12,6 +12,8 @@ export interface AppState {
   result?: RegistrationResult
   /** Whether the moving panel shows the registered result instead of the moving input. */
   showResult: boolean
+  /** True while elastix is running; blocks another run and input changes. */
+  registering: boolean
 }
 
 /** Called after every update with the new state and the one it replaced. */
@@ -30,7 +32,7 @@ export interface AppStore {
 }
 
 export function createStore(initial: Partial<AppState> = {}): AppStore {
-  let state: Readonly<AppState> = { showResult: false, ...initial }
+  let state: Readonly<AppState> = { showResult: false, registering: false, ...initial }
   const listeners = new Set<StateListener>()
 
   return {
@@ -69,9 +71,14 @@ export function hasResult(state: Readonly<AppState>): state is Readonly<AppState
   return state.result !== undefined
 }
 
-/** Registration may be started: both inputs are loaded. */
+/** Registration may be started: both inputs are loaded and no run is active. */
 export function canRegister(state: Readonly<AppState>): boolean {
-  return hasInputs(state)
+  return hasInputs(state) && !state.registering
+}
+
+/** Inputs may be (re)loaded: no registration is running against them. */
+export function canLoadInputs(state: Readonly<AppState>): boolean {
+  return !state.registering
 }
 
 /** The registered result is both available and selected for display. */
@@ -87,9 +94,25 @@ export function inputsLoaded(fixed: LoadedImage, moving: LoadedImage): Partial<A
   return { fixed, moving, result: undefined, showResult: false }
 }
 
-/** Patch for a completed registration: store the result and display it. */
+/** Patch for the start of a registration run. */
+export function registrationStarted(): Partial<AppState> {
+  return { registering: true }
+}
+
+/**
+ * Patch for a completed registration: store the result, display it, and
+ * end the run.
+ */
 export function resultReady(result: RegistrationResult): Partial<AppState> {
-  return { result, showResult: true }
+  return { result, showResult: true, registering: false }
+}
+
+/**
+ * Patch for a registration that ended without a result. Any earlier result
+ * is kept; it still belongs to the current inputs.
+ */
+export function registrationFailed(): Partial<AppState> {
+  return { registering: false }
 }
 
 /** Name under which the registered result is displayed and exported. */

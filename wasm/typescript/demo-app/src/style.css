@@ -102,9 +102,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* elastix errors arrive as multi-line stderr text; keep the line breaks but
+   cap the row so the viewers keep their space. */
 .status-callout {
   flex: 1 1 auto;
   min-width: 0;
+  max-height: 7.5rem;
+  overflow: auto;
+  white-space: pre-line;
 }
 
 /* Viewers ----------------------------------------------------------------- */

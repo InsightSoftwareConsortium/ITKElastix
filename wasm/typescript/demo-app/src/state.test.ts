@@ -6,6 +6,7 @@ import type { LoadedImage } from './io/load-image.ts'
 import type { RegistrationResult } from './registration/types.ts'
 import {
   RESULT_NAME,
+  canLoadInputs,
   canRegister,
   createStore,
   fixedPanelContent,
@@ -14,6 +15,8 @@ import {
   inputsLoaded,
   isShowingResult,
   movingPanelContent,
+  registrationFailed,
+  registrationStarted,
   resultReady,
 } from './state.ts'
 
@@ -29,7 +32,7 @@ function fakeResult(): RegistrationResult {
 
 test('starts empty with the result hidden', () => {
   const store = createStore()
-  assert.deepEqual(store.state, { showResult: false })
+  assert.deepEqual(store.state, { showResult: false, registering: false })
   assert.equal(hasInputs(store.state), false)
   assert.equal(hasResult(store.state), false)
   assert.equal(canRegister(store.state), false)
@@ -122,4 +125,38 @@ test('panel content follows the inputs and the display toggle', () => {
 
   store.update({ showResult: false })
   assert.deepEqual(movingPanelContent(store.state), { image: moving.itkImage, name: 'moving.mha' })
+})
+
+test('registrationStarted blocks another run and input changes', () => {
+  const store = createStore({ fixed: fakeImage('fixed'), moving: fakeImage('moving') })
+  assert.equal(canRegister(store.state), true)
+  assert.equal(canLoadInputs(store.state), true)
+
+  store.update(registrationStarted())
+  assert.equal(store.state.registering, true)
+  assert.equal(canRegister(store.state), false)
+  assert.equal(canLoadInputs(store.state), false)
+})
+
+test('resultReady ends the run, stores the result, and shows it', () => {
+  const store = createStore({ fixed: fakeImage('fixed'), moving: fakeImage('moving') })
+  store.update(registrationStarted())
+  const result = fakeResult()
+
+  store.update(resultReady(result))
+  assert.equal(store.state.registering, false)
+  assert.equal(store.state.result, result)
+  assert.equal(isShowingResult(store.state), true)
+  assert.equal(canRegister(store.state), true)
+})
+
+test('registrationFailed ends the run and keeps an earlier result', () => {
+  const earlier = fakeResult()
+  const store = createStore({ fixed: fakeImage('fixed'), moving: fakeImage('moving'), result: earlier })
+  store.update(registrationStarted())
+
+  store.update(registrationFailed())
+  assert.equal(store.state.registering, false)
+  assert.equal(store.state.result, earlier)
+  assert.equal(canRegister(store.state), true)
 })
