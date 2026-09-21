@@ -5,10 +5,12 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import {
+  LARGE_INPUT_BYTES,
   PIXEL_BUDGET_BYTES,
   budgetBytesFromQuery,
   bytesPerElement,
   estimateLevelBytes,
+  largeInputWarning,
   ngffImageBytes,
   planScaleFactors,
   selectScaleForBudget,
@@ -101,4 +103,16 @@ test('budgetBytesFromQuery reads ?budget=<MiB> and falls back otherwise', () => 
   assert.equal(budgetBytesFromQuery('?budget=abc', 7), 7)
   // Tiny values never round down to a zero budget.
   assert.equal(budgetBytesFromQuery('?budget=0.0000001'), 1)
+})
+
+test('largeInputWarning names an input above the threshold and the budget it is brought down to', () => {
+  assert.equal(LARGE_INPUT_BYTES, 512 * MiB)
+  assert.equal(largeInputWarning('small.nii.gz', 100 * MiB, PIXEL_BUDGET_BYTES), null)
+  assert.equal(largeInputWarning('edge.nii.gz', LARGE_INPUT_BYTES, PIXEL_BUDGET_BYTES), null)
+  assert.equal(
+    largeInputWarning('huge.nii.gz', 612 * MiB, PIXEL_BUDGET_BYTES),
+    'huge.nii.gz is 612.0 MB at full resolution, more than 512.0 MB; downsampling it to the 50.0 MB budget may take a while and a lot of memory.',
+  )
+  assert.match(largeInputWarning('custom.nii.gz', 3 * MiB, 2 * MiB, 2 * MiB) ?? '', /^custom\.nii\.gz is 3\.0 MB .* more than 2\.0 MB; .* the 2\.0 MB budget/)
+  assert.equal(largeInputWarning('nan.nii.gz', Number.NaN, PIXEL_BUDGET_BYTES), null)
 })

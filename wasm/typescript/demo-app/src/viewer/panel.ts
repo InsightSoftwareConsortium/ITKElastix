@@ -27,6 +27,7 @@ import { iwi2nii } from '@niivue/cbor-loader'
 import { imageToIwiCborBytes } from '../io/iwi-cbor'
 import type { AppStore } from '../state'
 import { canvasIsStale } from '../ui/layout-options'
+import type { Notifier } from '../ui/notify'
 import type { Splash } from '../ui/splash'
 import { DEFAULT_COLORMAP, DEFAULT_SLICE_TYPE, sliceTypeForDimension } from '../ui/view-options'
 import { promoteTo3d } from './promote-to-3d'
@@ -71,6 +72,8 @@ export interface DemoGlobals {
   state?: AppStore
   /** The splash dialog (see src/ui/splash.ts); published by main.ts. */
   splash?: Splash
+  /** The notifier the toasts are raised through (see src/ui/notify.ts); published by main.ts. */
+  notify?: Notifier
 }
 
 declare global {

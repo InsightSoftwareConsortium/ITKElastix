@@ -36,7 +36,7 @@ export interface ViewControls {
   destroy(): void
 }
 
-export type ViewControlsShell = Pick<Shell, 'fixedPanel' | 'movingPanel'>
+export type ViewControlsShell = Pick<Shell, 'fixedPanel' | 'movingPanel' | 'notify'>
 
 /**
  * Bind the view controls under `root` to `store` and the shell's two
@@ -102,7 +102,7 @@ export function createViewControls(root: ParentNode, store: AppStore, shell: Vie
       panels[role].setColormap(value).catch((error: unknown) => {
         // The panel kept its previous colormap; put the picker back on it.
         picker.value = panels[role].colormap
-        console.error(`Could not apply the ${value} colormap to the ${panels[role].label} panel`, error)
+        shell.notify.failure(`Could not apply the ${value} colormap to the ${panels[role].label} panel`, error)
       })
     })
   }

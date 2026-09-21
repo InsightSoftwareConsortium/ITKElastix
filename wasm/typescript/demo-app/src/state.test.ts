@@ -354,3 +354,22 @@ test('overlayOpacityChanged clamps the slider value and falls back to the defaul
   store.update(overlayOpacityChanged(null))
   assert.equal(store.state.overlayOpacity, DEFAULT_OVERLAY_OPACITY)
 })
+
+test('a listener that throws is reported and does not stop the others', () => {
+  const errors: unknown[] = []
+  const store = createStore({}, { onError: (error) => errors.push(error) })
+  const seen: boolean[] = []
+  store.subscribe(() => {
+    throw new Error('render failed')
+  })
+  store.subscribe((state) => {
+    seen.push(state.showResult)
+  })
+
+  const state = store.update({ showResult: true })
+
+  assert.equal(state.showResult, true)
+  assert.deepEqual(seen, [true], 'the second listener still ran')
+  assert.equal(errors.length, 1)
+  assert.equal((errors[0] as Error).message, 'render failed')
+})

@@ -16,6 +16,7 @@ import type WaSlider from '@awesome.me/webawesome/dist/components/slider/slider.
 import type WaSwitch from '@awesome.me/webawesome/dist/components/switch/switch.js'
 
 import type { LoadedImage } from '../src/io/load-image'
+import type { ToastVariant } from '../src/ui/notify-options'
 import type { SlotRole } from '../src/ui/splash-slots'
 
 /** The bundled sample images, downloaded by scripts/fetch-samples.mjs before the dev server starts. */
@@ -291,4 +292,39 @@ export async function start(page: Page): Promise<void> {
 export async function clickForDownload(page: Page, button: Locator): Promise<Download> {
   const [download] = await Promise.all([page.waitForEvent('download'), button.click()])
   return download
+}
+
+/** The text of the status line under the header. */
+export async function statusText(page: Page): Promise<string> {
+  return (await page.locator('#status-message').textContent())?.trim() ?? ''
+}
+
+/** One toast in the notification stack (src/ui/notify.ts), as the user sees it. */
+export interface ToastFacts {
+  message: string
+  variant: string
+  /** Stays until dismissed. */
+  persistent: boolean
+  /** Carries a dismiss button. */
+  dismissible: boolean
+  /** The ARIA role, or null for a toast the status row has already announced. */
+  role: string | null
+}
+
+/** The toasts on show, oldest first. */
+export function toastFacts(page: Page): Promise<ToastFacts[]> {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('#toast-stack .toast')].map((toast) => ({
+      message: toast.querySelector('.toast-message')?.textContent?.trim() ?? '',
+      variant: toast.dataset.variant ?? '',
+      persistent: toast.hasAttribute('data-persistent'),
+      dismissible: toast.querySelector('.toast-dismiss') !== null,
+      role: toast.getAttribute('role'),
+    })),
+  )
+}
+
+/** The toasts of `variant`, or every toast, in the stack. */
+export function toasts(page: Page, variant?: ToastVariant): Locator {
+  return page.locator(variant ? `#toast-stack .toast[data-variant="${variant}"]` : '#toast-stack .toast')
 }

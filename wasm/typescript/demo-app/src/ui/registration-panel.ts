@@ -37,6 +37,7 @@ import {
   summaryFields,
   type RegistrationSummary,
 } from './registration-summary'
+import { errorMessage } from './notify-options'
 import { createListenerBag, fillPicker, requireElement } from './shell'
 import { renderSummaryList } from './summary-list'
 
@@ -186,7 +187,16 @@ export function createRegistrationPanel(
       return
     }
     shownResult = state.result
-    const summary = summarizeRegistration(state.result, state.fixed, state.moving)
+    let summary: RegistrationSummary
+    try {
+      summary = summarizeRegistration(state.result, state.fixed, state.moving)
+    } catch (error) {
+      // No card is better than a stale one; the store reports the error
+      // (`onError` in src/state.ts) and the result stays usable otherwise.
+      elements.summary.hidden = true
+      elements.copyParameters.value = ''
+      throw new Error(`Could not summarize the registration: ${errorMessage(error)}`, { cause: error })
+    }
     elements.summaryBrief.textContent = summaryBrief(summary)
     renderSummaryList(elements.summaryList, summaryFields(summary))
     renderMatrixTable(elements.matrix, summary)

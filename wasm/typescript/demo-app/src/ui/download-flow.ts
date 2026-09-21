@@ -27,6 +27,7 @@ import {
   type OutputKind,
 } from '../state.ts'
 import type { FormatChoices } from './download-controls.ts'
+import { errorMessage } from './notify-options.ts'
 import type { Shell, StatusOptions } from './shell.ts'
 
 export interface DownloadFlowOptions {
@@ -112,8 +113,7 @@ export function createDownloadFlow(
       download(file.bytes, file.filename)
       shell.setStatus({ message: `Downloaded ${file.filename} (${formatBytes(file.bytes.byteLength)}).` })
     } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error)
-      shell.setStatus({ message: `Could not write ${filename}: ${reason}`, variant: 'danger' })
+      shell.setStatus({ message: `Could not write ${filename}: ${errorMessage(error)}`, variant: 'danger' })
     } finally {
       store.update(writingFinished(kind))
     }

@@ -6,6 +6,7 @@ import { test } from 'node:test'
 import type { ImageSource, LoadImageOptions, LoadedImage } from '../io/load-image.ts'
 import { createStore, registrationStarted, resultReady, type AppStore } from '../state.ts'
 import type { RegistrationResult } from '../registration/types.ts'
+import type { Notifier } from './notify.ts'
 import { createReloadFlow, type ReloadFlowShell } from './reload-flow.ts'
 import type { StatusOptions } from './shell.ts'
 
@@ -26,13 +27,20 @@ function fakeResult(): RegistrationResult {
   return { image: { name: 'result' }, elapsedMs: 1 } as unknown as RegistrationResult
 }
 
-function recordingShell(): ReloadFlowShell & { statuses: StatusOptions[]; settledCalls: number } {
+function recordingShell(): ReloadFlowShell & { statuses: StatusOptions[]; warnings: string[]; settledCalls: number } {
   const shell = {
     statuses: [] as StatusOptions[],
+    warnings: [] as string[],
     settledCalls: 0,
     setStatus(options: StatusOptions) {
       shell.statuses.push(options)
     },
+    // The flow raises warning toasts only.
+    notify: {
+      warning(message: string) {
+        shell.warnings.push(message)
+      },
+    } as unknown as Notifier,
     async settled() {
       shell.settledCalls += 1
     },
@@ -192,4 +200,22 @@ test('ignores a second reload while one is active', async () => {
   await first
   assert.equal(calls, 2)
   assert.equal(store.state.budgetBytes, 10 * MIB)
+})
+
+test('shows a loader warning as a toast while the reload goes on', async () => {
+  const store = loadedStore()
+  const shell = recordingShell()
+  const { reload } = createReloadFlow(store, shell, {
+    async loadImage(source, options?: LoadImageOptions) {
+      const name = (source as { name: string }).name
+      options?.onWarning?.(`${name} is 612.0 MB at full resolution`)
+      return fakeImage(name, options?.budgetBytes)
+    },
+  })
+
+  await reload(10 * MIB)
+
+  assert.deepEqual(shell.warnings, ['fixed.mha is 612.0 MB at full resolution', 'moving.mha is 612.0 MB at full resolution'])
+  assert.equal(store.state.budgetBytes, 10 * MIB)
+  assert.equal(shell.statuses.at(-1)!.variant, undefined, 'the warning stays out of the status row')
 })

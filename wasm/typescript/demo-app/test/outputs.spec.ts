@@ -25,6 +25,7 @@ import {
   loadSample,
   splashDialog,
   start,
+  toasts,
   volumeName,
   waitForSlot,
 } from './helpers'
@@ -170,8 +171,8 @@ async function downloadAs(session: Session, kind: OutputKind, id: string, filena
   expect(await download.failure()).toBeNull()
   const bytes = await readFile(await download.path())
   expect(bytes.byteLength, `${filename} should not be empty`).toBeGreaterThan(0)
-  // The status row reports the finished download rather than a failure.
-  await expect(page.locator('#status-callout')).toBeHidden()
+  // The status row reports the finished download, and no failure toast was raised.
+  await expect(toasts(page, 'danger')).toHaveCount(0)
   await expect(page.locator('#status-message')).toContainText(`Downloaded ${filename} (`)
   files.set(filename, bytes)
 }

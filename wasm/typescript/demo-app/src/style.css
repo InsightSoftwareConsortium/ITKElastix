@@ -157,14 +157,22 @@ html:not(.wa-dark) .theme-icon-sun {
   color: var(--wa-color-text-normal);
 }
 
-/* elastix errors arrive as multi-line stderr text; keep the line breaks but
-   cap the row so the viewers keep their space. */
-.status-callout {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-height: 7.5rem;
-  overflow: auto;
-  white-space: pre-line;
+/* The outcome of the last flow, in its variant's colour; the toast that
+   went with it (src/ui/notify.ts) carried the same text. */
+.status-row[data-variant='brand'] .status-message {
+  color: var(--wa-color-brand-on-quiet);
+}
+
+.status-row[data-variant='success'] .status-message {
+  color: var(--wa-color-success-on-quiet);
+}
+
+.status-row[data-variant='warning'] .status-message {
+  color: var(--wa-color-warning-on-quiet);
+}
+
+.status-row[data-variant='danger'] .status-message {
+  color: var(--wa-color-danger-on-quiet);
 }
 
 /* Registration panel ------------------------------------------------------ */
@@ -457,6 +465,109 @@ html:not(.wa-dark) .theme-icon-sun {
 
 .app-footer a:hover {
   text-decoration: var(--wa-link-decoration-hover);
+}
+
+/* Notifications ----------------------------------------------------------- */
+
+/* The toast stack (src/ui/notify.ts): a manual popover pinned to the top
+   right corner, so it renders in the top layer, painted above the splash
+   dialog. The user agent's popover box (centred, bordered, opaque) is undone
+   here, and only the toasts take pointer events, so the empty part of the
+   stack never blocks the header under it. The stack shows while it holds
+   a toast (`:popover-open`, or `data-open` where popovers are unsupported)
+   and is hidden otherwise. On a narrow window it spans the width, which
+   needs no media query. */
+.toast-stack {
+  position: fixed;
+  inset: var(--wa-space-m) var(--wa-space-m) auto auto;
+  z-index: 10;
+  display: none;
+  flex-direction: column;
+  gap: var(--wa-space-s);
+  width: min(24rem, calc(100vw - 2 * var(--wa-space-m)));
+  max-height: calc(100dvh - 2 * var(--wa-space-m));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.toast-stack:popover-open {
+  display: flex;
+}
+
+.toast-stack[data-open] {
+  display: flex;
+}
+
+/* One toast: a raised callout with the variant's accent down its start
+   edge and its icon in the variant's colour (the `wa-<variant>` class on
+   the host maps the tokens), lifted off the page by a shadow. The fade in
+   and out are driven from the module (Web Animations, skipped under
+   prefers-reduced-motion), so no keyframes live here. */
+.toast {
+  pointer-events: auto;
+  align-items: flex-start;
+  padding: var(--wa-space-s) var(--wa-space-xs) var(--wa-space-s) var(--wa-space-m);
+  background: var(--wa-color-surface-raised);
+  border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+  border-inline-start: var(--wa-space-2xs) solid var(--wa-color-fill-loud);
+  border-radius: var(--wa-border-radius-m);
+  box-shadow: var(--wa-shadow-l);
+  color: var(--wa-color-text-normal);
+  font-size: var(--wa-font-size-s);
+  line-height: var(--wa-line-height-normal);
+}
+
+.toast::part(icon) {
+  color: var(--wa-color-on-quiet);
+  font-size: 1.25em;
+}
+
+.toast-icon {
+  display: block;
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The message beside its dismiss button, whose box hangs into the padding
+   so the toast stays as tall as a line of text. */
+.toast-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--wa-space-xs);
+  min-width: 0;
+}
+
+/* elastix and writer errors arrive as several lines; keep the breaks and
+   scroll a very long one rather than filling the screen. */
+.toast-message {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 10rem;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+  padding-block: var(--wa-space-3xs);
+}
+
+.toast-dismiss {
+  flex: none;
+  margin-block: calc(-1 * var(--wa-space-2xs));
+  color: var(--wa-color-text-quiet);
+}
+
+.toast-dismiss .toast-icon {
+  width: 1.25em;
+  height: 1.25em;
 }
 
 /* Narrow viewports -------------------------------------------------------- */

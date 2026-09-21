@@ -6,6 +6,8 @@
 // can pass plain objects instead of real zarr arrays.
 import type { NgffImage } from '@fideus-labs/ngff-zarr/browser'
 
+import { formatBytes } from '../format.ts'
+
 /** Largest image buffer, in bytes, that elastix is handed for registration. */
 export const PIXEL_BUDGET_BYTES = 50 * 1024 * 1024
 
@@ -117,4 +119,31 @@ export function selectScaleForBudget(
   }
   const fitting = images.findIndex((image) => ngffImageBytes(image) <= budgetBytes)
   return fitting === -1 ? images.length - 1 : fitting
+}
+
+/**
+ * Full-resolution size, in bytes, above which an input is warned about
+ * before it is downsampled: pyramiding a larger image takes a while and
+ * several times its size in memory.
+ */
+export const LARGE_INPUT_BYTES = 512 * 1024 * 1024
+
+/**
+ * The warning for an input whose full-resolution buffer of `bytes` is
+ * larger than `threshold`, naming the budget it is about to be brought
+ * down to; null when it is not.
+ */
+export function largeInputWarning(
+  name: string,
+  bytes: number,
+  budgetBytes: number,
+  threshold: number = LARGE_INPUT_BYTES,
+): string | null {
+  if (!(bytes > threshold)) {
+    return null
+  }
+  return (
+    `${name} is ${formatBytes(bytes)} at full resolution, more than ${formatBytes(threshold)}; ` +
+    `downsampling it to the ${formatBytes(budgetBytes)} budget may take a while and a lot of memory.`
+  )
 }

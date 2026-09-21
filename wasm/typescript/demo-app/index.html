@@ -86,10 +86,12 @@
         </div>
       </header>
 
-      <div id="status" class="status-row" role="status" aria-live="polite">
+      <!-- The status row: one line the shell keeps current (src/ui/shell.ts),
+           coloured by the variant of the last status; anything but a neutral
+           status is also raised as a toast in the stack at the end of the app. -->
+      <div id="status" class="status-row" role="status" aria-live="polite" data-variant="neutral">
         <wa-progress-bar id="status-progress" indeterminate label="Working" hidden></wa-progress-bar>
         <span id="status-message" class="status-message">Starting…</span>
-        <wa-callout id="status-callout" class="status-callout" size="s" hidden></wa-callout>
       </div>
 
       <!-- The registration panel (src/ui/registration-panel.ts): the options
@@ -204,6 +206,11 @@
           <a href="https://webawesome.com/" target="_blank" rel="noopener">Web Awesome</a>
         </nav>
       </footer>
+
+      <!-- The toast stack (src/ui/notify.ts): a manual popover, so it renders in
+           the top layer, painted above the splash dialog; the notifier shows it
+           while it holds a toast and hides it again once the last one has gone. -->
+      <div id="toast-stack" class="toast-stack" popover="manual" role="region" aria-label="Notifications"></div>
 
       <wa-dialog id="splash" label="Load fixed and moving images" data-locked>
         <div class="splash-body">

@@ -21,6 +21,7 @@ import {
   type AppState,
   type AppStore,
 } from '../state'
+import { errorMessage } from '../ui/notify-options'
 import { createListenerBag, requireElement, type Shell } from '../ui/shell'
 import { OVERLAY_COLORMAP, OVERLAY_OPACITY_STEP, formatOpacity } from './overlay-options'
 import type { OverlayContent } from './panel'
@@ -80,7 +81,7 @@ export function createOverlay(root: ParentNode, store: AppStore, shell: OverlayS
 
     const volume = overlayVolume(state)
     shell.fixedPanel.setOverlay(volume).catch((error: unknown) => {
-      const reason = error instanceof Error ? error.message : String(error)
+      const reason = errorMessage(error)
       shell.setStatus({
         message: volume
           ? `Could not overlay ${volume.name} on the fixed image: ${reason}`

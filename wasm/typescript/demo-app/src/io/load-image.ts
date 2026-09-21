@@ -45,7 +45,13 @@ import {
   registrationSliceOptions,
   type SpatialAxis,
 } from './normalize'
-import { PIXEL_BUDGET_BYTES, planScaleFactors, selectScaleForBudget } from './scale-select'
+import {
+  PIXEL_BUDGET_BYTES,
+  estimateLevelBytes,
+  largeInputWarning,
+  planScaleFactors,
+  selectScaleForBudget,
+} from './scale-select'
 import {
   detectSourceKind,
   hasOrientationExtension,
@@ -64,7 +70,7 @@ export {
   type RegistrationInput,
   type SpatialAxis,
 } from './normalize'
-export { PIXEL_BUDGET_BYTES } from './scale-select'
+export { LARGE_INPUT_BYTES, PIXEL_BUDGET_BYTES } from './scale-select'
 export {
   detectSourceKind,
   hasOrientationExtension,
@@ -143,6 +149,12 @@ export interface LoadImageOptions {
    */
   budgetBytes?: number
   onProgress?: LoadProgressCallback
+  /**
+   * Receives a warning that does not stop the load: today, that the image
+   * is larger than {@link LARGE_INPUT_BYTES} at full resolution and about
+   * to be downsampled, which is slow and memory-hungry.
+   */
+  onWarning?: (message: string) => void
 }
 
 /** Zarr chunk edge length for the in-memory arrays. */
@@ -383,7 +395,7 @@ export function absoluteStoreUrl(url: string): string {
 export async function multiscalesFromItkImage(
   image: Image,
   name: string,
-  { budgetBytes = PIXEL_BUDGET_BYTES, onProgress }: LoadImageOptions = {},
+  { budgetBytes = PIXEL_BUDGET_BYTES, onProgress, onWarning }: LoadImageOptions = {},
 ): Promise<Multiscales> {
   const report = makeReporter(onProgress)
 
@@ -393,6 +405,13 @@ export async function multiscalesFromItkImage(
     addAnatomicalOrientation: sourceDimension === 3 && hasOrientationExtension(name),
     chunks: INGEST_CHUNK_SIZE,
   })
+
+  // Warn before the downsampling starts, which is where a very large
+  // image spends its time and memory.
+  const warning = largeInputWarning(name, estimateLevelBytes(baseImage, 1), budgetBytes)
+  if (warning !== null) {
+    onWarning?.(warning)
+  }
 
   const scaleFactors = planScaleFactors(baseImage, budgetBytes)
   report(

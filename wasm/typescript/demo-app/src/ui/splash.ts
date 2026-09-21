@@ -21,6 +21,7 @@ import {
 import type { Sample } from '../samples'
 import { hasInputs, type AppStore } from '../state'
 import { imageSummaryFields } from './image-summary'
+import { errorMessage } from './notify-options'
 import { requireElement } from './shell'
 import {
   firstUrlFromList,
@@ -49,6 +50,12 @@ export interface SplashOptions {
    * error. The dialog closes once this resolves.
    */
   onLoaded: (fixed: LoadedImage, moving: LoadedImage) => void | Promise<void>
+  /**
+   * Receives a warning the loader raises about an input without stopping
+   * the load (a very large image about to be downsampled); the app shows
+   * it as a toast, since the dialog's status lines are transient.
+   */
+  onWarning?: (message: string) => void
   /** Defaults to {@link loadImageSource}; injectable for tests. */
   loadImage?: ImageLoader
 }
@@ -75,10 +82,6 @@ export interface Splash {
 /** Element id of the button that loads a bundled sample pair. */
 export function sampleButtonId(sample: Pick<Sample, 'id'>): string {
   return `sample-${sample.id}`
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 /** The controls of one input slot; ids follow the `fixed-*` / `moving-*` pattern. */
@@ -123,7 +126,7 @@ function droppedSource(transfer: DataTransfer | null): ImageSource | null {
 }
 
 export function createSplash(root: ParentNode, options: SplashOptions): Splash {
-  const { store, samples, onLoaded } = options
+  const { store, samples, onLoaded, onWarning } = options
   const loadImage = options.loadImage ?? loadImageSource
 
   const dialog = requireElement<WaDialog>(root, '#splash')
@@ -266,6 +269,7 @@ export function createSplash(root: ParentNode, options: SplashOptions): Splash {
       const image = await loadImage(source, {
         budgetBytes: store.state.budgetBytes,
         onProgress: (update) => setSlotStatus(role, 'loading', update.message),
+        onWarning,
       })
       images = { ...images, [role]: image }
       return true

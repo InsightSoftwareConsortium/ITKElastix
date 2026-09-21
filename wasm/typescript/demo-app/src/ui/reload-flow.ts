@@ -6,7 +6,9 @@
 // runs the store's `reloading` flag disables Register, Load images, and
 // the picker itself; a failure leaves the loaded pair and the budget in
 // effect untouched, so the picker falls back to them when the shell
-// renders.
+// renders. A warning the loader raises about an input (a very large image
+// about to be downsampled) goes to a toast, since the row is showing the
+// progress.
 //
 // The loader is injected so this module never imports the ingest pipeline;
 // the node unit tests drive it with a stand-in.
@@ -14,6 +16,7 @@ import { formatBytes } from '../format.ts'
 import type { LoadedImage } from '../io/load-image.ts'
 import { assertCompatiblePair } from '../io/normalize.ts'
 import { budgetApplied, canReloadInputs, reloadFailed, reloadStarted, type AppStore } from '../state.ts'
+import { errorMessage } from './notify-options.ts'
 import type { Shell } from './shell.ts'
 import type { ImageLoader } from './splash.ts'
 import { SLOT_ROLES, roleLabel, type SlotRole } from './splash-slots.ts'
@@ -23,7 +26,7 @@ export interface ReloadFlowOptions {
   loadImage: ImageLoader
 }
 
-export type ReloadFlowShell = Pick<Shell, 'setStatus' | 'settled'>
+export type ReloadFlowShell = Pick<Shell, 'setStatus' | 'settled' | 'notify'>
 
 export interface ReloadFlow {
   /**
@@ -56,6 +59,7 @@ export function createReloadFlow(store: AppStore, shell: ReloadFlowShell, { load
         loaded[role] = await loadImage(source, {
           budgetBytes,
           onProgress: (update) => shell.setStatus({ message: `${roleLabel(role)}: ${update.message}`, busy: true }),
+          onWarning: (message) => shell.notify.warning(message),
         })
       }
       const fixed = loaded.fixed!
@@ -79,9 +83,8 @@ export function createReloadFlow(store: AppStore, shell: ReloadFlowShell, { load
       store.update(budgetApplied(fixed, moving, budgetBytes))
     } catch (error) {
       store.update(reloadFailed())
-      const reason = error instanceof Error ? error.message : String(error)
       shell.setStatus({
-        message: `Could not reload the images at ${budget}: ${reason}. The pair loaded at ${formatBytes(previous.fixed.budgetBytes)} is kept.`,
+        message: `Could not reload the images at ${budget}: ${errorMessage(error)}. The pair loaded at ${formatBytes(previous.fixed.budgetBytes)} is kept.`,
         variant: 'danger',
       })
       return

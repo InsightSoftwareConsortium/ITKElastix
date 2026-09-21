@@ -12,6 +12,7 @@
 import { formatElapsed } from '../format.ts'
 import { AFFINE_STAGES_LABEL, type RegisterFunction, type RegistrationResult } from '../registration/types.ts'
 import { canRegister, registrationFailed, registrationStarted, resultReady, type AppStore } from '../state.ts'
+import { errorMessage } from './notify-options.ts'
 import type { Shell } from './shell.ts'
 
 export interface RegisterFlowOptions {
@@ -83,8 +84,7 @@ export function createRegisterFlow(
         })
         return
       }
-      const reason = error instanceof Error ? error.message : String(error)
-      shell.setStatus({ message: `Registration failed: ${reason}`, variant: 'danger' })
+      shell.setStatus({ message: `Registration failed: ${errorMessage(error)}`, variant: 'danger' })
       return
     } finally {
       clearInterval(timer)

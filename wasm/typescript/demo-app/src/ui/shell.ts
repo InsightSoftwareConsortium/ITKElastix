@@ -4,13 +4,15 @@
 // state store. Controls and panels are rendered from state, so swapping the
 // moving panel to the registered result, choosing a format, or showing a
 // button's spinner while its file is written is a state change, not a call
-// into this module. The two panels are linked so they navigate together
+// into this module. A status of a success, warning, or danger variant is
+// shown in the row in that colour and raised as a toast through the
+// notifier (src/ui/notify.ts), so the flows report through `setStatus`
+// alone. The two panels are linked so they navigate together
 // (src/viewer/panel.ts), and a freshly loaded pair opens on the default
 // view; the view controls in src/ui/view-controls.ts and the overlay in
 // src/viewer/overlay.ts drive the rest.
 import type WaBadge from '@awesome.me/webawesome/dist/components/badge/badge.js'
 import type WaButton from '@awesome.me/webawesome/dist/components/button/button.js'
-import type WaCallout from '@awesome.me/webawesome/dist/components/callout/callout.js'
 import type WaProgressBar from '@awesome.me/webawesome/dist/components/progress-bar/progress-bar.js'
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js'
 import type WaSplitPanel from '@awesome.me/webawesome/dist/components/split-panel/split-panel.js'
@@ -35,6 +37,8 @@ import {
 } from '../state'
 import { createViewerPanel, linkPanels, resetLinkedViews, type ViewerPanel } from '../viewer/panel'
 import { formatTooltip, pickerFormats, progressPercent, selectedFormat, type ProgressCounts } from './download-controls'
+import type { Notifier } from './notify'
+import { errorMessage } from './notify-options'
 
 export type StatusVariant = 'neutral' | 'brand' | 'success' | 'warning' | 'danger'
 
@@ -42,7 +46,11 @@ export interface StatusOptions {
   message: string
   /** Show the progress bar next to the message. */
   busy?: boolean
-  /** Anything but 'neutral' renders the message in a callout of that variant. */
+  /**
+   * Anything but 'neutral' colours the message and raises it as a toast
+   * of that variant (src/ui/notify.ts); the row keeps the text after the
+   * toast has gone.
+   */
   variant?: StatusVariant
   /** Counts the progress bar is drawn from while `busy`; without them it is indeterminate. */
   progress?: ProgressCounts
@@ -54,6 +62,11 @@ export interface ShellHandlers {
   onRegister?: () => void
   /** The download button for `kind`; the format to write is read from the store. */
   onDownload?: (kind: OutputKind) => void
+}
+
+/** What the shell is built with: the button callbacks and the notifier it reports through. */
+export interface ShellOptions extends ShellHandlers {
+  notify: Notifier
 }
 
 /** The controls of one download: the format picker, the button, and the button's tooltip. */
@@ -72,7 +85,6 @@ export interface ShellElements {
   status: HTMLElement
   statusProgress: WaProgressBar
   statusMessage: HTMLElement
-  statusCallout: WaCallout
   viewers: WaSplitPanel
   fixedCaption: WaBadge
   movingCaption: WaBadge
@@ -82,6 +94,8 @@ export interface Shell {
   readonly elements: ShellElements
   readonly fixedPanel: ViewerPanel
   readonly movingPanel: ViewerPanel
+  /** The notifier the shell raises its toasts through, for modules that report outside a status. */
+  readonly notify: Notifier
   setStatus(options: StatusOptions): void
   /**
    * Resolves once every panel update queued so far has finished, the
@@ -169,7 +183,8 @@ function sameContent(a: PanelContent | undefined, b: PanelContent | undefined): 
  * half of the split panel, and keep the controls and panels in sync with
  * the state until `destroy()` is called.
  */
-export async function createShell(root: ParentNode, store: AppStore, handlers: ShellHandlers = {}): Promise<Shell> {
+export async function createShell(root: ParentNode, store: AppStore, options: ShellOptions): Promise<Shell> {
+  const { notify, ...handlers } = options
   const elements: ShellElements = {
     loadImages: requireElement(root, '#load-images'),
     register: requireElement(root, '#register'),
@@ -178,7 +193,6 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     status: requireElement(root, '#status'),
     statusProgress: requireElement(root, '#status-progress'),
     statusMessage: requireElement(root, '#status-message'),
-    statusCallout: requireElement(root, '#status-callout'),
     viewers: requireElement(root, '#viewers'),
     fixedCaption: requireElement(root, '#fixed-caption'),
     movingCaption: requireElement(root, '#moving-caption'),
@@ -200,14 +214,19 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     bar.indeterminate = progress === undefined
     bar.value = progress === undefined ? 0 : progressPercent(progress)
     elements.status.dataset.busy = String(busy)
-    const useCallout = variant !== 'neutral'
-    elements.statusMessage.hidden = useCallout
-    elements.statusCallout.hidden = !useCallout
-    if (useCallout) {
-      elements.statusCallout.variant = variant
-      elements.statusCallout.textContent = message
+    elements.status.dataset.variant = variant
+    elements.statusMessage.textContent = message
+    // The line is clipped to one row; a warning or failure, which can run
+    // to several lines of elastix or writer output, keeps its full text
+    // in the tooltip after its toast has gone.
+    if (variant === 'warning' || variant === 'danger') {
+      elements.statusMessage.title = message
     } else {
-      elements.statusMessage.textContent = message
+      elements.statusMessage.removeAttribute('title')
+    }
+    if (variant !== 'neutral') {
+      // The row is a live region and has just announced the text itself.
+      notify.show(message, { variant, announce: false })
     }
   }
 
@@ -226,8 +245,10 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     const next = previous
       .then(() => (content ? panel.show(content.image, content.name) : panel.clear()))
       .catch((error: unknown) => {
-        const reason = error instanceof Error ? error.message : String(error)
-        setStatus({ message: `Could not display ${content?.name ?? 'image'} in the ${panel.label} panel: ${reason}`, variant: 'danger' })
+        setStatus({
+          message: `Could not display ${content?.name ?? 'image'} in the ${panel.label} panel: ${errorMessage(error)}`,
+          variant: 'danger',
+        })
       })
     pending.set(panel, next)
   }
@@ -323,6 +344,7 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     elements,
     fixedPanel,
     movingPanel,
+    notify,
     setStatus,
     async settled() {
       await Promise.all([...pending.values(), fixedPanel.settled(), movingPanel.settled()])

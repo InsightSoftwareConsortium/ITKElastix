@@ -18,6 +18,7 @@ import {
   imageFacts,
   isDisabled,
   selectValue,
+  statusText,
   switchState,
   volumeCount,
   volumeFacts,
@@ -76,15 +77,6 @@ async function openOptions(page: Page): Promise<void> {
   await expect(page.locator('#resolutions')).toBeVisible()
 }
 
-/** The text of the neutral status line, or of the callout when one is shown. */
-async function statusText(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const message = document.querySelector<HTMLElement>('#status-message')
-    const callout = document.querySelector<HTMLElement>('#status-callout')
-    const shown = message?.hidden ? callout : message
-    return shown?.textContent?.trim() ?? ''
-  })
-}
 
 /** The summary rows of the card, keyed by their `data-field`. */
 function summaryRows(page: Page): Promise<Record<string, string>> {

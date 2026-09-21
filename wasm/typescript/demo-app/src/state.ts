@@ -71,7 +71,23 @@ export interface AppStore {
   subscribe(listener: StateListener): () => void
 }
 
-export function createStore(initial: Partial<AppState> = {}): AppStore {
+export interface StoreOptions {
+  /**
+   * Receives an exception a listener threw while being notified. The
+   * remaining listeners are still notified and the state stays as
+   * updated. Defaults to logging it; the app reports it in a toast.
+   */
+  onError?: (error: unknown) => void
+}
+
+function logListenerError(error: unknown): void {
+  console.error('A state listener failed', error)
+}
+
+export function createStore(
+  initial: Partial<AppState> = {},
+  { onError = logListenerError }: StoreOptions = {},
+): AppStore {
   let state: Readonly<AppState> = {
     showResult: false,
     registering: false,
@@ -98,7 +114,12 @@ export function createStore(initial: Partial<AppState> = {}): AppStore {
       // Copy so a listener that unsubscribes (or subscribes) mid-notify does
       // not disturb the iteration.
       for (const listener of [...listeners]) {
-        listener(state, previous)
+        // One listener failing must not leave the others unrendered.
+        try {
+          listener(state, previous)
+        } catch (error) {
+          onError(error)
+        }
       }
       return state
     },
