@@ -1,0 +1,5 @@
+dist/
+public/samples/
+playwright-report/
+test-results/
+node_modules/
