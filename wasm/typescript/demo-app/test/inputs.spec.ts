@@ -4,100 +4,47 @@
 // read from the app state (`window.__demo.state`, published by src/main.ts)
 // and the splash's pending slots (`window.__demo.splash`) rather than from
 // rendered text wherever the state carries the fact; only the danger callout
-// and the slot summaries are checked as the user sees them. OZX and OME-TIFF
-// round trips join in Phase 03 once the exporter can write their fixtures.
-import { fileURLToPath } from 'node:url'
-
+// and the slot summaries are checked as the user sees them. The OZX and
+// OME-TIFF round trips live in test/outputs.spec.ts, which downloads their
+// fixtures first; the page helpers both files use are in test/helpers.ts.
 import { expect, test as base, type Locator, type Page } from '@playwright/test'
-import type WaButton from '@awesome.me/webawesome/dist/components/button/button.js'
 
-import type { LoadedImage } from '../src/io/load-image'
 import { BUDGET_QUERY_PARAM, PIXEL_BUDGET_BYTES } from '../src/io/scale-select'
 import type { SlotRole } from '../src/ui/splash-slots'
-
-/** The bundled sample images, downloaded by scripts/fetch-samples.mjs before the dev server starts. */
-const SAMPLES_DIR = fileURLToPath(new URL('../public/samples/', import.meta.url))
-const CT_FIXED = 'CT_2D_head_fixed.mha'
-const CT_MOVING = 'CT_2D_head_moving.mha'
-const MNI_FIXED = 'tpl-MNI152NLin2009aSym_res-1_T2w.nii.gz'
-const MNI_MOVING = 'tpl-MNI305_T1w.nii.gz'
+import {
+  CT_FIXED,
+  CT_MOVING,
+  LOAD_TIMEOUT_3D,
+  MNI_FIXED,
+  MNI_MOVING,
+  MNI_SAMPLE_BUTTON,
+  SAMPLES_DIR,
+  collectPageErrors,
+  imageFacts,
+  isDisabled,
+  loadSample,
+  splashDialog,
+  start,
+  volumeCount,
+  waitForSlot,
+} from './helpers'
 
 /** Pixel budget, in MiB, small enough to force the 3D sample down a pyramid level. */
 const SMALL_BUDGET_MIB = 4
 const SMALL_BUDGET_BYTES = SMALL_BUDGET_MIB * 1024 * 1024
-
-/** The 2D CT slices load in well under a second; the ingest wasm compiles on first use. */
-const LOAD_TIMEOUT = 60_000
-/** The 3D pair is 16 MB of NIfTI to decompress, pyramid, and display. */
-const LOAD_TIMEOUT_3D = 120_000
-
-// Chromium reports this benign layout warning as an error when niivue's
-// canvases and the split panel resize each other during a frame.
-const IGNORED_PAGE_ERRORS = [/ResizeObserver loop completed with undelivered notifications/]
 
 /** Every test fails if the page threw an uncaught error. */
 const test = base.extend<{ pageErrors: string[] }>({
   pageErrors: [
     async ({ page }, use) => {
       const errors: string[] = []
-      page.on('pageerror', (error) => {
-        if (!IGNORED_PAGE_ERRORS.some((pattern) => pattern.test(error.message))) {
-          errors.push(error.message)
-        }
-      })
+      collectPageErrors(page, errors)
       await use(errors)
       expect(errors, 'the page should not throw').toEqual([])
     },
     { auto: true },
   ],
 })
-
-/** The serializable part of a {@link LoadedImage} the tests assert on. */
-interface ImageFacts {
-  name: string
-  kind: LoadedImage['kind']
-  format: LoadedImage['format']
-  dimension: LoadedImage['dimension']
-  /** Extents of the image elastix receives, x first. */
-  size: number[]
-  scaleIndex: number
-  /** Number of pyramid levels held in memory. */
-  levels: number
-  registrationBytes: number
-  budgetBytes: number
-}
-
-/** Where a loaded image lives: committed to the app store, or pending in a splash slot. */
-type ImageHolder = 'store' | 'splash'
-
-/**
- * Facts about the image `role` holds in the store or the splash, or
- * undefined while that slot is empty. `LoadedImage` carries typed arrays
- * and zarr handles, so only plain fields cross the page boundary.
- */
-function imageFacts(page: Page, holder: ImageHolder, role: SlotRole): Promise<ImageFacts | undefined> {
-  return page.evaluate(
-    ([holder, role]) => {
-      const demo = window.__demo
-      const image = holder === 'store' ? demo?.state?.state[role] : demo?.splash?.images[role]
-      if (!image) {
-        return undefined
-      }
-      return {
-        name: image.name,
-        kind: image.kind,
-        format: image.format,
-        dimension: image.dimension,
-        size: [...image.itkImage.size],
-        scaleIndex: image.scaleIndex,
-        levels: image.multiscales.images.length,
-        registrationBytes: image.registrationBytes,
-        budgetBytes: image.budgetBytes,
-      }
-    },
-    [holder, role] as const,
-  )
-}
 
 /** Names of the pair the app store holds; undefined entries for empty slots. */
 function storeNames(page: Page): Promise<{ fixed?: string; moving?: string }> {
@@ -107,54 +54,9 @@ function storeNames(page: Page): Promise<{ fixed?: string; moving?: string }> {
   })
 }
 
-/** Number of volumes the niivue instance of the `role` panel shows. */
-function volumeCount(page: Page, role: SlotRole): Promise<number | undefined> {
-  return page.evaluate((role) => window.__demo?.[role]?.volumes.length, role)
-}
-
-/**
- * `wa-button` keeps `disabled` as a property without reflecting it, so
- * Playwright's `toBeEnabled` cannot see it; read the property instead.
- */
-function isDisabled(button: Locator): Promise<boolean> {
-  return button.evaluate((element: WaButton) => element.disabled)
-}
-
-/** The native dialog inside the `wa-dialog` host; the host itself has no box. */
-function splashDialog(page: Page): Locator {
-  return page.locator('#splash dialog')
-}
-
 /** The value cell of one summary row under a splash slot. */
 function summaryValue(page: Page, role: SlotRole, field: string): Locator {
   return page.locator(`#${role}-summary .summary-row[data-field="${field}"] dd`)
-}
-
-/**
- * Wait until the splash slot `role` holds `name` and the dialog is idle
- * again: a slot is filled before the busy flag drops, and "Start" and the
- * pair check only follow once it has.
- */
-async function waitForSlot(page: Page, role: SlotRole, name: string, timeout = LOAD_TIMEOUT): Promise<void> {
-  await expect
-    .poll(
-      () =>
-        page.evaluate((role) => {
-          const splash = window.__demo?.splash
-          return { name: splash?.images[role]?.name, loading: splash?.loading }
-        }, role),
-      { message: `the ${role} slot should finish loading ${name}`, timeout },
-    )
-    .toEqual({ name, loading: false })
-}
-
-/** Click a sample button and wait for the pair to reach the store and both viewers. */
-async function loadSample(page: Page, sampleId: string, timeout: number): Promise<void> {
-  await expect(splashDialog(page)).toBeVisible()
-  await page.locator(`#${sampleId}`).click()
-  await expect(splashDialog(page)).toBeHidden({ timeout })
-  await expect.poll(() => volumeCount(page, 'fixed'), { timeout }).toBe(1)
-  await expect.poll(() => volumeCount(page, 'moving'), { timeout }).toBe(1)
 }
 
 /** Type `url` into the slot's URL field and load it. */
@@ -177,18 +79,10 @@ async function pickFile(page: Page, role: SlotRole, fileName: string): Promise<v
   await page.locator(`#${role}-file`).setInputFiles(`${SAMPLES_DIR}${fileName}`)
 }
 
-/** Press "Start" and wait for the dialog to hand the pair to the app. */
-async function start(page: Page): Promise<void> {
-  const startButton = page.locator('#start-registration-inputs')
-  await expect.poll(() => isDisabled(startButton), { message: 'a compatible pair should enable Start' }).toBe(false)
-  await startButton.click()
-  await expect(splashDialog(page)).toBeHidden({ timeout: LOAD_TIMEOUT })
-}
-
 test.describe('3D MNI sample', () => {
   test('loads both volumes at full resolution under the default budget', async ({ page }) => {
     await page.goto('/')
-    await loadSample(page, 'sample-mni-3d', LOAD_TIMEOUT_3D)
+    await loadSample(page, MNI_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
 
     const fixed = await imageFacts(page, 'store', 'fixed')
     const moving = await imageFacts(page, 'store', 'moving')
@@ -208,7 +102,7 @@ test.describe('3D MNI sample', () => {
 
   test(`downsamples both volumes under ?${BUDGET_QUERY_PARAM}=${SMALL_BUDGET_MIB}`, async ({ page }) => {
     await page.goto(`/?${BUDGET_QUERY_PARAM}=${SMALL_BUDGET_MIB}`)
-    await loadSample(page, 'sample-mni-3d', LOAD_TIMEOUT_3D)
+    await loadSample(page, MNI_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
 
     const fixed = await imageFacts(page, 'store', 'fixed')
     const moving = await imageFacts(page, 'store', 'moving')
