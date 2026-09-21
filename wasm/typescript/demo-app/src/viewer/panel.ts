@@ -15,13 +15,18 @@
 // with `linkPanels` navigate together through niivue's broadcast API: on
 // every redraw the source panel copies its crosshair (through world
 // millimetres, so different grids agree), 2D pan and zoom, 3D camera, and
-// clip planes onto its peer.
+// clip planes onto its peer. A panel also watches its container with a
+// ResizeObserver and has niivue resize the canvas whenever the drawing
+// buffer no longer matches the canvas's CSS box (the split panel flipping
+// or being dragged, the window changing), so the picture is never
+// stretched.
 import type { Image } from 'itk-wasm'
 import { NiiVue, SLICE_TYPE, type BackendType, type NVImage, type SyncOpts } from '@niivue/niivue'
 import { iwi2nii } from '@niivue/cbor-loader'
 
 import { imageToIwiCborBytes } from '../io/iwi-cbor'
 import type { AppStore } from '../state'
+import { canvasIsStale } from '../ui/layout-options'
 import type { Splash } from '../ui/splash'
 import { DEFAULT_COLORMAP, DEFAULT_SLICE_TYPE, sliceTypeForDimension } from '../ui/view-options'
 import { promoteTo3d } from './promote-to-3d'
@@ -147,6 +152,12 @@ export interface ViewerPanel {
    * panels (or use {@link linkPanels}) for a two-way link.
    */
   link(peer: ViewerPanel | null): void
+  /**
+   * Have niivue match the drawing buffer to the canvas's CSS box if the
+   * two disagree, and redraw. Runs on every container resize; returns
+   * whether a resize was needed.
+   */
+  resize(): boolean
   /** Resolves once every volume change queued so far has finished. */
   settled(): Promise<void>
   /** Release GPU resources and detach the canvas. */
@@ -419,16 +430,35 @@ export async function createViewerPanel(
       peer = next
       applyLink()
     },
+    resize() {
+      const box = canvas.getBoundingClientRect()
+      if (!canvasIsStale({ width: canvas.width, height: canvas.height }, box, window.devicePixelRatio)) {
+        return false
+      }
+      nv.resize()
+      return true
+    },
     settled() {
       return queue
     },
     destroy() {
+      resizeObserver.disconnect()
       peer = null
       nv.broadcastTo()
       nv.destroy()
       canvas.remove()
     },
   }
+
+  // niivue observes the canvas itself; observing the container as well
+  // catches a box change the canvas observer has not delivered yet (the
+  // two fire in the same batch, so this is usually a no-op) and keeps the
+  // guarantee in the app's hands.
+  const resizeObserver = new ResizeObserver(() => {
+    panel.resize()
+  })
+  resizeObserver.observe(container)
+
   return panel
 }
 

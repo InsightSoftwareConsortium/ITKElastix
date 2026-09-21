@@ -3,8 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>elastix affine registration</title>
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <!-- Apply the pinned or system color scheme before the first paint, so a
+         pinned theme never flashes the other one. src/ui/theme.ts takes over
+         once the app runs; the storage key, the class, and the media query
+         here must match src/ui/theme-options.ts (its test checks). -->
+    <script>
+      ;(function () {
+        var stored = null
+        try {
+          stored = localStorage.getItem('elastix-demo-theme')
+        } catch (error) {}
+        var pinned = stored === 'light' || stored === 'dark'
+        var dark = pinned ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
+        document.documentElement.classList.toggle('wa-dark', dark)
+        if (pinned) {
+          document.querySelector('meta[name="color-scheme"]').setAttribute('content', stored)
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="app">
@@ -20,6 +39,23 @@
           <wa-button id="cancel-registration" variant="danger" appearance="outlined" disabled>Cancel</wa-button>
           <wa-tooltip for="cancel-registration">Stop the running registration; the elastix worker is terminated</wa-tooltip>
           <wa-switch id="show-result" disabled>Show registered result</wa-switch>
+        </div>
+        <!-- The theme toggle (src/ui/theme.ts): an icon-only button showing
+             the scheme it switches to. The icon is chosen from the root
+             element's class, so the first paint is already right; the
+             visually hidden label and the tooltip name the action. -->
+        <div class="app-theme">
+          <wa-button id="theme-toggle" class="theme-toggle" appearance="plain">
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+            <span id="theme-toggle-label" class="wa-visually-hidden">Switch to the dark theme</span>
+          </wa-button>
+          <wa-tooltip id="theme-toggle-tooltip" for="theme-toggle">Switch to the dark theme</wa-tooltip>
         </div>
         <!-- The outputs row: each download is a format picker beside its button.
              The shell fills the pickers from the format registry and keeps the
@@ -157,6 +193,17 @@
           </wa-details>
         </div>
       </wa-split-panel>
+
+      <footer class="app-footer">
+        <span class="app-footer-note">Registration runs in your browser; nothing is uploaded.</span>
+        <nav class="app-footer-links" aria-label="Projects this demo is built on">
+          <a href="https://github.com/InsightSoftwareConsortium/ITKElastix" target="_blank" rel="noopener">ITKElastix</a>
+          <a href="https://elastix.dev/" target="_blank" rel="noopener">elastix</a>
+          <a href="https://github.com/niivue/niivue" target="_blank" rel="noopener">niivue</a>
+          <a href="https://github.com/fideus-labs/ngff-zarr" target="_blank" rel="noopener">ngff-zarr</a>
+          <a href="https://webawesome.com/" target="_blank" rel="noopener">Web Awesome</a>
+        </nav>
+      </footer>
 
       <wa-dialog id="splash" label="Load fixed and moving images" data-locked>
         <div class="splash-body">

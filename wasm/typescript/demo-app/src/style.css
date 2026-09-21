@@ -33,10 +33,11 @@ body {
 
 /* Header ------------------------------------------------------------------ */
 
+/* The title grows, so the toolbar and the theme toggle sit at the right
+   end of the first row; the downloads always take a row of their own. */
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--wa-space-s) var(--wa-space-l);
   padding: var(--wa-space-s) var(--wa-space-m);
@@ -47,6 +48,7 @@ body {
 .app-title {
   display: flex;
   align-items: center;
+  flex: 1 1 auto;
   gap: var(--wa-space-s);
   min-width: 0;
 }
@@ -58,9 +60,10 @@ body {
 
 .app-title h1 {
   margin: 0;
+  font-family: var(--wa-font-family-heading);
   font-size: var(--wa-font-size-l);
-  font-weight: var(--wa-font-weight-semibold);
-  line-height: 1.2;
+  font-weight: var(--wa-font-weight-heading);
+  line-height: var(--wa-line-height-condensed);
   white-space: nowrap;
 }
 
@@ -69,6 +72,30 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--wa-space-s);
+}
+
+/* The theme toggle (src/ui/theme.ts): an icon-only button whose icon is
+   the scheme it switches to, chosen by the root element's class so the
+   inline script's first paint already shows the right one. */
+.app-theme {
+  display: flex;
+  align-items: center;
+}
+
+.theme-icon {
+  display: block;
+  width: 1.25em;
+  height: 1.25em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html.wa-dark .theme-icon-moon,
+html:not(.wa-dark) .theme-icon-sun {
+  display: none;
 }
 
 /* The outputs row under the title and toolbar: the two downloads, each a
@@ -80,6 +107,7 @@ body {
   justify-content: flex-end;
   flex-wrap: wrap;
   flex-basis: 100%;
+  order: 2;
   gap: var(--wa-space-s) var(--wa-space-m);
 }
 
@@ -122,6 +150,11 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+/* While something runs, the message reads as the active line, not a hint. */
+.status-row[data-busy='true'] .status-message {
+  color: var(--wa-color-text-normal);
 }
 
 /* elastix errors arrive as multi-line stderr text; keep the line breaks but
@@ -393,6 +426,117 @@ body {
 .viewer-details::part(content) {
   max-height: 40vh;
   overflow: auto;
+}
+
+/* Footer ------------------------------------------------------------------ */
+
+/* One quiet line under the viewers: what the demo is built on. */
+.app-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--wa-space-2xs) var(--wa-space-m);
+  padding: var(--wa-space-2xs) var(--wa-space-m);
+  border-top: 1px solid var(--wa-color-surface-border);
+  background: var(--wa-color-surface-default);
+  font-size: var(--wa-font-size-xs);
+  color: var(--wa-color-text-quiet);
+}
+
+.app-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wa-space-2xs) var(--wa-space-m);
+}
+
+.app-footer a {
+  color: var(--wa-color-text-link);
+  text-decoration: var(--wa-link-decoration-default);
+}
+
+.app-footer a:hover {
+  text-decoration: var(--wa-link-decoration-hover);
+}
+
+/* Narrow viewports -------------------------------------------------------- */
+
+/* Below the breakpoint in src/ui/layout-options.ts, where src/ui/layout.ts
+   also stacks the split panel, the theme toggle joins the title row, the
+   toolbar and each download take a row of their own, the rows tighten, and
+   the things that could push the stacked viewers off the screen are
+   capped. The query must stay identical to NARROW_LAYOUT_QUERY. */
+@media (width < 800px) {
+  /* The stacked layout is taller than most narrow windows: let the page
+     scroll and give the viewers a height of their own, rather than
+     squeezing them to a strip under the rows above (and the rows into
+     each other). */
+  #app {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .viewers {
+    flex: none;
+    height: 70vh;
+    min-height: 24rem;
+  }
+
+  .app-header {
+    gap: var(--wa-space-xs) var(--wa-space-s);
+    padding: var(--wa-space-xs) var(--wa-space-s);
+  }
+
+  .app-title h1 {
+    font-size: var(--wa-font-size-m);
+  }
+
+  .app-toolbar {
+    flex-basis: 100%;
+    order: 1;
+  }
+
+  /* Each download fills a row; the button drops under its picker only
+     once the row is too narrow for both. */
+  .download-group {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  .download-format {
+    flex: 1 1 14rem;
+    width: auto;
+    min-width: 0;
+  }
+
+  .status-row,
+  .registration-row,
+  .view-controls {
+    padding-inline: var(--wa-space-s);
+  }
+
+  .view-controls {
+    gap: var(--wa-space-xs) var(--wa-space-m);
+  }
+
+  /* Room for the rows and a 2D affine; a 3D one scrolls within the card. */
+  .registration-summary-body {
+    max-height: 12rem;
+    overflow: auto;
+  }
+
+  .viewers {
+    margin: 0 var(--wa-space-xs) var(--wa-space-xs);
+  }
+
+  .viewer-details::part(content) {
+    max-height: 25vh;
+  }
+
+  .app-footer {
+    justify-content: center;
+    text-align: center;
+  }
 }
 
 /* Splash dialog ----------------------------------------------------------- */

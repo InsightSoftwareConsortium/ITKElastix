@@ -39,28 +39,25 @@ import { samples } from './samples'
 import { createStore, inputsLoaded } from './state'
 import { createDownloadFlow } from './ui/download-flow'
 import { createImageInfo } from './ui/image-info'
+import { createLayout } from './ui/layout'
 import { createRegisterFlow } from './ui/register-flow'
 import { createRegistrationPanel } from './ui/registration-panel'
 import { createReloadFlow } from './ui/reload-flow'
 import { createShell } from './ui/shell'
 import { createSplash } from './ui/splash'
+import { createThemeToggle } from './ui/theme'
 import { createViewControls } from './ui/view-controls'
 import { createOverlay } from './viewer/overlay'
 import { exposeDemoGlobals } from './viewer/panel'
-
-// Follow the browser/OS color scheme; WebAwesome's dark palette is keyed on
-// the `wa-dark` class of the root element.
-const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
-function applyColorScheme(prefersDark: boolean): void {
-  document.documentElement.classList.toggle('wa-dark', prefersDark)
-}
-applyColorScheme(darkQuery.matches)
-darkQuery.addEventListener('change', (event) => applyColorScheme(event.matches))
 
 const app = document.querySelector<HTMLDivElement>('#app')
 if (!app) {
   throw new Error('Missing #app root element')
 }
+
+// The inline script in index.html already applied the stored or system
+// color scheme before the first paint; the toggle takes over from it.
+createThemeToggle(app)
 
 async function bootstrap(root: HTMLElement): Promise<void> {
   // `?budget=<MiB>` on the page URL shrinks the pixel budget so tests and
@@ -70,6 +67,9 @@ async function bootstrap(root: HTMLElement): Promise<void> {
   // Playwright reads the store (and the two NiiVue instances the panels
   // publish) from window.__demo.
   exposeDemoGlobals({ state: store })
+
+  // Stack the viewers on a narrow window before niivue sizes its canvases.
+  createLayout(root)
 
   // `splash`, `registration`, and `downloads` are assigned below; the
   // handlers only run on user clicks, long after bootstrap has finished.
