@@ -46,7 +46,7 @@ import {
   type SpatialAxis,
 } from './normalize'
 import { PIXEL_BUDGET_BYTES, planScaleFactors, selectScaleForBudget } from './scale-select'
-import { detectSourceKind, nameFromUrl, type SourceKind } from './source-kind'
+import { detectSourceKind, nameFromUrl, sourceFormatForKind, type SourceFormat, type SourceKind } from './source-kind'
 import { isOmeTiffStore, openTiffStore, TIFF_STORE_VERSION, tiffPoolSize, tiffStoreAsOmeZarrStore } from './tiff-store'
 
 export {
@@ -58,7 +58,7 @@ export {
   type SpatialAxis,
 } from './normalize'
 export { PIXEL_BUDGET_BYTES } from './scale-select'
-export { detectSourceKind, nameFromUrl, type SourceKind } from './source-kind'
+export { detectSourceKind, nameFromUrl, sourceFormatForKind, type SourceFormat, type SourceKind } from './source-kind'
 
 /** Everything the app keeps for one loaded input image. */
 export interface LoadedImage {
@@ -66,6 +66,11 @@ export interface LoadedImage {
   name: string
   /** Reader the source was routed to; see {@link detectSourceKind}. */
   kind: SourceKind
+  /**
+   * Format the source was read as, for display (ITK, OME-Zarr, OZX, TIFF,
+   * OME-TIFF); see {@link sourceFormatForKind}.
+   */
+  format: SourceFormat
   /** Spatial dimension of {@link itkImage}, the image elastix receives. */
   dimension: 2 | 3
   /** Full in-memory pyramid; later phases render or export other levels. */
@@ -343,14 +348,14 @@ async function loadTiffSource(source: ImageSource, name: string, options: LoadIm
     report('fetch', source instanceof File ? `Opening ${name}…` : `Opening ${name} with range requests…`)
     const store = await openTiffStore(source instanceof File ? source : absoluteStoreUrl(source.url), { pool })
 
-    const flavor = isOmeTiffStore(store) ? 'OME-TIFF' : 'TIFF'
+    const format: SourceFormat = isOmeTiffStore(store) ? 'OME-TIFF' : 'TIFF'
     const levels = `${store.levels} level${store.levels === 1 ? '' : 's'}`
-    report('read', `Reading ${flavor} metadata from ${name} (${levels})…`)
+    report('read', `Reading ${format} metadata from ${name} (${levels})…`)
     const multiscales = await fromOmeZarr(tiffStoreAsOmeZarrStore(store), {
       version: TIFF_STORE_VERSION,
       cache: chunkCache,
     })
-    return await finalizeFromMultiscales(name, multiscales, options.budgetBytes, options.onProgress, 'tiff')
+    return await finalizeFromMultiscales(name, multiscales, options.budgetBytes, options.onProgress, 'tiff', format)
   } finally {
     pool.terminateWorkers()
   }
@@ -443,7 +448,9 @@ export async function ingestItkImage(image: Image, name: string, options: LoadIm
  * volume becomes 2D; the result must be 2D or 3D; see src/io/normalize.ts).
  * Only the chosen level's chunks are read, so a lazily backed pyramid (a
  * remote store) never has to be pulled whole. `kind` records which head
- * produced the pyramid.
+ * produced the pyramid and `format` the label shown for it, which defaults
+ * to the kind's own ({@link sourceFormatForKind}); the `tiff` head passes
+ * 'OME-TIFF' when the file carried OME-XML.
  */
 export async function finalizeFromMultiscales(
   name: string,
@@ -451,6 +458,7 @@ export async function finalizeFromMultiscales(
   budgetBytes: number = PIXEL_BUDGET_BYTES,
   onProgress?: LoadProgressCallback,
   kind: SourceKind = 'itk',
+  format: SourceFormat = sourceFormatForKind(kind),
 ): Promise<LoadedImage> {
   const report = makeReporter(onProgress)
 
@@ -469,6 +477,7 @@ export async function finalizeFromMultiscales(
   return {
     name,
     kind,
+    format,
     dimension,
     multiscales,
     scaleIndex,

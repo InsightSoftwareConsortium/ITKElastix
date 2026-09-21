@@ -3,7 +3,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { detectSourceKind, isOmeZarrUrl, isTiffFilename, nameFromUrl, urlPathname } from './source-kind.ts'
+import {
+  detectSourceKind,
+  isOmeZarrUrl,
+  isTiffFilename,
+  nameFromUrl,
+  sourceFormatForKind,
+  urlPathname,
+} from './source-kind.ts'
 
 test('nameFromUrl takes the last path segment without query, fragment, or trailing slash', () => {
   assert.equal(nameFromUrl('/samples/CT_2D_head_fixed.mha'), 'CT_2D_head_fixed.mha')
@@ -71,4 +78,12 @@ test('detectSourceKind leaves everything else to ITK-Wasm', () => {
   }
   assert.equal(detectSourceKind('CT_2D_head_fixed.mha', '/samples/CT_2D_head_fixed.mha'), 'itk')
   assert.equal(detectSourceKind('a.nii.gz', 'https://host/tpl.nii.gz?x=1.tif'), 'itk')
+})
+
+test('sourceFormatForKind labels each kind as the format shown to the user', () => {
+  assert.equal(sourceFormatForKind('itk'), 'ITK')
+  assert.equal(sourceFormatForKind('ozx'), 'OZX')
+  assert.equal(sourceFormatForKind('ome-zarr-url'), 'OME-Zarr')
+  // The tiff head refines this to 'OME-TIFF' once it has seen the OME-XML.
+  assert.equal(sourceFormatForKind('tiff'), 'TIFF')
 })

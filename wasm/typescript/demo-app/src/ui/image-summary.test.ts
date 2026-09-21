@@ -3,12 +3,18 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import type { LoadedImage } from '../io/load-image.ts'
+import type { RegistrationResult } from '../registration/types.ts'
+import type { AppState } from '../state.ts'
 import {
   axisLabels,
   downsampleFactor,
   formatShape,
   formatSpacing,
+  imageDetailFields,
   imageSummaryFields,
+  panelDetails,
+  resultBrief,
+  resultDetailFields,
   scaleUsedLabel,
   shortSummary,
 } from './image-summary.ts'
@@ -17,6 +23,7 @@ function fakeImage(overrides: Record<string, unknown> = {}): LoadedImage {
   return {
     name: 'brain.nii.gz',
     kind: 'itk',
+    format: 'ITK',
     dimension: 3,
     scaleIndex: 1,
     multiscales: {
@@ -39,6 +46,18 @@ function fakeImage(overrides: Record<string, unknown> = {}): LoadedImage {
 
 function fieldMap(image: LoadedImage): Record<string, string> {
   return Object.fromEntries(imageSummaryFields(image).map((field) => [field.key, field.value]))
+}
+
+function fakeResult(overrides: Record<string, unknown> = {}): RegistrationResult {
+  return {
+    image: {
+      size: [128, 96, 64],
+      spacing: [1.5, 1.5, 2],
+      imageType: { dimension: 3, componentType: 'float32', pixelType: 'Scalar', components: 1 },
+    },
+    elapsedMs: 2345,
+    ...overrides,
+  } as unknown as RegistrationResult
 }
 
 test('formats shapes, axis labels, and spacing', () => {
@@ -110,4 +129,75 @@ test('adds channel, time point, and squeezed rows only when they apply', () => {
   assert.equal(fields.bytes, '64.0 KB')
   assert.equal(imageSummaryFields(rgb).find((field) => field.key === 'shape')?.label, 'Shape (x × y)')
   assert.equal(shortSummary(rgb), '2D 256 × 256 uint8, 64.0 KB')
+})
+
+test('image details add the source format after the name and the budget after the bytes', () => {
+  const fields = imageDetailFields(fakeImage({ kind: 'tiff', format: 'OME-TIFF' }))
+  assert.deepEqual(
+    fields.map((field) => field.key),
+    ['name', 'source', 'dimension', 'shape', 'dtype', 'spacing', 'levels', 'scale', 'bytes', 'budget'],
+  )
+  const values = Object.fromEntries(fields.map((field) => [field.key, field.value]))
+  assert.equal(values.source, 'OME-TIFF')
+  assert.equal(values.budget, '50.0 MB')
+  assert.equal(fields.find((field) => field.key === 'budget')?.label, 'Pixel budget')
+  // A `?budget=4` load shows the budget it was selected under.
+  assert.equal(
+    imageDetailFields(fakeImage({ budgetBytes: 4 * 1024 * 1024 })).find((field) => field.key === 'budget')?.value,
+    '4.0 MB',
+  )
+  // The optional rows still trail the list.
+  const squeezed = imageDetailFields(fakeImage({ squeezedAxis: 'z', channelCount: 3 }))
+  assert.deepEqual(squeezed.slice(-3).map((field) => field.key), ['budget', 'channel', 'squeezed'])
+})
+
+test('result details say the moving panel shows the result on the fixed grid', () => {
+  const fixed = fakeImage({ name: 'fixed.nii.gz' })
+  const moving = fakeImage({ name: 'moving.nii.gz' })
+  const fields = resultDetailFields(fakeResult(), fixed, moving)
+  assert.deepEqual(
+    fields.map((field) => field.key),
+    ['displaying', 'name', 'moving', 'grid', 'dimension', 'shape', 'dtype', 'spacing', 'transform', 'elapsed'],
+  )
+  const values = Object.fromEntries(fields.map((field) => [field.key, field.value]))
+  assert.equal(values.displaying, 'Registered result on the fixed grid')
+  assert.equal(values.name, 'registered')
+  assert.equal(values.moving, 'moving.nii.gz')
+  assert.equal(values.grid, 'fixed.nii.gz (fixed grid)')
+  assert.equal(values.dimension, '3D')
+  assert.equal(values.shape, '128 × 96 × 64')
+  assert.equal(values.dtype, 'float32')
+  assert.equal(values.spacing, '1.5 × 1.5 × 2')
+  assert.equal(values.transform, 'translation → rigid → affine')
+  assert.equal(values.elapsed, '2.3 s')
+  assert.equal(fields.find((field) => field.key === 'shape')?.label, 'Shape (x × y × z)')
+  assert.equal(resultBrief(fakeResult()), 'registered result on the fixed grid, 3D 128 × 96 × 64 float32')
+})
+
+test('panelDetails follows the store: the inputs, then the result while it is shown', () => {
+  const fixed = fakeImage({ name: 'fixed.nii.gz' })
+  const moving = fakeImage({ name: 'moving.nii.gz', format: 'OZX' })
+  const empty: AppState = { showResult: false, registering: false }
+  assert.equal(panelDetails(empty, 'fixed'), undefined)
+  assert.equal(panelDetails(empty, 'moving'), undefined)
+
+  const loaded: AppState = { ...empty, fixed, moving }
+  const fixedDetails = panelDetails(loaded, 'fixed')
+  assert.equal(fixedDetails?.content, 'fixed')
+  assert.equal(fixedDetails?.brief, '3D 128 × 96 × 64 int16, 1.5 MB')
+  assert.equal(fixedDetails?.fields[0]?.value, 'fixed.nii.gz')
+  const movingDetails = panelDetails(loaded, 'moving')
+  assert.equal(movingDetails?.content, 'moving')
+  assert.equal(movingDetails?.fields.find((field) => field.key === 'source')?.value, 'OZX')
+  // The toggle alone, without a result, changes nothing.
+  assert.equal(panelDetails({ ...loaded, showResult: true }, 'moving')?.content, 'moving')
+
+  const shown: AppState = { ...loaded, result: fakeResult(), showResult: true }
+  const resultDetails = panelDetails(shown, 'moving')
+  assert.equal(resultDetails?.content, 'result')
+  assert.equal(resultDetails?.brief, 'registered result on the fixed grid, 3D 128 × 96 × 64 float32')
+  assert.equal(resultDetails?.fields[0]?.value, 'Registered result on the fixed grid')
+  // The fixed panel is never touched by the toggle, and toggling off restores the moving input.
+  assert.equal(panelDetails(shown, 'fixed')?.content, 'fixed')
+  assert.equal(panelDetails({ ...shown, showResult: false }, 'moving')?.content, 'moving')
 })

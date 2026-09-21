@@ -136,6 +136,17 @@ body {
   border-radius: var(--wa-border-radius-pill);
 }
 
+/* One column of the split panel: the viewer over its "Image details". */
+.viewer-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: var(--wa-space-xs);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
 /* One niivue viewer: a caption over a canvas that fills the remaining space. */
 .viewer-panel {
   position: relative;
@@ -175,6 +186,42 @@ body {
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
+}
+
+/* "Image details" under a viewer (src/ui/image-info.ts): a compact
+   wa-details whose summary row carries a one-line brief of the content. */
+.viewer-details {
+  flex: none;
+  font-size: var(--wa-font-size-s);
+  --spacing: var(--wa-space-s);
+}
+
+.viewer-details-summary {
+  display: flex;
+  align-items: baseline;
+  flex: 1 1 auto;
+  gap: var(--wa-space-s);
+  min-width: 0;
+}
+
+.viewer-details-title {
+  flex: none;
+  font-weight: var(--wa-font-weight-semibold);
+}
+
+.viewer-details-brief {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wa-color-text-quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Cap the open body so a long list scrolls instead of squeezing the canvas away. */
+.viewer-details::part(content) {
+  max-height: 40vh;
+  overflow: auto;
 }
 
 /* Splash dialog ----------------------------------------------------------- */

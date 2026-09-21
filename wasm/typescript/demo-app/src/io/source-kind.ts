@@ -13,6 +13,30 @@
  */
 export type SourceKind = 'ozx' | 'ome-zarr-url' | 'tiff' | 'itk'
 
+/**
+ * Format a source was read as, for display: the reader's name for `itk`
+ * and the container format otherwise. Finer than {@link SourceKind}: the
+ * `tiff` head tells an OME-TIFF from a plain TIFF once it has seen whether
+ * the file carries OME-XML.
+ */
+export type SourceFormat = 'ITK' | 'OME-Zarr' | 'OZX' | 'TIFF' | 'OME-TIFF'
+
+/** Format label of each source kind before the file is opened. */
+export const SOURCE_KIND_FORMATS: Readonly<Record<SourceKind, SourceFormat>> = {
+  itk: 'ITK',
+  ozx: 'OZX',
+  'ome-zarr-url': 'OME-Zarr',
+  tiff: 'TIFF',
+}
+
+/**
+ * Format label of a source kind: 'ITK', 'OZX', 'OME-Zarr', or 'TIFF'. The
+ * `tiff` head refines 'TIFF' to 'OME-TIFF' after opening the file.
+ */
+export function sourceFormatForKind(kind: SourceKind): SourceFormat {
+  return SOURCE_KIND_FORMATS[kind]
+}
+
 /** Extensions of zipped OME-Zarr stores; `.ome.zarr.ozx` ends with `.ozx`. */
 export const OZX_EXTENSIONS: readonly string[] = ['.ozx']
 

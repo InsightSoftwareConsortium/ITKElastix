@@ -7,6 +7,7 @@ import './pipelines'
 import '@awesome.me/webawesome/dist/styles/webawesome.css'
 import '@awesome.me/webawesome/dist/styles/themes/default.css'
 import '@awesome.me/webawesome/dist/components/button/button.js'
+import '@awesome.me/webawesome/dist/components/details/details.js'
 import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
 import '@awesome.me/webawesome/dist/components/input/input.js'
 import '@awesome.me/webawesome/dist/components/split-panel/split-panel.js'
@@ -29,6 +30,7 @@ import { registerAffine } from './registration/register'
 import { samples } from './samples'
 import { createStore, inputsLoaded } from './state'
 import { createDownloadFlow } from './ui/download-flow'
+import { createImageInfo } from './ui/image-info'
 import { createRegisterFlow } from './ui/register-flow'
 import { createShell } from './ui/shell'
 import { createSplash } from './ui/splash'
@@ -68,6 +70,8 @@ async function bootstrap(root: HTMLElement): Promise<void> {
       void downloads.downloadTransform()
     },
   })
+  // The "Image details" under each viewer follow the store on their own.
+  createImageInfo(root, store)
   const runRegistration = createRegisterFlow(store, shell, { register: registerAffine })
   const downloads = createDownloadFlow(store, shell, { exportImage, exportTransform, download: downloadBytes })
 

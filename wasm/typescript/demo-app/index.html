@@ -31,12 +31,30 @@
       </div>
 
       <wa-split-panel id="viewers" class="viewers">
-        <section slot="start" class="viewer-panel" data-panel="fixed">
-          <wa-badge id="fixed-caption" class="viewer-caption" variant="neutral">Fixed</wa-badge>
-        </section>
-        <section slot="end" class="viewer-panel" data-panel="moving">
-          <wa-badge id="moving-caption" class="viewer-caption" variant="brand">Moving</wa-badge>
-        </section>
+        <div slot="start" class="viewer-column">
+          <section class="viewer-panel" data-panel="fixed">
+            <wa-badge id="fixed-caption" class="viewer-caption" variant="neutral">Fixed</wa-badge>
+          </section>
+          <wa-details id="fixed-details" class="viewer-details" hidden>
+            <span slot="summary" class="viewer-details-summary">
+              <span class="viewer-details-title">Image details</span>
+              <span id="fixed-details-brief" class="viewer-details-brief"></span>
+            </span>
+            <dl id="fixed-details-list" class="summary-list"></dl>
+          </wa-details>
+        </div>
+        <div slot="end" class="viewer-column">
+          <section class="viewer-panel" data-panel="moving">
+            <wa-badge id="moving-caption" class="viewer-caption" variant="brand">Moving</wa-badge>
+          </section>
+          <wa-details id="moving-details" class="viewer-details" hidden>
+            <span slot="summary" class="viewer-details-summary">
+              <span class="viewer-details-title">Image details</span>
+              <span id="moving-details-brief" class="viewer-details-brief"></span>
+            </span>
+            <dl id="moving-details-list" class="summary-list"></dl>
+          </wa-details>
+        </div>
       </wa-split-panel>
 
       <wa-dialog id="splash" label="Load fixed and moving images" data-locked>
