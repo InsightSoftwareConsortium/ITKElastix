@@ -1,51 +1,71 @@
-// Application shell: binds the header controls, status row, and the two
-// niivue panels inside the split panel (markup in index.html) to the state
-// store. Panels are rendered from state, so swapping the moving panel to the
-// registered result is a state change, not a call into this module.
+// Application shell: binds the header controls (including the two download
+// format pickers with their buttons and tooltips), the status row, and the
+// two niivue panels inside the split panel (markup in index.html) to the
+// state store. Controls and panels are rendered from state, so swapping the
+// moving panel to the registered result, choosing a format, or showing a
+// button's spinner while its file is written is a state change, not a call
+// into this module.
 import type WaBadge from '@awesome.me/webawesome/dist/components/badge/badge.js'
 import type WaButton from '@awesome.me/webawesome/dist/components/button/button.js'
 import type WaCallout from '@awesome.me/webawesome/dist/components/callout/callout.js'
 import type WaProgressBar from '@awesome.me/webawesome/dist/components/progress-bar/progress-bar.js'
+import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js'
 import type WaSplitPanel from '@awesome.me/webawesome/dist/components/split-panel/split-panel.js'
 import type WaSwitch from '@awesome.me/webawesome/dist/components/switch/switch.js'
+import type WaTooltip from '@awesome.me/webawesome/dist/components/tooltip/tooltip.js'
 
 import {
+  OUTPUT_KINDS,
+  canDownload,
   canLoadInputs,
   canRegister,
   fixedPanelContent,
+  formatChosen,
   hasResult,
   isShowingResult,
+  isWriting,
   movingPanelContent,
   type AppState,
   type AppStore,
+  type OutputKind,
   type PanelContent,
 } from '../state'
 import { createViewerPanel, type ViewerPanel } from '../viewer/panel'
+import { formatTooltip, pickerFormats, progressPercent, selectedFormat, type ProgressCounts } from './download-controls'
 
 export type StatusVariant = 'neutral' | 'brand' | 'success' | 'warning' | 'danger'
 
 export interface StatusOptions {
   message: string
-  /** Show the indeterminate progress bar next to the message. */
+  /** Show the progress bar next to the message. */
   busy?: boolean
   /** Anything but 'neutral' renders the message in a callout of that variant. */
   variant?: StatusVariant
+  /** Counts the progress bar is drawn from while `busy`; without them it is indeterminate. */
+  progress?: ProgressCounts
 }
 
 /** Callbacks for the header buttons; missing ones leave the button inert. */
 export interface ShellHandlers {
   onLoadImages?: () => void
   onRegister?: () => void
-  onDownloadImage?: () => void
-  onDownloadTransform?: () => void
+  /** The download button for `kind`; the format to write is read from the store. */
+  onDownload?: (kind: OutputKind) => void
+}
+
+/** The controls of one download: the format picker, the button, and the button's tooltip. */
+export interface DownloadElements {
+  format: WaSelect
+  button: WaButton
+  tooltip: WaTooltip
 }
 
 export interface ShellElements {
   loadImages: WaButton
   register: WaButton
   showResult: WaSwitch
-  downloadImage: WaButton
-  downloadTransform: WaButton
+  /** Ids follow the `image-format` / `download-image` / `download-image-tooltip` pattern. */
+  downloads: Readonly<Record<OutputKind, DownloadElements>>
   status: HTMLElement
   statusProgress: WaProgressBar
   statusMessage: HTMLElement
@@ -73,6 +93,26 @@ export function requireElement<T extends Element>(root: ParentNode, selector: st
   return element
 }
 
+function downloadElements(root: ParentNode, kind: OutputKind): DownloadElements {
+  return {
+    format: requireElement(root, `#${kind}-format`),
+    button: requireElement(root, `#download-${kind}`),
+    tooltip: requireElement(root, `#download-${kind}-tooltip`),
+  }
+}
+
+/** Fill `picker` with one `wa-option` per format of `kind`, valued by registry id. */
+function fillFormatPicker(picker: WaSelect, kind: OutputKind): void {
+  picker.replaceChildren(
+    ...pickerFormats(kind).map((format) => {
+      const option = document.createElement('wa-option')
+      option.value = format.id
+      option.textContent = format.label
+      return option
+    }),
+  )
+}
+
 function sameContent(a: PanelContent | undefined, b: PanelContent | undefined): boolean {
   return a?.image === b?.image && a?.name === b?.name
 }
@@ -87,8 +127,7 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     loadImages: requireElement(root, '#load-images'),
     register: requireElement(root, '#register'),
     showResult: requireElement(root, '#show-result'),
-    downloadImage: requireElement(root, '#download-image'),
-    downloadTransform: requireElement(root, '#download-transform'),
+    downloads: { image: downloadElements(root, 'image'), transform: downloadElements(root, 'transform') },
     status: requireElement(root, '#status'),
     statusProgress: requireElement(root, '#status-progress'),
     statusMessage: requireElement(root, '#status-message'),
@@ -97,14 +136,20 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     fixedCaption: requireElement(root, '#fixed-caption'),
     movingCaption: requireElement(root, '#moving-caption'),
   }
+  for (const kind of OUTPUT_KINDS) {
+    fillFormatPicker(elements.downloads[kind].format, kind)
+  }
 
   const fixedPanel = await createViewerPanel(requireElement(root, '[data-panel="fixed"]'), 'Fixed', { role: 'fixed' })
   const movingPanel = await createViewerPanel(requireElement(root, '[data-panel="moving"]'), 'Moving', {
     role: 'moving',
   })
 
-  function setStatus({ message, busy = false, variant = 'neutral' }: StatusOptions): void {
-    elements.statusProgress.hidden = !busy
+  function setStatus({ message, busy = false, variant = 'neutral', progress }: StatusOptions): void {
+    const bar = elements.statusProgress
+    bar.hidden = !busy
+    bar.indeterminate = progress === undefined
+    bar.value = progress === undefined ? 0 : progressPercent(progress)
     elements.status.dataset.busy = String(busy)
     const useCallout = variant !== 'neutral'
     elements.statusMessage.hidden = useCallout
@@ -138,15 +183,31 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     pending.set(panel, next)
   }
 
+  function renderDownload(state: Readonly<AppState>, kind: OutputKind): void {
+    const { format: picker, button, tooltip } = elements.downloads[kind]
+    const format = selectedFormat(state, kind)
+    // Setting the value programmatically does not fire `change`, so this
+    // cannot loop back into the store.
+    if (picker.value !== format.id) {
+      picker.value = format.id
+    }
+    button.disabled = !canDownload(state, kind)
+    button.loading = isWriting(state, kind)
+    const text = formatTooltip(kind, format)
+    if (tooltip.textContent !== text) {
+      tooltip.textContent = text
+    }
+  }
+
   function renderControls(state: Readonly<AppState>): void {
-    const resultAvailable = hasResult(state)
     elements.loadImages.disabled = !canLoadInputs(state)
     elements.register.disabled = !canRegister(state)
     elements.register.loading = state.registering
-    elements.showResult.disabled = !resultAvailable
+    elements.showResult.disabled = !hasResult(state)
     elements.showResult.checked = isShowingResult(state)
-    elements.downloadImage.disabled = !resultAvailable
-    elements.downloadTransform.disabled = !resultAvailable
+    for (const kind of OUTPUT_KINDS) {
+      renderDownload(state, kind)
+    }
 
     elements.fixedCaption.textContent = state.fixed ? `Fixed · ${state.fixed.name}` : 'Fixed'
     if (isShowingResult(state)) {
@@ -164,18 +225,29 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     queuePanelUpdate(movingPanel, movingPanelContent(state))
   }
 
-  const onLoadImages = () => handlers.onLoadImages?.()
-  const onRegister = () => handlers.onRegister?.()
-  const onDownloadImage = () => handlers.onDownloadImage?.()
-  const onDownloadTransform = () => handlers.onDownloadTransform?.()
-  const onShowResultChange = () => {
-    store.update({ showResult: elements.showResult.checked })
+  // Event listeners are collected so destroy() can remove them all.
+  const listeners: [EventTarget, string, EventListener][] = []
+  function listen(target: EventTarget, type: string, handler: EventListener): void {
+    target.addEventListener(type, handler)
+    listeners.push([target, type, handler])
   }
-  elements.loadImages.addEventListener('click', onLoadImages)
-  elements.register.addEventListener('click', onRegister)
-  elements.downloadImage.addEventListener('click', onDownloadImage)
-  elements.downloadTransform.addEventListener('click', onDownloadTransform)
-  elements.showResult.addEventListener('change', onShowResultChange)
+
+  listen(elements.loadImages, 'click', () => handlers.onLoadImages?.())
+  listen(elements.register, 'click', () => handlers.onRegister?.())
+  listen(elements.showResult, 'change', () => {
+    store.update({ showResult: elements.showResult.checked })
+  })
+  for (const kind of OUTPUT_KINDS) {
+    const { format: picker, button } = elements.downloads[kind]
+    listen(button, 'click', () => handlers.onDownload?.(kind))
+    // `wa-select` fires `change` on the host, with the chosen option's value.
+    listen(picker, 'change', () => {
+      const value = picker.value
+      if (typeof value === 'string') {
+        store.update(formatChosen(kind, value))
+      }
+    })
+  }
 
   const unsubscribe = store.subscribe(render)
   render(store.state)
@@ -190,11 +262,9 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     },
     destroy() {
       unsubscribe()
-      elements.loadImages.removeEventListener('click', onLoadImages)
-      elements.register.removeEventListener('click', onRegister)
-      elements.downloadImage.removeEventListener('click', onDownloadImage)
-      elements.downloadTransform.removeEventListener('click', onDownloadTransform)
-      elements.showResult.removeEventListener('change', onShowResultChange)
+      for (const [target, type, handler] of listeners) {
+        target.removeEventListener(type, handler)
+      }
       fixedPanel.destroy()
       movingPanel.destroy()
     },

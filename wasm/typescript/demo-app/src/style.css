@@ -71,9 +71,31 @@ body {
   gap: var(--wa-space-s);
 }
 
-.app-toolbar-divider {
-  align-self: stretch;
-  --spacing: var(--wa-space-2xs);
+/* The outputs row under the title and toolbar: the two downloads, each a
+   format picker beside its button, kept on their own full-width row so the
+   long format labels never squeeze the toolbar. */
+.app-downloads {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  gap: var(--wa-space-s) var(--wa-space-m);
+}
+
+/* One download: the format picker beside its button. The picker's label is
+   visually hidden (WebAwesome's `wa-visually-hidden-label`), so the group is
+   as tall as its button. */
+.download-group {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-2xs);
+}
+
+/* Wide enough for the longest labels, "OME-Zarr transform (.ome.zarr.ozx)"
+   and "elastix TransformParameters (.json)", to read in full. */
+.download-format {
+  width: 23rem;
 }
 
 /* Status row -------------------------------------------------------------- */

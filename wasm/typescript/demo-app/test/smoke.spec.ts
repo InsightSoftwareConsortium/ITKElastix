@@ -4,6 +4,7 @@
 // properties (and `window.__demo`, published by src/main.ts and
 // src/viewer/panel.ts), never through shadow DOM structure.
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js'
 import type WaSwitch from '@awesome.me/webawesome/dist/components/switch/switch.js'
 
 type PanelRole = 'fixed' | 'moving'
@@ -30,6 +31,11 @@ function volumeName(page: Page, panel: PanelRole): Promise<string | undefined> {
  */
 function switchState(toggle: Locator): Promise<{ disabled: boolean; checked: boolean }> {
   return toggle.evaluate((element: WaSwitch) => ({ disabled: element.disabled, checked: element.checked }))
+}
+
+/** The chosen value of a `wa-select`; a property, like the switch's state. */
+function selectValue(select: Locator): Promise<string | string[] | null> {
+  return select.evaluate((element: WaSelect) => element.value)
 }
 
 /** Click `button` and return the download it triggers. */
@@ -98,13 +104,18 @@ test('loads the 2D CT head pair, registers it, and downloads the result and tran
     expect(await volumeName(page, 'fixed')).toBe(fixedName)
   })
 
-  await test.step('download the registered image and the transform', async () => {
+  await test.step('download the registered image and the transform in the default OME-Zarr formats', async () => {
+    // The format pickers start on the OME-Zarr entries (see src/io/formats.ts);
+    // test/outputs.spec.ts covers the other formats.
+    expect(await selectValue(page.locator('#image-format'))).toBe('ozx')
+    expect(await selectValue(page.locator('#transform-format'))).toBe('ozx-transform')
+
     const image = await clickForDownload(page, page.locator('#download-image'))
-    expect(image.suggestedFilename()).toBe('registered.nrrd')
+    expect(image.suggestedFilename()).toBe('registered.ome.zarr.ozx')
     expect(await image.failure()).toBeNull()
 
     const transform = await clickForDownload(page, page.locator('#download-transform'))
-    expect(transform.suggestedFilename()).toBe('transform.h5')
+    expect(transform.suggestedFilename()).toBe('transform.ome.zarr.ozx')
     expect(await transform.failure()).toBeNull()
   })
 

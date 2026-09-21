@@ -14,7 +14,13 @@ import {
   outputFilename,
   stripImageExtension,
   transformFormatById,
+  type OutputFormat,
 } from './formats.ts'
+
+/** The registry fields a test compares by value; the description is prose. */
+function entry({ id, label, extension, kind }: OutputFormat<string, string>) {
+  return { id, label, extension, kind }
+}
 
 test('IMAGE_FORMATS lists OZX first, OME-TIFF second, then the ITK-Wasm formats', () => {
   assert.deepEqual(
@@ -41,13 +47,18 @@ test('IMAGE_FORMATS lists OZX first, OME-TIFF second, then the ITK-Wasm formats'
       'iwi.cbor',
     ],
   )
-  assert.deepEqual(IMAGE_FORMATS[0], {
+  assert.deepEqual(entry(IMAGE_FORMATS[0]), {
     id: 'ozx',
     label: 'OME-Zarr (.ome.zarr.ozx)',
     extension: '.ome.zarr.ozx',
     kind: 'ozx',
   })
-  assert.deepEqual(IMAGE_FORMATS[1], { id: 'ome-tiff', label: 'OME-TIFF (.ome.tif)', extension: '.ome.tif', kind: 'ome-tiff' })
+  assert.deepEqual(entry(IMAGE_FORMATS[1]), {
+    id: 'ome-tiff',
+    label: 'OME-TIFF (.ome.tif)',
+    extension: '.ome.tif',
+    kind: 'ome-tiff',
+  })
 })
 
 test('every ITK image format is keyed by the extension the itk-wasm writer selects on', () => {
@@ -63,13 +74,13 @@ test('TRANSFORM_FORMATS lists the RFC-5 OZX first, the ITK-Wasm formats, then el
     TRANSFORM_FORMATS.map((format) => format.id),
     ['ozx-transform', 'h5', 'hdf5', 'tfm', 'txt', 'mat', 'xfm', 'iwt.cbor', 'elastix-json'],
   )
-  assert.deepEqual(TRANSFORM_FORMATS[0], {
+  assert.deepEqual(entry(TRANSFORM_FORMATS[0]), {
     id: 'ozx-transform',
     label: 'OME-Zarr transform (.ome.zarr.ozx)',
     extension: '.ome.zarr.ozx',
     kind: 'ozx',
   })
-  assert.deepEqual(TRANSFORM_FORMATS.at(-1), {
+  assert.deepEqual(entry(TRANSFORM_FORMATS.at(-1)!), {
     id: 'elastix-json',
     label: 'elastix TransformParameters (.json)',
     extension: '.json',
@@ -90,6 +101,20 @@ test('format ids are unique and every extension starts with a dot', () => {
       assert.ok(format.label.includes(format.extension), format.id)
     }
   }
+})
+
+test('every format carries a distinct one- or two-sentence description for its tooltip', () => {
+  for (const formats of [IMAGE_FORMATS, TRANSFORM_FORMATS]) {
+    const descriptions = formats.map((format) => format.description)
+    assert.equal(new Set(descriptions).size, descriptions.length)
+    for (const format of formats) {
+      assert.match(format.description, /^[A-Za-z].*\.$/, format.id)
+      assert.ok(format.description.length >= 30 && format.description.length <= 300, format.id)
+    }
+  }
+  // The formats a writer refuses say so, since the picker still lists them.
+  assert.match(imageFormatById('png').description, /cannot be written/)
+  assert.match(transformFormatById('xfm').description, /cannot be written/)
 })
 
 test('the defaults are the first entries: OZX for the image and the RFC-5 OZX for the transform', () => {

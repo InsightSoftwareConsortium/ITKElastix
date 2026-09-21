@@ -5,19 +5,26 @@ import { test } from 'node:test'
 import type { LoadedImage } from './io/load-image.ts'
 import type { RegistrationResult } from './registration/types.ts'
 import {
+  OUTPUT_KINDS,
   RESULT_NAME,
+  canDownload,
   canLoadInputs,
   canRegister,
   createStore,
   fixedPanelContent,
+  formatChosen,
   hasInputs,
   hasResult,
   inputsLoaded,
   isShowingResult,
+  isWriting,
   movingPanelContent,
   registrationFailed,
   registrationStarted,
   resultReady,
+  selectedFormatId,
+  writingFinished,
+  writingStarted,
 } from './state.ts'
 
 // The selectors only touch `name`, `itkImage`, and `image`, so stand-ins
@@ -30,12 +37,22 @@ function fakeResult(): RegistrationResult {
   return { image: { name: 'result' }, elapsedMs: 1 } as unknown as RegistrationResult
 }
 
-test('starts empty with the result hidden', () => {
+test('starts empty with the result hidden, the OME-Zarr formats chosen, and nothing being written', () => {
   const store = createStore()
-  assert.deepEqual(store.state, { showResult: false, registering: false })
+  assert.deepEqual(store.state, {
+    showResult: false,
+    registering: false,
+    imageFormat: 'ozx',
+    transformFormat: 'ozx-transform',
+    writing: { image: false, transform: false },
+  })
   assert.equal(hasInputs(store.state), false)
   assert.equal(hasResult(store.state), false)
   assert.equal(canRegister(store.state), false)
+  for (const kind of OUTPUT_KINDS) {
+    assert.equal(canDownload(store.state, kind), false, kind)
+    assert.equal(isWriting(store.state, kind), false, kind)
+  }
 })
 
 test('accepts initial values', () => {
@@ -159,4 +176,54 @@ test('registrationFailed ends the run and keeps an earlier result', () => {
   assert.equal(store.state.registering, false)
   assert.equal(store.state.result, earlier)
   assert.equal(canRegister(store.state), true)
+})
+
+test('formatChosen changes one picker at a time and refuses ids the registry lacks for that kind', () => {
+  const store = createStore()
+  assert.equal(selectedFormatId(store.state, 'image'), 'ozx')
+  assert.equal(selectedFormatId(store.state, 'transform'), 'ozx-transform')
+
+  store.update(formatChosen('image', 'nii.gz'))
+  assert.equal(store.state.imageFormat, 'nii.gz')
+  assert.equal(store.state.transformFormat, 'ozx-transform')
+  assert.equal(selectedFormatId(store.state, 'image'), 'nii.gz')
+
+  store.update(formatChosen('transform', 'elastix-json'))
+  assert.equal(store.state.imageFormat, 'nii.gz')
+  assert.equal(store.state.transformFormat, 'elastix-json')
+  assert.equal(selectedFormatId(store.state, 'transform'), 'elastix-json')
+
+  assert.throws(() => formatChosen('image', 'elastix-json'), /Unknown image format: elastix-json/)
+  assert.throws(() => formatChosen('transform', 'nrrd'), /Unknown transform format: nrrd/)
+  assert.throws(() => formatChosen('image', ''), /Unknown image format: /)
+})
+
+test('writingStarted and writingFinished toggle one output and canDownload follows the result and the flag', () => {
+  const store = createStore()
+  store.update(writingStarted('image'))
+  assert.deepEqual(store.state.writing, { image: true, transform: false })
+  assert.equal(isWriting(store.state, 'image'), true)
+  assert.equal(isWriting(store.state, 'transform'), false)
+  // Without a result nothing can be downloaded, written or not.
+  assert.equal(canDownload(store.state, 'image'), false)
+  assert.equal(canDownload(store.state, 'transform'), false)
+
+  store.update(resultReady(fakeResult()))
+  assert.equal(canDownload(store.state, 'image'), false, 'the image is still being written')
+  assert.equal(canDownload(store.state, 'transform'), true)
+
+  store.update(writingStarted('transform'))
+  assert.deepEqual(store.state.writing, { image: true, transform: true })
+  store.update(writingFinished('image'))
+  assert.deepEqual(store.state.writing, { image: false, transform: true })
+  assert.equal(canDownload(store.state, 'image'), true)
+  assert.equal(canDownload(store.state, 'transform'), false)
+  store.update(writingFinished('transform'))
+  assert.deepEqual(store.state.writing, { image: false, transform: false })
+
+  // A new pair drops the result but leaves a write in progress alone.
+  store.update(writingStarted('image'))
+  store.update(inputsLoaded(fakeImage('fixed'), fakeImage('moving')))
+  assert.equal(hasResult(store.state), false)
+  assert.equal(isWriting(store.state, 'image'), true)
 })

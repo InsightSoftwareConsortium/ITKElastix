@@ -1,10 +1,26 @@
-// Application state: the two loaded inputs, the registration result, and the
-// display toggle, held in a tiny synchronous store the shell renders from.
-// Keep this module free of DOM access so the node unit tests can exercise it.
+// Application state: the two loaded inputs, the registration result, the
+// display toggle, the download formats chosen in the pickers, and which
+// outputs are being written, held in a tiny synchronous store the shell
+// renders from. Keep this module free of DOM access so the node unit tests
+// can exercise it.
 import type { Image } from 'itk-wasm'
 
+import {
+  DEFAULT_IMAGE_FORMAT,
+  DEFAULT_TRANSFORM_FORMAT,
+  isImageFormatId,
+  isTransformFormatId,
+  type ImageFormatId,
+  type TransformFormatId,
+} from './io/formats.ts'
 import type { LoadedImage } from './io/load-image'
 import type { RegistrationResult } from './registration/types'
+
+/** The two outputs a registration result can be downloaded as. */
+export type OutputKind = 'image' | 'transform'
+
+/** Both output kinds, in toolbar order. */
+export const OUTPUT_KINDS: readonly OutputKind[] = ['image', 'transform']
 
 export interface AppState {
   fixed?: LoadedImage
@@ -14,6 +30,12 @@ export interface AppState {
   showResult: boolean
   /** True while elastix is running; blocks another run and input changes. */
   registering: boolean
+  /** Format the registered image is downloaded in: an id from src/io/formats.ts. */
+  imageFormat: ImageFormatId
+  /** Format the fixed-to-moving transform is downloaded in: an id from src/io/formats.ts. */
+  transformFormat: TransformFormatId
+  /** Outputs being written for download; each blocks its own button until done. */
+  writing: Readonly<Record<OutputKind, boolean>>
 }
 
 /** Called after every update with the new state and the one it replaced. */
@@ -32,7 +54,14 @@ export interface AppStore {
 }
 
 export function createStore(initial: Partial<AppState> = {}): AppStore {
-  let state: Readonly<AppState> = { showResult: false, registering: false, ...initial }
+  let state: Readonly<AppState> = {
+    showResult: false,
+    registering: false,
+    imageFormat: DEFAULT_IMAGE_FORMAT.id,
+    transformFormat: DEFAULT_TRANSFORM_FORMAT.id,
+    writing: { image: false, transform: false },
+    ...initial,
+  }
   const listeners = new Set<StateListener>()
 
   return {
@@ -113,6 +142,49 @@ export function resultReady(result: RegistrationResult): Partial<AppState> {
  */
 export function registrationFailed(): Partial<AppState> {
   return { registering: false }
+}
+
+/** `kind` is being written for download. */
+export function isWriting(state: Readonly<AppState>, kind: OutputKind): boolean {
+  return state.writing[kind]
+}
+
+/** `kind` may be downloaded: a result exists and no download of it is being written. */
+export function canDownload(state: Readonly<AppState>, kind: OutputKind): boolean {
+  return hasResult(state) && !state.writing[kind]
+}
+
+/** The registry id of the format chosen for `kind`. */
+export function selectedFormatId(state: Readonly<AppState>, kind: OutputKind): ImageFormatId | TransformFormatId {
+  return kind === 'image' ? state.imageFormat : state.transformFormat
+}
+
+/**
+ * Patch for a format picked for `kind`; `id` is the picker's value. Throws
+ * on an id the registry does not list for that kind: the pickers are filled
+ * from the registry, so an unknown value is a bug rather than user input.
+ */
+export function formatChosen(kind: OutputKind, id: string): Partial<AppState> {
+  if (kind === 'image') {
+    if (!isImageFormatId(id)) {
+      throw new Error(`Unknown image format: ${id}`)
+    }
+    return { imageFormat: id }
+  }
+  if (!isTransformFormatId(id)) {
+    throw new Error(`Unknown transform format: ${id}`)
+  }
+  return { transformFormat: id }
+}
+
+/** Patch for the start of writing `kind` for download. */
+export function writingStarted(kind: OutputKind): StatePatch {
+  return (state) => ({ writing: { ...state.writing, [kind]: true } })
+}
+
+/** Patch for the end of writing `kind`, whether or not it produced a file. */
+export function writingFinished(kind: OutputKind): StatePatch {
+  return (state) => ({ writing: { ...state.writing, [kind]: false } })
 }
 
 /** Name under which the registered result is displayed and exported. */

@@ -1,7 +1,8 @@
 // Serialize the registration outputs to file bytes with ITK-Wasm's writers.
-// The file format follows from the file name's extension (NRRD and ITK HDF5
-// for the prototype; Phase 03 adds a format list). Each write runs in its
-// own itk-wasm web worker, which is terminated once the bytes are back.
+// The file format follows from the file name's extension; the registry-driven
+// exporters (src/io/export-image.ts, src/io/export-transform.ts) pick the
+// name for the `itk` kinds and call in here. Each write runs in its own
+// itk-wasm web worker, which is terminated once the bytes are back.
 import { writeImage } from '@itk-wasm/image-io'
 import { writeTransform } from '@itk-wasm/transform-io'
 import { createWebWorker, type Image, type TransformList } from 'itk-wasm'
@@ -11,13 +12,7 @@ import { toWriterError } from './export-plan'
 import { RESULT_IMAGE_FILENAME, TRANSFORM_FILENAME, type ExportedFile } from './export-types'
 import { withTypedParameterArrays } from './transform-list'
 
-export {
-  RESULT_IMAGE_FILENAME,
-  TRANSFORM_FILENAME,
-  type ExportedFile,
-  type ExportImageFunction,
-  type ExportTransformFunction,
-} from './export-types'
+export { RESULT_IMAGE_FILENAME, TRANSFORM_FILENAME, type ExportedFile } from './export-types'
 
 /**
  * Write `image` in the format `filename`'s extension selects and return the

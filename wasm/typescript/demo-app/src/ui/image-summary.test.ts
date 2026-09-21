@@ -4,7 +4,7 @@ import { test } from 'node:test'
 
 import type { LoadedImage } from '../io/load-image.ts'
 import type { RegistrationResult } from '../registration/types.ts'
-import type { AppState } from '../state.ts'
+import { createStore, type AppState } from '../state.ts'
 import {
   axisLabels,
   downsampleFactor,
@@ -177,7 +177,7 @@ test('result details say the moving panel shows the result on the fixed grid', (
 test('panelDetails follows the store: the inputs, then the result while it is shown', () => {
   const fixed = fakeImage({ name: 'fixed.nii.gz' })
   const moving = fakeImage({ name: 'moving.nii.gz', format: 'OZX' })
-  const empty: AppState = { showResult: false, registering: false }
+  const empty: AppState = createStore().state
   assert.equal(panelDetails(empty, 'fixed'), undefined)
   assert.equal(panelDetails(empty, 'moving'), undefined)
 

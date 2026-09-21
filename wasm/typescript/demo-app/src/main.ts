@@ -6,6 +6,9 @@ import './pipelines'
 // and upgrade the markup already present in index.html.
 import '@awesome.me/webawesome/dist/styles/webawesome.css'
 import '@awesome.me/webawesome/dist/styles/themes/default.css'
+// `wa-visually-hidden-label` keeps the download pickers' labels for
+// assistive technology only; the utility is not part of webawesome.css.
+import '@awesome.me/webawesome/dist/styles/utilities/visually-hidden.css'
 import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@awesome.me/webawesome/dist/components/details/details.js'
 import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
@@ -24,7 +27,8 @@ import '@awesome.me/webawesome/dist/components/tooltip/tooltip.js'
 import './style.css'
 
 import { downloadBytes } from './io/download'
-import { exportImage, exportTransform } from './io/export'
+import { exportRegisteredImage } from './io/export-image'
+import { exportRegisteredTransform } from './io/export-transform'
 import { budgetBytesFromQuery } from './io/scale-select'
 import { registerAffine } from './registration/register'
 import { samples } from './samples'
@@ -63,17 +67,18 @@ async function bootstrap(root: HTMLElement): Promise<void> {
     onRegister: () => {
       void runRegistration()
     },
-    onDownloadImage: () => {
-      void downloads.downloadImage()
-    },
-    onDownloadTransform: () => {
-      void downloads.downloadTransform()
+    onDownload: (kind) => {
+      void downloads.download(kind)
     },
   })
   // The "Image details" under each viewer follow the store on their own.
   createImageInfo(root, store)
   const runRegistration = createRegisterFlow(store, shell, { register: registerAffine })
-  const downloads = createDownloadFlow(store, shell, { exportImage, exportTransform, download: downloadBytes })
+  const downloads = createDownloadFlow(store, shell, {
+    exportImage: exportRegisteredImage,
+    exportTransform: exportRegisteredTransform,
+    download: downloadBytes,
+  })
 
   // `?budget=<MiB>` on the page URL shrinks the pixel budget so tests and
   // developers can force the ingest pipeline to downsample.

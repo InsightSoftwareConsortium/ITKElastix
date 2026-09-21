@@ -18,9 +18,33 @@
           <wa-button id="register" variant="brand" disabled>Register</wa-button>
           <wa-tooltip for="register">Run translation → rigid → affine registration in a web worker</wa-tooltip>
           <wa-switch id="show-result" disabled>Show registered result</wa-switch>
-          <wa-divider orientation="vertical" class="app-toolbar-divider"></wa-divider>
-          <wa-button id="download-image" appearance="outlined" disabled>Download image</wa-button>
-          <wa-button id="download-transform" appearance="outlined" disabled>Download transform</wa-button>
+        </div>
+        <!-- The outputs row: each download is a format picker beside its button.
+             The shell fills the pickers from the format registry and keeps the
+             tooltip on each button describing the chosen format. The picker
+             labels are for assistive technology only, so the row stays as tall
+             as its buttons. -->
+        <div class="app-downloads">
+          <div class="download-group" data-output="image">
+            <wa-select
+              id="image-format"
+              class="download-format wa-visually-hidden-label"
+              label="Image format"
+              placement="bottom"
+            ></wa-select>
+            <wa-button id="download-image" appearance="outlined" disabled>Download image</wa-button>
+            <wa-tooltip id="download-image-tooltip" for="download-image"></wa-tooltip>
+          </div>
+          <div class="download-group" data-output="transform">
+            <wa-select
+              id="transform-format"
+              class="download-format wa-visually-hidden-label"
+              label="Transform format"
+              placement="bottom"
+            ></wa-select>
+            <wa-button id="download-transform" appearance="outlined" disabled>Download transform</wa-button>
+            <wa-tooltip id="download-transform-tooltip" for="download-transform"></wa-tooltip>
+          </div>
         </div>
       </header>
 
