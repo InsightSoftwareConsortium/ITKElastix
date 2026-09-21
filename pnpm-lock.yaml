@@ -75,6 +75,9 @@ importers:
       '@niivue/niivue':
         specifier: 1.0.0-rc.13
         version: 1.0.0-rc.13
+      cbor-x:
+        specifier: ^1.6.6
+        version: 1.6.6
       fflate:
         specifier: ^0.8.2
         version: 0.8.3

@@ -22,7 +22,66 @@ body {
   flex-direction: column;
 }
 
+/* Temporary layout until the WebAwesome shell replaces it. */
 .placeholder {
-  margin: auto;
-  text-align: center;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.placeholder-header {
+  padding: 0.5rem 1rem;
+}
+
+.placeholder-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.placeholder-header p {
+  margin: 0.25rem 0 0;
+  color: var(--wa-color-text-quiet, #52525b);
+}
+
+.placeholder-panels {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0 0.5rem 0.5rem;
+}
+
+/* One niivue viewer: a caption above a canvas that fills the remaining space. */
+.viewer-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: #000;
+  border-radius: var(--wa-border-radius-m, 0.375rem);
+  overflow: hidden;
+}
+
+.viewer-caption {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* niivue resizes its drawing buffer from the canvas's CSS box, so the canvas
+   must fill its panel and never impose an intrinsic size of its own. */
+.viewer-canvas {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
 }

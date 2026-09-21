@@ -23,6 +23,7 @@
     "@itk-wasm/transform-io": "^1.1.0",
     "@niivue/cbor-loader": "^1.2.1",
     "@niivue/niivue": "1.0.0-rc.13",
+    "cbor-x": "^1.6.6",
     "fflate": "^0.8.2",
     "itk-wasm": "^1.0.0-b.201"
   },
