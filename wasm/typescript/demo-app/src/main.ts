@@ -38,6 +38,7 @@ import { createImageInfo } from './ui/image-info'
 import { createRegisterFlow } from './ui/register-flow'
 import { createShell } from './ui/shell'
 import { createSplash } from './ui/splash'
+import { createViewControls } from './ui/view-controls'
 import { exposeDemoGlobals } from './viewer/panel'
 
 // Follow the browser/OS color scheme; WebAwesome's dark palette is keyed on
@@ -71,8 +72,10 @@ async function bootstrap(root: HTMLElement): Promise<void> {
       void downloads.download(kind)
     },
   })
-  // The "Image details" under each viewer follow the store on their own.
+  // The "Image details" under each viewer and the view controls above them
+  // follow the store on their own.
   createImageInfo(root, store)
+  createViewControls(root, store, shell)
   const runRegistration = createRegisterFlow(store, shell, { register: registerAffine })
   const downloads = createDownloadFlow(store, shell, {
     exportImage: exportRegisteredImage,

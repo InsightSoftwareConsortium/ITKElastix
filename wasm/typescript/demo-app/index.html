@@ -54,6 +54,22 @@
         <wa-callout id="status-callout" class="status-callout" size="s" hidden></wa-callout>
       </div>
 
+      <!-- The view controls: the slice layout picker (shown for a 3D pair only),
+           "Reset view", and a colormap picker per panel. src/ui/view-controls.ts
+           fills the pickers and forwards the choices to the two panels, which
+           always navigate together. -->
+      <div id="view-controls" class="view-controls">
+        <div class="view-controls-group">
+          <wa-select id="slice-type" class="view-picker" size="s" label="View" placement="bottom" hidden></wa-select>
+          <wa-button id="reset-view" size="s" appearance="outlined">Reset view</wa-button>
+          <wa-tooltip for="reset-view">Recenter both panels and return the zoom and 3D camera to their defaults</wa-tooltip>
+        </div>
+        <div class="view-controls-group">
+          <wa-select id="fixed-colormap" class="view-picker" size="s" label="Fixed colormap" placement="bottom"></wa-select>
+          <wa-select id="moving-colormap" class="view-picker" size="s" label="Moving colormap" placement="bottom"></wa-select>
+        </div>
+      </div>
+
       <wa-split-panel id="viewers" class="viewers">
         <div slot="start" class="viewer-column">
           <section class="viewer-panel" data-panel="fixed">

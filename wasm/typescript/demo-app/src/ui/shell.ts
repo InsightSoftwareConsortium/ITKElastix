@@ -4,7 +4,9 @@
 // state store. Controls and panels are rendered from state, so swapping the
 // moving panel to the registered result, choosing a format, or showing a
 // button's spinner while its file is written is a state change, not a call
-// into this module.
+// into this module. The two panels are linked so they navigate together
+// (src/viewer/panel.ts), and a freshly loaded pair opens on the default
+// view; the view controls in src/ui/view-controls.ts drive the rest.
 import type WaBadge from '@awesome.me/webawesome/dist/components/badge/badge.js'
 import type WaButton from '@awesome.me/webawesome/dist/components/button/button.js'
 import type WaCallout from '@awesome.me/webawesome/dist/components/callout/callout.js'
@@ -30,7 +32,7 @@ import {
   type OutputKind,
   type PanelContent,
 } from '../state'
-import { createViewerPanel, type ViewerPanel } from '../viewer/panel'
+import { createViewerPanel, linkPanels, resetLinkedViews, type ViewerPanel } from '../viewer/panel'
 import { formatTooltip, pickerFormats, progressPercent, selectedFormat, type ProgressCounts } from './download-controls'
 
 export type StatusVariant = 'neutral' | 'brand' | 'success' | 'warning' | 'danger'
@@ -101,16 +103,57 @@ function downloadElements(root: ParentNode, kind: OutputKind): DownloadElements 
   }
 }
 
-/** Fill `picker` with one `wa-option` per format of `kind`, valued by registry id. */
-function fillFormatPicker(picker: WaSelect, kind: OutputKind): void {
+/** One entry of a `wa-select`: the option's value and its visible label. */
+export interface PickerEntry {
+  value: string
+  label: string
+}
+
+/**
+ * Replace the options of `picker` with one `wa-option` per entry. Options
+ * created after the component is defined are picked up in a microtask, and
+ * a `value` set before that resolves once they exist.
+ */
+export function fillPicker(picker: WaSelect, entries: readonly PickerEntry[]): void {
   picker.replaceChildren(
-    ...pickerFormats(kind).map((format) => {
+    ...entries.map(({ value, label }) => {
       const option = document.createElement('wa-option')
-      option.value = format.id
-      option.textContent = format.label
+      option.value = value
+      option.textContent = label
       return option
     }),
   )
+}
+
+/** Fill `picker` with one `wa-option` per format of `kind`, valued by registry id. */
+function fillFormatPicker(picker: WaSelect, kind: OutputKind): void {
+  fillPicker(
+    picker,
+    pickerFormats(kind).map((format) => ({ value: format.id, label: format.label })),
+  )
+}
+
+export interface ListenerBag {
+  /** Add `handler` for `type` on `target`, remembering it for {@link removeAll}. */
+  listen(target: EventTarget, type: string, handler: EventListener): void
+  /** Remove every listener added through {@link listen}. */
+  removeAll(): void
+}
+
+/** Collects event listeners so a module's `destroy()` can remove them together. */
+export function createListenerBag(): ListenerBag {
+  const listeners: [EventTarget, string, EventListener][] = []
+  return {
+    listen(target, type, handler) {
+      target.addEventListener(type, handler)
+      listeners.push([target, type, handler])
+    },
+    removeAll() {
+      for (const [target, type, handler] of listeners.splice(0)) {
+        target.removeEventListener(type, handler)
+      }
+    },
+  }
 }
 
 function sameContent(a: PanelContent | undefined, b: PanelContent | undefined): boolean {
@@ -144,6 +187,8 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
   const movingPanel = await createViewerPanel(requireElement(root, '[data-panel="moving"]'), 'Moving', {
     role: 'moving',
   })
+  // Either panel's navigation moves the other, from now until destroy().
+  const unlinkPanels = linkPanels(fixedPanel, movingPanel)
 
   function setStatus({ message, busy = false, variant = 'neutral', progress }: StatusOptions): void {
     const bar = elements.statusProgress
@@ -219,6 +264,21 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     }
   }
 
+  /**
+   * Once both panels' queued updates are done, return them to the default
+   * view, centred on the fixed image. Queued on both panels, so `settled()`
+   * covers the reset too.
+   */
+  function queueViewReset(): void {
+    const panels = [fixedPanel, movingPanel]
+    const reset = Promise.all(panels.map((panel) => pending.get(panel) ?? Promise.resolve())).then(() => {
+      resetLinkedViews(fixedPanel, movingPanel)
+    })
+    for (const panel of panels) {
+      pending.set(panel, reset)
+    }
+  }
+
   function render(state: Readonly<AppState>): void {
     renderControls(state)
     queuePanelUpdate(fixedPanel, fixedPanelContent(state))
@@ -226,22 +286,18 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
   }
 
   // Event listeners are collected so destroy() can remove them all.
-  const listeners: [EventTarget, string, EventListener][] = []
-  function listen(target: EventTarget, type: string, handler: EventListener): void {
-    target.addEventListener(type, handler)
-    listeners.push([target, type, handler])
-  }
+  const bag = createListenerBag()
 
-  listen(elements.loadImages, 'click', () => handlers.onLoadImages?.())
-  listen(elements.register, 'click', () => handlers.onRegister?.())
-  listen(elements.showResult, 'change', () => {
+  bag.listen(elements.loadImages, 'click', () => handlers.onLoadImages?.())
+  bag.listen(elements.register, 'click', () => handlers.onRegister?.())
+  bag.listen(elements.showResult, 'change', () => {
     store.update({ showResult: elements.showResult.checked })
   })
   for (const kind of OUTPUT_KINDS) {
     const { format: picker, button } = elements.downloads[kind]
-    listen(button, 'click', () => handlers.onDownload?.(kind))
+    bag.listen(button, 'click', () => handlers.onDownload?.(kind))
     // `wa-select` fires `change` on the host, with the chosen option's value.
-    listen(picker, 'change', () => {
+    bag.listen(picker, 'change', () => {
       const value = picker.value
       if (typeof value === 'string') {
         store.update(formatChosen(kind, value))
@@ -249,7 +305,14 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     })
   }
 
-  const unsubscribe = store.subscribe(render)
+  const unsubscribe = store.subscribe((state, previous) => {
+    render(state)
+    // A new pair opens on the default view; the result toggle, which only
+    // swaps the moving panel's volume, keeps the user's.
+    if (state.fixed !== previous.fixed || state.moving !== previous.moving) {
+      queueViewReset()
+    }
+  })
   render(store.state)
 
   return {
@@ -262,9 +325,8 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     },
     destroy() {
       unsubscribe()
-      for (const [target, type, handler] of listeners) {
-        target.removeEventListener(type, handler)
-      }
+      bag.removeAll()
+      unlinkPanels()
       fixedPanel.destroy()
       movingPanel.destroy()
     },

@@ -8,7 +8,7 @@
 import type WaDetails from '@awesome.me/webawesome/dist/components/details/details.js'
 
 import type { AppState, AppStore } from '../state'
-import type { DemoPanelRole } from '../viewer/panel'
+import { PANEL_ROLES, type DemoPanelRole } from '../viewer/panel'
 import { panelDetails } from './image-summary'
 import { requireElement } from './shell'
 import { renderSummaryList } from './summary-list'
@@ -28,8 +28,6 @@ export interface ImageInfo {
   render(state: Readonly<AppState>): void
   destroy(): void
 }
-
-const PANEL_ROLES: readonly DemoPanelRole[] = ['fixed', 'moving']
 
 function infoElements(root: ParentNode, role: DemoPanelRole): ImageInfoElements {
   return {

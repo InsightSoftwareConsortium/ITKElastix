@@ -134,6 +134,34 @@ body {
   white-space: pre-line;
 }
 
+/* View controls ----------------------------------------------------------- */
+
+/* The row between the status and the viewers (src/ui/view-controls.ts):
+   the slice layout picker and "Reset view" on the left, a colormap picker
+   per panel on the right. The pickers keep their labels above the control,
+   so everything aligns on the bottom edge of the controls. */
+.view-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s) var(--wa-space-l);
+  padding: 0 var(--wa-space-m) var(--wa-space-s);
+}
+
+.view-controls-group {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s);
+}
+
+/* Wide enough for the longest built-in colormap names ("Afni_blues_inv",
+   "Ct_soft_tissue") and for "Multiplanar" to read in full. */
+.view-picker {
+  width: 11rem;
+}
+
 /* Viewers ----------------------------------------------------------------- */
 
 .viewers {

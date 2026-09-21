@@ -62,6 +62,86 @@ export function volumeName(page: Page, role: SlotRole): Promise<string | undefin
   return page.evaluate((role) => window.__demo?.[role]?.volumes[0]?.name, role)
 }
 
+/** Colormap of the first volume the `role` panel shows (a canonical niivue name such as `Gray`). */
+export function volumeColormap(page: Page, role: SlotRole): Promise<string | undefined> {
+  return page.evaluate((role) => window.__demo?.[role]?.volumes[0]?.colormap, role)
+}
+
+/** The niivue `SLICE_TYPE` value the `role` panel is drawn in. */
+export function sliceType(page: Page, role: SlotRole): Promise<number | undefined> {
+  return page.evaluate((role) => window.__demo?.[role]?.sliceType, role)
+}
+
+/** The navigation state of one panel that the viewer spec compares across the two. */
+export interface ViewFacts {
+  /** Crosshair as niivue scene fractions, 0 to 1 per axis. */
+  crosshair: number[]
+  /** Crosshair in world millimetres, comparable between panels on different grids. */
+  crosshairMm: number[]
+  /** 2D pan in millimetres (x, y, z) and the 2D zoom. */
+  pan: number[]
+  /** 3D render camera. */
+  azimuth: number
+  elevation: number
+  /** 3D zoom. */
+  zoom: number
+}
+
+export function viewFacts(page: Page, role: SlotRole): Promise<ViewFacts | undefined> {
+  return page.evaluate((role) => {
+    const nv = window.__demo?.[role]
+    if (!nv) {
+      return undefined
+    }
+    return {
+      crosshair: Array.from(nv.crosshairPos),
+      crosshairMm: Array.from(nv.model.scene2mm(nv.crosshairPos)),
+      pan: Array.from(nv.pan2Dxyzmm),
+      azimuth: nv.azimuth,
+      elevation: nv.elevation,
+      zoom: nv.scaleMultiplier,
+    }
+  }, role)
+}
+
+/** The parts of a panel's view a spec moves, as a user drag or scroll would. */
+export interface ViewChange {
+  crosshair?: [number, number, number]
+  pan?: [number, number, number, number]
+  azimuth?: number
+  elevation?: number
+  zoom?: number
+}
+
+/** Move the `role` panel's view and redraw, which is what broadcasts the change to the linked panel. */
+export function navigate(page: Page, role: SlotRole, change: ViewChange): Promise<void> {
+  return page.evaluate(
+    ([role, change]) => {
+      const nv = window.__demo?.[role]
+      if (!nv) {
+        throw new Error(`No ${role} viewer`)
+      }
+      if (change.crosshair) {
+        nv.crosshairPos = change.crosshair
+      }
+      if (change.pan) {
+        nv.pan2Dxyzmm = change.pan
+      }
+      if (change.azimuth !== undefined) {
+        nv.azimuth = change.azimuth
+      }
+      if (change.elevation !== undefined) {
+        nv.elevation = change.elevation
+      }
+      if (change.zoom !== undefined) {
+        nv.scaleMultiplier = change.zoom
+      }
+      nv.drawScene()
+    },
+    [role, change] as const,
+  )
+}
+
 /** The serializable part of a {@link LoadedImage} the specs assert on. */
 export interface ImageFacts {
   name: string
