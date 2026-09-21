@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import type { Transform, TransformList } from 'itk-wasm'
-import { withTypedParameterArrays } from './transform-list.ts'
+import { withoutCompositeHeader, withTypedParameterArrays } from './transform-list.ts'
 
 const PLACEHOLDER = 'data:application/vnd.itk.address,0:0'
 
@@ -63,4 +63,21 @@ test('leaves a non-typed field alone when its count is non-zero, so the writer r
   const broken = transform('Affine', { n: 6, fixedN: 2, fixedParameters: PLACEHOLDER })
   const [cleaned] = withTypedParameterArrays([broken])
   assert.equal(cleaned, broken)
+})
+
+test('withoutCompositeHeader drops the leading Composite marker elastix writes', () => {
+  const composite = transform('Composite', { n: 0, fixedN: 0, parameters: PLACEHOLDER, fixedParameters: PLACEHOLDER })
+  const translation = transform('Translation', { n: 2, fixedN: 0 })
+  const affine = transform('Affine', { n: 6, fixedN: 2 })
+
+  assert.deepEqual(withoutCompositeHeader([composite, translation, affine]), [translation, affine])
+})
+
+test('withoutCompositeHeader leaves a list without a header, and a nested Composite, untouched', () => {
+  const affine = transform('Affine', { n: 6, fixedN: 2 })
+  const nested = transform('Composite', { n: 0, fixedN: 0, parameters: PLACEHOLDER, fixedParameters: PLACEHOLDER })
+  const list: TransformList = [affine, nested]
+
+  assert.equal(withoutCompositeHeader(list), list)
+  assert.deepEqual(withoutCompositeHeader([]), [])
 })

@@ -32,3 +32,18 @@ function typedOrEmpty(transform: Transform, value: TypedArray, count: number): T
   }
   return transform.transformType.parametersValueType === 'float32' ? new Float32Array(0) : new Float64Array(0)
 }
+
+/**
+ * `transforms` without the leading `Composite` marker. An itk-wasm pipeline
+ * serializes a composite transform as a parameterless `Composite` entry
+ * followed by its components, and elastix always returns one (see
+ * `wasm/elastix-wasm.cxx`). The ITK writers understand that convention, but
+ * ngff-zarr's `itkTransformToNgffTransform` refuses a `Composite` entry
+ * wherever it appears, because a *nested* composite serializes as the same
+ * parameterless entry with its children dropped, and it cannot tell the two
+ * apart. Dropping the header is what its error message asks for; a
+ * `Composite` further down the list is left in place so it still throws.
+ */
+export function withoutCompositeHeader(transforms: TransformList): TransformList {
+  return transforms[0]?.transformType.transformParameterization === 'Composite' ? transforms.slice(1) : transforms
+}
