@@ -1,11 +1,13 @@
 // Splash dialog: picks a bundled sample pair or two user files, runs both
-// through the ingest pipeline with live progress, and hands the loaded pair
-// to the app. The dialog cannot be dismissed until both inputs exist.
+// through the ingest pipeline with live progress, checks that the pair can
+// be registered together, and hands it to the app. The dialog cannot be
+// dismissed until both inputs exist.
 import type WaButton from '@awesome.me/webawesome/dist/components/button/button.js'
 import type WaCallout from '@awesome.me/webawesome/dist/components/callout/callout.js'
 import type WaDialog from '@awesome.me/webawesome/dist/components/dialog/dialog.js'
 
 import {
+  assertCompatiblePair,
   loadImageSource,
   nameFromUrl,
   type ImageSource,
@@ -23,8 +25,9 @@ export interface SplashOptions {
   store: AppStore
   samples: readonly Sample[]
   /**
-   * Receives both loaded images. Throwing rejects the pair: the dialog stays
-   * open and shows the error. The dialog closes once this resolves.
+   * Receives both loaded images once `assertCompatiblePair` has accepted
+   * them. Throwing rejects the pair: the dialog stays open and shows the
+   * error. The dialog closes once this resolves.
    */
   onLoaded: (fixed: LoadedImage, moving: LoadedImage) => void | Promise<void>
   /** Defaults to {@link loadImageSource}; injectable for tests. */
@@ -182,6 +185,9 @@ export function createSplash(root: ParentNode, options: SplashOptions): Splash {
         return
       }
       try {
+        // Reject a 2D/3D mix here, before the app sees the pair, so the
+        // message lands in the callout and the previous inputs stay put.
+        assertCompatiblePair(fixedOutcome.value, movingOutcome.value)
         await onLoaded(fixedOutcome.value, movingOutcome.value)
       } catch (error) {
         showError(errorMessage(error))

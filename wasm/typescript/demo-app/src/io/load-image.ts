@@ -15,6 +15,10 @@
 // - `ome-zarr-url`: an OME-Zarr directory store URL -> `fromOmeZarr`, which
 //   reads it lazily through zarrita's FetchStore.
 //
+// The tail ends by normalizing the level for elastix (src/io/normalize.ts):
+// one time point and one channel, with a single-slice volume squeezed to
+// 2D, so the pair check in the splash sees comparable scalar images.
+//
 // This follows the read side of fidnii's examples/convert/converter.ts
 // (`convertImage`). Keep this module free of DOM access so tests and web
 // workers can reuse it; UI code lives in src/ui/.
@@ -36,14 +40,23 @@ import {
 import { formatBytes } from '../format'
 import { memoryStoreFromZip, omeZarrVersionOption } from './ozx-store'
 import {
-  PIXEL_BUDGET_BYTES,
-  ngffImageBytes,
-  planScaleFactors,
-  selectScaleForBudget,
-} from './scale-select'
+  channelAndTimepointInfo,
+  normalizeForRegistration,
+  registrationSliceOptions,
+  type SpatialAxis,
+} from './normalize'
+import { PIXEL_BUDGET_BYTES, planScaleFactors, selectScaleForBudget } from './scale-select'
 import { detectSourceKind, nameFromUrl, type SourceKind } from './source-kind'
 import { isOmeTiffStore, openTiffStore, TIFF_STORE_VERSION, tiffPoolSize, tiffStoreAsOmeZarrStore } from './tiff-store'
 
+export {
+  REGISTRATION_CHANNEL_INDEX,
+  REGISTRATION_TIMEPOINT_INDEX,
+  assertCompatiblePair,
+  squeezeSingletonAxis,
+  type RegistrationInput,
+  type SpatialAxis,
+} from './normalize'
 export { PIXEL_BUDGET_BYTES } from './scale-select'
 export { detectSourceKind, nameFromUrl, type SourceKind } from './source-kind'
 
@@ -61,12 +74,23 @@ export interface LoadedImage {
   scaleIndex: number
   /** The chosen level, still carrying any 'c'/'t' dims. */
   ngffImage: NgffImage
-  /** Scalar 2D or 3D image (t=0, c=0 of the chosen level) for elastix. */
+  /**
+   * Scalar 2D or 3D image for elastix: t=0, c=0 of the chosen level, with a
+   * single-slice volume squeezed to 2D (see src/io/normalize.ts).
+   */
   itkImage: Image
-  /** Byte size of `itkImage.data`. */
+  /** Byte size of `itkImage`'s pixel buffer: what elastix actually receives. */
   registrationBytes: number
   /** Pixel budget, in bytes, that scale selection used for this image. */
   budgetBytes: number
+  /** Extent of the source's 'c' axis; 1 when it has none. */
+  channelCount: number
+  /** Channel that `itkImage` holds. */
+  channelIndex: number
+  /** Extent of the source's 't' axis; 1 when it has none. */
+  timepointCount: number
+  /** Axis dropped when the chosen level was a single-slice volume. */
+  squeezedAxis?: SpatialAxis
 }
 
 /** A user-picked File or a URL plus the file name to read it as. */
@@ -415,10 +439,11 @@ export async function ingestItkImage(image: Image, name: string, options: LoadIm
 /**
  * The shared tail of every ingest path. Picks the finest pyramid level that
  * fits `budgetBytes`, extracts it with `ngffImageToItkImage` at t=0, c=0 so
- * elastix always receives a scalar image, and checks that the result is 2D
- * or 3D. Only the chosen level's chunks are read, so a lazily backed
- * pyramid (a remote store) never has to be pulled whole. `kind` records
- * which head produced the pyramid.
+ * elastix always receives a scalar image, and normalizes it (a single-slice
+ * volume becomes 2D; the result must be 2D or 3D; see src/io/normalize.ts).
+ * Only the chosen level's chunks are read, so a lazily backed pyramid (a
+ * remote store) never has to be pulled whole. `kind` records which head
+ * produced the pyramid.
  */
 export async function finalizeFromMultiscales(
   name: string,
@@ -432,19 +457,28 @@ export async function finalizeFromMultiscales(
   report('select', 'Selecting registration scale…')
   const scaleIndex = selectScaleForBudget(multiscales, budgetBytes)
   const ngffImage = multiscales.images[scaleIndex]
-  const itkImage = await ngffImageToItkImage(ngffImage, {
-    tIndex: ngffImage.dims.includes('t') ? 0 : undefined,
-    cIndex: ngffImage.dims.includes('c') ? 0 : undefined,
-  })
-  const dimension = itkImage.imageType.dimension
-  if (dimension !== 2 && dimension !== 3) {
-    throw new Error(`Expected a 2D or 3D image after ingest, got ${dimension}D (${name})`)
-  }
-  const registrationBytes = itkImage.data?.byteLength ?? ngffImageBytes(ngffImage)
+  const levelImage = await ngffImageToItkImage(ngffImage, registrationSliceOptions(ngffImage))
+  const { itkImage, dimension, registrationBytes, squeezedAxis } = normalizeForRegistration(levelImage, name)
+  const { channelCount, channelIndex, timepointCount } = channelAndTimepointInfo(ngffImage)
 
+  const squeezed = squeezedAxis === undefined ? '' : `, single ${squeezedAxis} slice squeezed to 2D`
   report(
     'done',
-    `Loaded ${name}: ${dimension}D ${itkImage.size.join('×')} at scale ${scaleIndex} of ${multiscales.images.length} (${formatBytes(registrationBytes)})`,
+    `Loaded ${name}: ${dimension}D ${itkImage.size.join('×')} at scale ${scaleIndex} of ${multiscales.images.length} (${formatBytes(registrationBytes)}${squeezed})`,
   )
-  return { name, kind, dimension, multiscales, scaleIndex, ngffImage, itkImage, registrationBytes, budgetBytes }
+  return {
+    name,
+    kind,
+    dimension,
+    multiscales,
+    scaleIndex,
+    ngffImage,
+    itkImage,
+    registrationBytes,
+    budgetBytes,
+    channelCount,
+    channelIndex,
+    timepointCount,
+    squeezedAxis,
+  }
 }

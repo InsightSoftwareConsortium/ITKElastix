@@ -78,12 +78,8 @@ async function bootstrap(root: HTMLElement): Promise<void> {
     store,
     samples,
     budgetBytes,
+    // The splash has already run `assertCompatiblePair` on the two images.
     async onLoaded(fixed, moving) {
-      if (fixed.dimension !== moving.dimension) {
-        throw new Error(
-          `The fixed image is ${fixed.dimension}D but the moving image is ${moving.dimension}D; elastix needs both to match.`,
-        )
-      }
       store.update(inputsLoaded(fixed, moving))
       shell.setStatus({ message: `Displaying ${fixed.name} and ${moving.name}…`, busy: true })
       await shell.settled()
