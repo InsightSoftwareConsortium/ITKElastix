@@ -8,8 +8,10 @@
 //   `itkImageToNgffImage` -> `toMultiscales` (Phase 01 path).
 // - `tiff`: read by ITK-Wasm's TIFF reader until the `@fideus-labs/fiff`
 //   TiffStore head lands.
-// - `ozx`, `ome-zarr-url`: rejected with a descriptive error until the
-//   `@fideus-labs/ngff-zarr` store heads land.
+// - `ozx`: a zipped OME-Zarr (RFC-9) File or URL -> bytes -> `unzipSync`
+//   into a `MemoryStore` (src/io/ozx-store.ts) -> `fromOmeZarr`.
+// - `ome-zarr-url`: an OME-Zarr directory store URL -> `fromOmeZarr`, which
+//   reads it lazily through zarrita's FetchStore.
 //
 // This follows the read side of fidnii's examples/convert/converter.ts
 // (`convertImage`). Keep this module free of DOM access so tests and web
@@ -18,14 +20,18 @@ import type { Image } from 'itk-wasm'
 import { readImage } from '@itk-wasm/image-io'
 import {
   bytesOnlyCodecs,
+  fromOmeZarr,
   itkImageToNgffImage,
   Methods,
   ngffImageToItkImage,
+  readOzxVersion,
   toMultiscales,
+  type ChunkCache,
   type Multiscales,
   type NgffImage,
 } from '@fideus-labs/ngff-zarr/browser'
 import { formatBytes } from '../format'
+import { memoryStoreFromZip, omeZarrVersionOption } from './ozx-store'
 import {
   PIXEL_BUDGET_BYTES,
   ngffImageBytes,
@@ -41,6 +47,8 @@ export { detectSourceKind, nameFromUrl, type SourceKind } from './source-kind'
 export interface LoadedImage {
   /** File name (or URL-derived name) used for format detection and labels. */
   name: string
+  /** Reader the source was routed to; see {@link detectSourceKind}. */
+  kind: SourceKind
   /** Spatial dimension of {@link itkImage}, the image elastix receives. */
   dimension: 2 | 3
   /** Full in-memory pyramid; later phases render or export other levels. */
@@ -85,6 +93,16 @@ export interface LoadImageOptions {
 
 /** Zarr chunk edge length for the in-memory arrays. */
 export const INGEST_CHUNK_SIZE = 128
+
+/**
+ * Decoded-chunk cache shared by every OME-Zarr read, so a level that is
+ * read again (the same remote pyramid loaded as fixed and moving, or a
+ * reload after a failed pair) is served from memory. Passed as the `cache`
+ * option of `fromOmeZarr`; ngff-zarr 0.33's browser reader accepts it and
+ * only its OMERO statistics path consumes it, so today this is a
+ * forward-compatible no-op rather than a memory concern.
+ */
+const chunkCache: ChunkCache = new Map()
 
 // File formats whose headers carry a direction matrix, so anatomical
 // orientation metadata (RFC 4) can be trusted. Compound extensions must be
@@ -232,16 +250,12 @@ export async function loadImageSource(source: ImageSource, options: LoadImageOpt
 /** Head for one source kind: everything up to and including the shared tail. */
 type SourceLoader = (source: ImageSource, name: string, options: LoadImageOptions) => Promise<LoadedImage>
 
-function unsupportedSource(description: string): SourceLoader {
-  return (_source, name) => Promise.reject(new Error(`${description} is not supported yet (${name})`))
-}
-
 const sourceLoaders: Record<SourceKind, SourceLoader> = {
   itk: loadItkSource,
   // ITK-Wasm's TIFF reader stands in until the fiff-backed TiffStore head lands.
   tiff: loadItkSource,
-  ozx: unsupportedSource('Loading a zipped OME-Zarr (.ozx) store'),
-  'ome-zarr-url': unsupportedSource('Loading an OME-Zarr directory store URL'),
+  ozx: loadOzxSource,
+  'ome-zarr-url': loadOmeZarrUrlSource,
 }
 
 /**
@@ -257,6 +271,57 @@ async function loadItkSource(source: ImageSource, name: string, options: LoadIma
   ;(webWorker as Worker | null)?.terminate()
 
   return ingestItkImage(image, name, options)
+}
+
+/**
+ * The `ozx` head: a zipped OME-Zarr (RFC-9) File, or a remote `.ozx` fetched
+ * with progress, is unzipped whole into a `MemoryStore` and read with
+ * `fromOmeZarr`. The version hint comes from the archive comment when
+ * `readOzxVersion` finds one; otherwise the reader detects it.
+ */
+async function loadOzxSource(source: ImageSource, name: string, options: LoadImageOptions): Promise<LoadedImage> {
+  const report = makeReporter(options.onProgress)
+  const data = await readSourceBytes(source, options.onProgress)
+
+  report('read', `Unzipping ${name}…`)
+  const store = memoryStoreFromZip(data)
+  const version = omeZarrVersionOption(readOzxVersion(data))
+
+  report('read', `Reading OME-Zarr metadata from ${name}…`)
+  const multiscales = await fromOmeZarr(store, { version, cache: chunkCache })
+  return finalizeFromMultiscales(name, multiscales, options.budgetBytes, options.onProgress, 'ozx')
+}
+
+/**
+ * The `ome-zarr-url` head: a remote OME-Zarr directory store read lazily
+ * through zarrita's FetchStore. Only the metadata documents are fetched
+ * here; {@link finalizeFromMultiscales} then pulls the chunks of the one
+ * level it selects, so a large pyramid is never downloaded whole.
+ */
+async function loadOmeZarrUrlSource(
+  source: ImageSource,
+  name: string,
+  options: LoadImageOptions,
+): Promise<LoadedImage> {
+  if (source instanceof File) {
+    throw new Error(
+      `${name} looks like an OME-Zarr directory store, which a file picker cannot read; enter its URL or zip it as .ozx`,
+    )
+  }
+  const report = makeReporter(options.onProgress)
+  report('fetch', `Reading OME-Zarr metadata from ${name}…`)
+  const multiscales = await fromOmeZarr(absoluteStoreUrl(source.url), { cache: chunkCache })
+  return finalizeFromMultiscales(name, multiscales, options.budgetBytes, options.onProgress, 'ome-zarr-url')
+}
+
+/**
+ * The browser reader only accepts `http(s)://` strings, so a root-relative
+ * URL (the dev server's own `/samples/...`) is resolved against the page.
+ * Where there is no page (a worker without a location) the URL must
+ * already be absolute.
+ */
+export function absoluteStoreUrl(url: string): string {
+  return new URL(url, globalThis.location?.href).href
 }
 
 /**
@@ -312,13 +377,15 @@ export async function ingestItkImage(image: Image, name: string, options: LoadIm
  * fits `budgetBytes`, extracts it with `ngffImageToItkImage` at t=0, c=0 so
  * elastix always receives a scalar image, and checks that the result is 2D
  * or 3D. Only the chosen level's chunks are read, so a lazily backed
- * pyramid (a remote store) never has to be pulled whole.
+ * pyramid (a remote store) never has to be pulled whole. `kind` records
+ * which head produced the pyramid.
  */
 export async function finalizeFromMultiscales(
   name: string,
   multiscales: Multiscales,
   budgetBytes: number = PIXEL_BUDGET_BYTES,
   onProgress?: LoadProgressCallback,
+  kind: SourceKind = 'itk',
 ): Promise<LoadedImage> {
   const report = makeReporter(onProgress)
 
@@ -339,5 +406,5 @@ export async function finalizeFromMultiscales(
     'done',
     `Loaded ${name}: ${dimension}D ${itkImage.size.join('×')} at scale ${scaleIndex} of ${multiscales.images.length} (${formatBytes(registrationBytes)})`,
   )
-  return { name, dimension, multiscales, scaleIndex, ngffImage, itkImage, registrationBytes, budgetBytes }
+  return { name, kind, dimension, multiscales, scaleIndex, ngffImage, itkImage, registrationBytes, budgetBytes }
 }

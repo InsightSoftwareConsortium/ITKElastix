@@ -8,6 +8,13 @@ const itkWasmPipelinePackages = ['elastix', 'image-io', 'transform-io', 'downsam
 
 export default defineConfig({
   base: process.env.VITE_BASE_URL || '/',
+  // The demo has no client-side routes, so the SPA history fallback is off:
+  // with it, the dev and preview servers answer every missing path (a zarr
+  // store's absent `.zmetadata`, an out-of-range chunk key, a mistyped
+  // `.ozx` URL) with index.html and status 200, and the OME-Zarr readers
+  // choke on HTML where a static host would have returned 404. `/` still
+  // serves index.html.
+  appType: 'mpa',
   server: {
     port: 5188,
     strictPort: true,
