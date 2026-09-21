@@ -58,8 +58,18 @@ export interface OpenTiffStoreOptions extends Omit<TiffStoreOptions, 'pool'> {
   pool?: DeflatePool | WorkerPool
 }
 
+/**
+ * `pool` as the `DeflatePool` fiff's reader and writer options take. The
+ * one place the worker-pool/fiff type mismatch described on
+ * {@link OpenTiffStoreOptions} is papered over; the OME-TIFF exporter's
+ * compression pool goes through here too.
+ */
+export function asDeflatePool(pool: DeflatePool | WorkerPool): DeflatePool {
+  return pool as unknown as DeflatePool
+}
+
 function toTiffStoreOptions({ pool, ...rest }: OpenTiffStoreOptions): TiffStoreOptions {
-  return pool === undefined ? rest : { ...rest, pool: pool as unknown as DeflatePool }
+  return pool === undefined ? rest : { ...rest, pool: asDeflatePool(pool) }
 }
 
 /** The geotiff 2.x entry point fiff 0.7 still calls, and where geotiff 3.x keeps it. */

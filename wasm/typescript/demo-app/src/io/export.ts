@@ -6,6 +6,8 @@ import { writeImage } from '@itk-wasm/image-io'
 import { writeTransform } from '@itk-wasm/transform-io'
 import { createWebWorker, type Image, type TransformList } from 'itk-wasm'
 
+import { toPlainUint8Array } from './bytes'
+import { toWriterError } from './export-plan'
 import { RESULT_IMAGE_FILENAME, TRANSFORM_FILENAME, type ExportedFile } from './export-types'
 import { withTypedParameterArrays } from './transform-list'
 
@@ -20,13 +22,19 @@ export {
 /**
  * Write `image` in the format `filename`'s extension selects and return the
  * file bytes. itk-wasm posts a copy of the pixel buffer to the worker, so
- * `image` stays usable afterwards.
+ * `image` stays usable afterwards. The bytes are copied onto a plain,
+ * exactly-sized `ArrayBuffer` before the worker is terminated: the pipeline
+ * can hand back a view onto a shared or larger buffer, which `Blob` rejects
+ * or would leak surrounding bytes into the file. A rejection is normalised
+ * with `toWriterError`, so a wasm exception pointer becomes a message.
  */
 export async function exportImage(image: Image, filename: string = RESULT_IMAGE_FILENAME): Promise<ExportedFile> {
   const webWorker = await createWebWorker()
   try {
-    const { serializedImage } = await writeImage(image, filename, { webWorker })
-    return { filename, bytes: serializedImage.data }
+    const { serializedImage } = await writeImage(image, filename, { webWorker }).catch((error: unknown) => {
+      throw toWriterError(error, filename)
+    })
+    return { filename, bytes: toPlainUint8Array(serializedImage.data) }
   } finally {
     webWorker.terminate()
   }
@@ -46,8 +54,12 @@ export async function exportTransform(
 ): Promise<ExportedFile> {
   const webWorker = await createWebWorker()
   try {
-    const { serializedTransform } = await writeTransform(withTypedParameterArrays(transform), filename, { webWorker })
-    return { filename, bytes: serializedTransform.data }
+    const { serializedTransform } = await writeTransform(withTypedParameterArrays(transform), filename, {
+      webWorker,
+    }).catch((error: unknown) => {
+      throw toWriterError(error, filename)
+    })
+    return { filename, bytes: toPlainUint8Array(serializedTransform.data) }
   } finally {
     webWorker.terminate()
   }

@@ -104,6 +104,52 @@ export function isOmeZarrUrl(url: string): boolean {
 }
 
 /**
+ * Extensions of formats whose headers carry a direction matrix, so the
+ * anatomical orientation metadata (RFC 4) derived from it can be trusted.
+ * Compound extensions must be listed alongside their bare forms because
+ * matching is by suffix. fidnii's list (examples/convert/converter.ts).
+ */
+export const ORIENTATION_EXTENSIONS: readonly string[] = [
+  '.nii',
+  '.nii.gz',
+  '.nrrd',
+  '.nhdr',
+  '.mha',
+  '.mhd',
+  '.mnc',
+  '.mnc.gz',
+  '.gipl',
+  '.gipl.gz',
+  '.hdf5',
+  '.h5',
+  '.fdf',
+  '.mgh',
+  '.mgz',
+  '.img',
+  '.img.gz',
+  '.hdr',
+  '.hdr.gz',
+  '.dcm',
+  '.dicom',
+]
+
+/**
+ * Whether the file name suggests a format that stores anatomical
+ * orientation. DICOM slices are often stored without an extension or with a
+ * numeric one, so those count too. Ingest applies this to a 3D input before
+ * `itkImageToNgffImage`, and the exporter applies it to the fixed input to
+ * decide the same for the registered image on its grid.
+ */
+export function hasOrientationExtension(name: string): boolean {
+  const lower = name.toLowerCase()
+  const base = lower.slice(lower.lastIndexOf('/') + 1)
+  if (hasExtension(base, ORIENTATION_EXTENSIONS)) {
+    return true
+  }
+  return !base.includes('.') || /\.\d+$/.test(base)
+}
+
+/**
  * Route a source by extension. `name` is the file name (a `File.name` or
  * the name derived from a URL); `url` is the URL it is fetched from, when
  * there is one. OZX and TIFF are recognised from either; a directory store

@@ -4,6 +4,8 @@
 // pipeline package (and its web worker), so those modules stay free of it.
 import type { Image, TransformList } from 'itk-wasm'
 
+import type { ExportableState } from './export-plan.ts'
+
 /** File name the registered result image is downloaded as. */
 export const RESULT_IMAGE_FILENAME = 'registered.nrrd'
 
@@ -21,3 +23,30 @@ export type ExportImageFunction = (image: Image, filename?: string) => Promise<E
 
 /** Signature of {@link exportTransform}, for injecting a stand-in. */
 export type ExportTransformFunction = (transform: TransformList, filename?: string) => Promise<ExportedFile>
+
+/**
+ * Coarse phases of one export, in order: the ITK-Wasm image becoming an
+ * OME-Zarr array (`convert`), the pyramid being built (`downsample`), the
+ * file being written (`package`, the only phase that reports counts), and
+ * the bytes being ready (`done`). An ITK-Wasm format skips straight to
+ * `package`.
+ */
+export type ExportStage = 'convert' | 'downsample' | 'package' | 'done'
+
+export interface ExportProgress {
+  stage: ExportStage
+  message: string
+  /** Units written so far: OME-Zarr chunks or OME-TIFF planes. Only while packaging. */
+  completed?: number
+  /** Units to write in total; reported together with `completed`. */
+  total?: number
+}
+
+export type ExportProgressCallback = (progress: ExportProgress) => void
+
+/** Signature of `exportRegisteredImage` (src/io/export-image.ts), for injecting a stand-in. */
+export type ExportRegisteredImageFunction = (
+  state: ExportableState,
+  formatId: string,
+  onProgress?: ExportProgressCallback,
+) => Promise<ExportedFile>

@@ -137,19 +137,48 @@ ngff-zarr's `memoryStoreToZip` at version `0.6`, so the archive is an RFC-9
 `.ozx` with the version in its ZIP comment, and `src/io/ozx-store.ts` reads it
 back.
 
-## The `Composite` header has to go first
+## The list is prepared before ngff-zarr sees it
 
-elastix returns its transform as an itk-wasm `TransformList` whose first entry
-is a parameterless `Composite` marker followed by the stage transforms. ITK's
-writers understand that convention, but `itkTransformToNgffTransform` refuses
-a `Composite` entry wherever it appears: a *nested* composite serializes as
-the same parameterless entry with its children dropped, and the two are
-indistinguishable. `withoutCompositeHeader` in `src/io/transform-list.ts`
-drops the leading marker and leaves any later one in place, so the refusal
-still fires where it should.
+elastix returns its transform as an itk-wasm `TransformList` that, for the
+demo's translation → rigid → affine run, reads `[Composite, Affine, Euler2D,
+Translation]` in 2D and `[Composite, Affine, Euler3D, Translation]` in 3D
+(ITK composite order: the *last* entry is applied first). ITK's writers take
+that list as is; `itkTransformToNgffTransform` needs three things done to it
+first, all in `src/io/transform-list.ts`:
 
-The remaining entries compose left to right in list order, because an ITK
-composite applies its *last* entry first.
+1. **The `Composite` header has to go.** The first entry is a parameterless
+   `Composite` marker, and ngff-zarr refuses a `Composite` entry wherever it
+   appears: a *nested* composite serializes as the same parameterless entry
+   with its children dropped, and the two are indistinguishable.
+   `withoutCompositeHeader` drops the leading marker and leaves any later
+   one in place, so the refusal still fires where it should.
+2. **Zero-count parameter fields must be typed arrays.** itk-wasm leaves
+   the `data:application/vnd.itk.address,0:0` placeholder string in a field
+   whose count is zero (the `Translation` stage has no fixed parameters),
+   and ngff-zarr reads the string's length as "36 fixed parameters".
+   `withTypedParameterArrays`, which the ITK writers already needed for the
+   same reason, substitutes empty typed arrays.
+3. **The rigid stage has to become an affine.** ITK hands the rigid stage
+   back as `Euler2D` (`[angle, tx, ty]`) or `Euler3D` (`[ax, ay, az, tx, ty,
+   tz]`, with the `ComputeZYX` flag as a fourth fixed parameter after the
+   center), and ngff-zarr decodes only parameterizations that store a
+   matrix: "Convert it to an Affine transform first." `toAffineTransform`
+   does that, computing the matrix exactly as the ITK class does (`Rz Rx
+   Ry` by default, `Rz Ry Rx` with `ComputeZYX`; `[[cos, -sin], [sin,
+   cos]]` in 2D; ITK's `Versor::GetMatrix` for the versor-based
+   `VersorRigid3D` and `Similarity3D`; the scale folded in for the
+   similarity classes) and carrying the translation and center of rotation
+   over unchanged, so the affine maps every point where the original did.
+   The conventions were checked against the ITK sources
+   (`itkEuler3DTransform.hxx`, `itkRigid2DTransform.hxx`,
+   `itkSimilarity2DTransform.hxx`, `itkSimilarity3DTransform.hxx`,
+   `itkVersorRigid3DTransform.hxx`, `itkVersor.hxx`); elastix's
+   `AdvancedEuler3DTransform` computes its matrix the same way, and the
+   demo's 3D run reports `ComputeZYX = 0`.
+
+`buildFixedToMovingTransform` applies the three in that order. The ITK-format
+transform downloads are written from the original list, so an `.h5` or
+`.tfm` still carries the Euler stage as ITK wrote it.
 
 ## What ngff-zarr does, so this app does not
 

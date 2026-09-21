@@ -46,7 +46,14 @@ import {
   type SpatialAxis,
 } from './normalize'
 import { PIXEL_BUDGET_BYTES, planScaleFactors, selectScaleForBudget } from './scale-select'
-import { detectSourceKind, nameFromUrl, sourceFormatForKind, type SourceFormat, type SourceKind } from './source-kind'
+import {
+  detectSourceKind,
+  hasOrientationExtension,
+  nameFromUrl,
+  sourceFormatForKind,
+  type SourceFormat,
+  type SourceKind,
+} from './source-kind'
 import { isOmeTiffStore, openTiffStore, TIFF_STORE_VERSION, tiffPoolSize, tiffStoreAsOmeZarrStore } from './tiff-store'
 
 export {
@@ -58,7 +65,14 @@ export {
   type SpatialAxis,
 } from './normalize'
 export { PIXEL_BUDGET_BYTES } from './scale-select'
-export { detectSourceKind, nameFromUrl, sourceFormatForKind, type SourceFormat, type SourceKind } from './source-kind'
+export {
+  detectSourceKind,
+  hasOrientationExtension,
+  nameFromUrl,
+  sourceFormatForKind,
+  type SourceFormat,
+  type SourceKind,
+} from './source-kind'
 
 /** Everything the app keeps for one loaded input image. */
 export interface LoadedImage {
@@ -136,47 +150,6 @@ export const INGEST_CHUNK_SIZE = 128
  * forward-compatible no-op rather than a memory concern.
  */
 const chunkCache: ChunkCache = new Map()
-
-// File formats whose headers carry a direction matrix, so anatomical
-// orientation metadata (RFC 4) can be trusted. Compound extensions must be
-// listed alongside their bare forms because matching is by suffix.
-const ORIENTATION_EXTENSIONS = [
-  '.nii',
-  '.nii.gz',
-  '.nrrd',
-  '.nhdr',
-  '.mha',
-  '.mhd',
-  '.mnc',
-  '.mnc.gz',
-  '.gipl',
-  '.gipl.gz',
-  '.hdf5',
-  '.h5',
-  '.fdf',
-  '.mgh',
-  '.mgz',
-  '.img',
-  '.img.gz',
-  '.hdr',
-  '.hdr.gz',
-  '.dcm',
-  '.dicom',
-]
-
-/**
- * Whether the file name suggests a format that stores anatomical
- * orientation. DICOM slices are often stored without an extension or with a
- * numeric one, so those count too.
- */
-export function hasOrientationExtension(name: string): boolean {
-  const lower = name.toLowerCase()
-  const base = lower.slice(lower.lastIndexOf('/') + 1)
-  if (ORIENTATION_EXTENSIONS.some((extension) => base.endsWith(extension))) {
-    return true
-  }
-  return !base.includes('.') || /\.\d+$/.test(base)
-}
 
 /**
  * Fetch a URL into memory. When the response carries Content-Length the body

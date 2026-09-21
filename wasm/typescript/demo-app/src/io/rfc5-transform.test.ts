@@ -243,6 +243,83 @@ test('buildFixedToMovingTransform drops the Composite header and converts to Zar
   })
 })
 
+/** An ITK-Wasm `Euler2D` entry: `[angle, tx, ty]` with the center of rotation as fixed parameters. */
+function itkEuler2D(angle: number, translation: number[], center: number[]): Transform {
+  return {
+    transformType: {
+      transformParameterization: 'Euler2D',
+      parametersValueType: 'float64',
+      inputDimension: 2,
+      outputDimension: 2,
+    },
+    numberOfParameters: 3,
+    numberOfFixedParameters: 2,
+    name: '',
+    inputSpaceName: '',
+    outputSpaceName: '',
+    parameters: new Float64Array([angle, ...translation]),
+    fixedParameters: new Float64Array(center),
+  } as unknown as Transform
+}
+
+test('buildFixedToMovingTransform accepts the Euler2D rigid stage elastix returns', async () => {
+  // elastix's rigid stage stores an angle, which ngff-zarr refuses; the
+  // builder rewrites it as the equivalent affine first, so a half turn about
+  // (10, 20) with a translation must match the same transform given as an
+  // Affine entry outright.
+  const fixed = await frame2d()
+  const moving = await frame2d()
+  const fromEuler = buildFixedToMovingTransform(
+    [COMPOSITE_HEADER, itkEuler2D(Math.PI, [3, -4], [10, 20])],
+    fixed,
+    moving,
+    'fixed',
+    'moving',
+  )
+  const fromAffine = buildFixedToMovingTransform(
+    [
+      COMPOSITE_HEADER,
+      itkAffine(
+        [
+          [-1, 0],
+          [0, -1],
+        ],
+        [3, -4],
+        [10, 20],
+      ),
+    ],
+    fixed,
+    moving,
+    'fixed',
+    'moving',
+  )
+
+  assert.equal(fromEuler.type, 'affine')
+  assertClose(fromEuler.affine, fromAffine.affine, 'Euler2D vs Affine')
+  // b = t + c - R c with R = -I: [3 + 20, -4 + 40] in ITK order, permuted to y, x.
+  assertClose(
+    fromEuler.affine,
+    [
+      [-1, 0, 36],
+      [0, -1, 23],
+    ],
+    'half turn',
+  )
+})
+
+test('buildFixedToMovingTransform tolerates the placeholder string of a zero-count parameter field', async () => {
+  // itk-wasm leaves `data:application/vnd.itk.address,0:0` in a field whose
+  // count is zero (the Translation stage has no fixed parameters), and
+  // ngff-zarr would count the string's characters as fixed parameters.
+  const translation = { ...itkTranslation([5, 7]), fixedParameters: PLACEHOLDER } as unknown as Transform
+  const affine = buildFixedToMovingTransform([COMPOSITE_HEADER, translation], await frame2d(), await frame2d(), 'fixed', 'moving')
+
+  assert.deepEqual(affine.affine, [
+    [1, 0, 7],
+    [0, 1, 5],
+  ])
+})
+
 test('buildFixedToMovingTransform composes the stages in the order ITK applies them', async () => {
   // An ITK composite applies its last entry first, so the scale is applied
   // to the already-translated point: p -> S (p + d).

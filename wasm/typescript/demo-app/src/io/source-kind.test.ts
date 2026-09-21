@@ -5,12 +5,39 @@ import { test } from 'node:test'
 
 import {
   detectSourceKind,
+  hasOrientationExtension,
   isOmeZarrUrl,
   isTiffFilename,
   nameFromUrl,
   sourceFormatForKind,
   urlPathname,
 } from './source-kind.ts'
+
+test('hasOrientationExtension trusts formats whose headers carry a direction matrix', () => {
+  for (const name of ['brain.nii', 'brain.nii.gz', 'ct.nrrd', 'ct.NHDR', 'x.mha', 'x.mhd', 'x.mnc', 'x.gipl.gz']) {
+    assert.equal(hasOrientationExtension(name), true, name)
+  }
+  for (const name of ['x.hdf5', 'x.h5', 'x.fdf', 'x.mgh', 'x.mgz', 'x.img', 'x.hdr.gz', 'slice.dcm', 'slice.dicom']) {
+    assert.equal(hasOrientationExtension(name), true, name)
+  }
+  // Only the file name part counts, so a directory with a dot does not fool it.
+  assert.equal(hasOrientationExtension('/data/v1.2/brain.nii.gz'), true)
+})
+
+test('hasOrientationExtension counts extensionless and numbered names as DICOM', () => {
+  assert.equal(hasOrientationExtension('IM0001'), true)
+  assert.equal(hasOrientationExtension('/series/IM0001'), true)
+  assert.equal(hasOrientationExtension('image.001'), true)
+  assert.equal(hasOrientationExtension('image.12'), true)
+})
+
+test('hasOrientationExtension rejects formats without a trustworthy direction', () => {
+  for (const name of ['a.png', 'a.jpg', 'a.bmp', 'a.tif', 'a.ome.tiff', 'a.ome.zarr.ozx', 'a.ozx', 'a.iwi.cbor', 'a.vtk']) {
+    assert.equal(hasOrientationExtension(name), false, name)
+  }
+  // A directory with a dot in its name does not make the file extensionless.
+  assert.equal(hasOrientationExtension('/data/v1.2/a.png'), false)
+})
 
 test('nameFromUrl takes the last path segment without query, fragment, or trailing slash', () => {
   assert.equal(nameFromUrl('/samples/CT_2D_head_fixed.mha'), 'CT_2D_head_fixed.mha')

@@ -35,7 +35,7 @@ import type { TransformList } from 'itk-wasm'
 
 import type { LoadedImage } from './load-image.ts'
 import { ROOT_METADATA_KEY, type MemoryStore } from './ozx-store.ts'
-import { withoutCompositeHeader } from './transform-list.ts'
+import { withAffineStages, withoutCompositeHeader, withTypedParameterArrays } from './transform-list.ts'
 
 /** OME-Zarr version the RFC-5 transform metadata is written at. */
 export const TRANSFORM_OME_ZARR_VERSION = '0.6'
@@ -128,6 +128,15 @@ export function buildCoordinateSystem(
  * `simplify` is off, so the result is always an `affine` rather than
  * whichever of `identity`/`translation`/`scale`/`sequence` happens to
  * represent this particular registration — see the decision note.
+ *
+ * The list is prepared first (src/io/transform-list.ts): elastix's
+ * `Composite` header is dropped (`withoutCompositeHeader`); the zero-count
+ * parameter fields that itk-wasm leaves as placeholder strings become empty
+ * typed arrays (`withTypedParameterArrays`), or ngff-zarr counts the
+ * string's characters as fixed parameters; and the rigid stage, which ITK
+ * hands back as an `Euler2D` or `Euler3D` transform storing angles, is
+ * rewritten as the equivalent `Affine` (`withAffineStages`), since
+ * ngff-zarr decodes only matrix-storing parameterizations.
  */
 export function buildFixedToMovingTransform(
   transform: TransformList,
@@ -137,7 +146,7 @@ export function buildFixedToMovingTransform(
   outputName: string,
 ): Affine {
   const converted = itkTransformToNgffTransform(
-    withoutCompositeHeader(transform),
+    withAffineStages(withTypedParameterArrays(withoutCompositeHeader(transform))),
     registrationDims(fixed.dimension),
     false,
     { fixed: fixed.ngffImage, moving: moving.ngffImage },
