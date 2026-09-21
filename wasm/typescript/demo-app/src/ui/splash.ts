@@ -51,11 +51,6 @@ export interface SplashOptions {
   onLoaded: (fixed: LoadedImage, moving: LoadedImage) => void | Promise<void>
   /** Defaults to {@link loadImageSource}; injectable for tests. */
   loadImage?: ImageLoader
-  /**
-   * Pixel budget passed to every load; the default of
-   * {@link loadImageSource} applies when omitted.
-   */
-  budgetBytes?: number
 }
 
 export interface Splash {
@@ -128,7 +123,7 @@ function droppedSource(transfer: DataTransfer | null): ImageSource | null {
 }
 
 export function createSplash(root: ParentNode, options: SplashOptions): Splash {
-  const { store, samples, onLoaded, budgetBytes } = options
+  const { store, samples, onLoaded } = options
   const loadImage = options.loadImage ?? loadImageSource
 
   const dialog = requireElement<WaDialog>(root, '#splash')
@@ -266,8 +261,10 @@ export function createSplash(root: ParentNode, options: SplashOptions): Splash {
     renderSlot(role)
     setSlotStatus(role, 'loading', 'Starting…')
     try {
+      // The budget in effect: the page URL's `?budget=` at start-up, or the
+      // last budget the registration panel reloaded the pair under.
       const image = await loadImage(source, {
-        budgetBytes,
+        budgetBytes: store.state.budgetBytes,
         onProgress: (update) => setSlotStatus(role, 'loading', update.message),
       })
       images = { ...images, [role]: image }

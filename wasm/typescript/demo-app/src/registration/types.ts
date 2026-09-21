@@ -13,6 +13,9 @@ export type AffineStage = (typeof AFFINE_STAGES)[number]
 /** Label for the stage sequence, as shown in the status row. */
 export const AFFINE_STAGES_LABEL = 'translation → rigid → affine'
 
+/** Multi-resolution pyramid levels each stage is optimized over unless the run says otherwise. */
+export const DEFAULT_NUMBER_OF_RESOLUTIONS = 3
+
 export interface RegistrationResult {
   /** The moving image resampled onto the fixed image's grid. */
   image: Image
@@ -25,6 +28,11 @@ export interface RegistrationResult {
   transformParameterObject: JsonCompatible
   /** Wall-clock duration of the elastix pipeline, in milliseconds. */
   elapsedMs: number
+  /**
+   * Pyramid levels each stage was optimized over, when the run built the
+   * default parameter maps; absent for a caller-supplied parameter object.
+   */
+  numberOfResolutions?: number
 }
 
 /**
@@ -56,9 +64,16 @@ export interface RegisterAffineOptions extends AffineParameterOptions {
   /**
    * itk-wasm web worker to run the pipelines in. When omitted one is created
    * for the run and terminated afterwards; a caller-supplied worker is left
-   * running.
+   * running unless the run is aborted.
    */
   webWorker?: Worker
+  /**
+   * Aborting it cancels the run: the pending pipeline call is abandoned,
+   * the worker is terminated (a caller-supplied one too, since terminating
+   * it is the only way to stop elastix), and the run rejects with the
+   * signal's reason.
+   */
+  signal?: AbortSignal
 }
 
 /** Signature of {@link registerAffine}, for injecting a stand-in. */

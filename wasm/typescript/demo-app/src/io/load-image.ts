@@ -110,6 +110,13 @@ export interface LoadedImage {
   timepointCount: number
   /** Axis dropped when the chosen level was a single-slice volume. */
   squeezedAxis?: SpatialAxis
+  /**
+   * The File or URL the image was read from, when it came through
+   * {@link loadImageSource}, so it can be loaded again under another pixel
+   * budget (src/ui/reload-flow.ts). Absent for an image ingested from
+   * memory ({@link ingestItkImage}).
+   */
+  source?: ImageSource
 }
 
 /** A user-picked File or a URL plus the file name to read it as. */
@@ -250,7 +257,8 @@ export async function readSourceBytes(source: ImageSource, onProgress?: LoadProg
 export async function loadImageSource(source: ImageSource, options: LoadImageOptions = {}): Promise<LoadedImage> {
   const name = sourceName(source)
   const kind = detectSourceKind(name, sourceUrl(source))
-  return sourceLoaders[kind](source, name, options)
+  const image = await sourceLoaders[kind](source, name, options)
+  return { ...image, source }
 }
 
 /** Head for one source kind: everything up to and including the shared tail. */

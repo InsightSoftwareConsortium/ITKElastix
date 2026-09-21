@@ -10,6 +10,8 @@ import '@awesome.me/webawesome/dist/styles/themes/default.css'
 // assistive technology only; the utility is not part of webawesome.css.
 import '@awesome.me/webawesome/dist/styles/utilities/visually-hidden.css'
 import '@awesome.me/webawesome/dist/components/button/button.js'
+import '@awesome.me/webawesome/dist/components/card/card.js'
+import '@awesome.me/webawesome/dist/components/copy-button/copy-button.js'
 import '@awesome.me/webawesome/dist/components/details/details.js'
 import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
 import '@awesome.me/webawesome/dist/components/input/input.js'
@@ -30,6 +32,7 @@ import './style.css'
 import { downloadBytes } from './io/download'
 import { exportRegisteredImage } from './io/export-image'
 import { exportRegisteredTransform } from './io/export-transform'
+import { loadImageSource } from './io/load-image'
 import { budgetBytesFromQuery } from './io/scale-select'
 import { registerAffine } from './registration/register'
 import { samples } from './samples'
@@ -37,6 +40,8 @@ import { createStore, inputsLoaded } from './state'
 import { createDownloadFlow } from './ui/download-flow'
 import { createImageInfo } from './ui/image-info'
 import { createRegisterFlow } from './ui/register-flow'
+import { createRegistrationPanel } from './ui/registration-panel'
+import { createReloadFlow } from './ui/reload-flow'
 import { createShell } from './ui/shell'
 import { createSplash } from './ui/splash'
 import { createViewControls } from './ui/view-controls'
@@ -58,42 +63,48 @@ if (!app) {
 }
 
 async function bootstrap(root: HTMLElement): Promise<void> {
-  const store = createStore()
+  // `?budget=<MiB>` on the page URL shrinks the pixel budget so tests and
+  // developers can force the ingest pipeline to downsample; the budget
+  // picker in the registration panel can change it later.
+  const store = createStore({ budgetBytes: budgetBytesFromQuery(window.location.search) })
   // Playwright reads the store (and the two NiiVue instances the panels
   // publish) from window.__demo.
   exposeDemoGlobals({ state: store })
 
-  // `splash`, `runRegistration`, and `downloads` are assigned below; the
+  // `splash`, `registration`, and `downloads` are assigned below; the
   // handlers only run on user clicks, long after bootstrap has finished.
   const shell = await createShell(root, store, {
     onLoadImages: () => splash.open(),
     onRegister: () => {
-      void runRegistration()
+      void registration.run()
     },
     onDownload: (kind) => {
       void downloads.download(kind)
     },
   })
   // The "Image details" under each viewer, the view controls above them,
-  // and the overlay on the fixed panel follow the store on their own.
+  // the overlay on the fixed panel, and the registration panel follow the
+  // store on their own.
   createImageInfo(root, store)
   createViewControls(root, store, shell)
   createOverlay(root, store, shell)
-  const runRegistration = createRegisterFlow(store, shell, { register: registerAffine })
+  const registration = createRegisterFlow(store, shell, { register: registerAffine })
+  const reloads = createReloadFlow(store, shell, { loadImage: loadImageSource })
+  createRegistrationPanel(root, store, {
+    onCancel: () => registration.cancel(),
+    onBudgetChosen: (budgetBytes) => {
+      void reloads.reload(budgetBytes)
+    },
+  })
   const downloads = createDownloadFlow(store, shell, {
     exportImage: exportRegisteredImage,
     exportTransform: exportRegisteredTransform,
     download: downloadBytes,
   })
 
-  // `?budget=<MiB>` on the page URL shrinks the pixel budget so tests and
-  // developers can force the ingest pipeline to downsample.
-  const budgetBytes = budgetBytesFromQuery(window.location.search)
-
   const splash = createSplash(root, {
     store,
     samples,
-    budgetBytes,
     // The splash has already run `assertCompatiblePair` on the two images.
     async onLoaded(fixed, moving) {
       store.update(inputsLoaded(fixed, moving))

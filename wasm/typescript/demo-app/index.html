@@ -17,6 +17,8 @@
           <wa-button id="load-images" appearance="outlined">Load images</wa-button>
           <wa-button id="register" variant="brand" disabled>Register</wa-button>
           <wa-tooltip for="register">Run translation → rigid → affine registration in a web worker</wa-tooltip>
+          <wa-button id="cancel-registration" variant="danger" appearance="outlined" disabled>Cancel</wa-button>
+          <wa-tooltip for="cancel-registration">Stop the running registration; the elastix worker is terminated</wa-tooltip>
           <wa-switch id="show-result" disabled>Show registered result</wa-switch>
         </div>
         <!-- The outputs row: each download is a format picker beside its button.
@@ -52,6 +54,48 @@
         <wa-progress-bar id="status-progress" indeterminate label="Working" hidden></wa-progress-bar>
         <span id="status-message" class="status-message">Starting…</span>
         <wa-callout id="status-callout" class="status-callout" size="s" hidden></wa-callout>
+      </div>
+
+      <!-- The registration panel (src/ui/registration-panel.ts): the options
+           for the next run and the summary of the last one. The pickers are
+           filled and rendered from the store; the Cancel button that belongs
+           with the options sits in the toolbar above so it is reachable during
+           a run. The summary card stays hidden until a result exists. -->
+      <div id="registration-row" class="registration-row">
+        <wa-details id="registration-options" class="registration-options" appearance="outlined">
+          <span slot="summary" class="registration-options-summary">Registration options</span>
+          <div class="registration-options-form">
+            <wa-select id="resolutions" class="registration-picker" size="s" label="Resolutions per stage" placement="bottom"></wa-select>
+            <wa-tooltip for="resolutions">
+              Multi-resolution pyramid levels each elastix stage is optimized over (NumberOfResolutions)
+            </wa-tooltip>
+            <wa-select id="pixel-budget" class="registration-picker" size="s" label="Pixel budget" placement="bottom" disabled></wa-select>
+            <wa-tooltip for="pixel-budget">
+              Largest image buffer handed to elastix; choosing another budget reloads both inputs at the finest
+              pyramid level that fits it
+            </wa-tooltip>
+          </div>
+        </wa-details>
+        <wa-card id="registration-summary" class="registration-summary" appearance="outlined" with-header with-header-actions hidden>
+          <span slot="header" class="registration-summary-header">
+            <span class="registration-summary-title">Registration summary</span>
+            <span id="registration-summary-brief" class="registration-summary-brief"></span>
+          </span>
+          <wa-copy-button
+            slot="header-actions"
+            id="copy-transform-parameters"
+            copy-label="Copy the elastix transform parameters (JSON)"
+            success-label="Copied the elastix transform parameters"
+            error-label="Could not copy; the clipboard is unavailable"
+          ></wa-copy-button>
+          <div class="registration-summary-body">
+            <dl id="registration-summary-list" class="summary-list"></dl>
+            <figure class="registration-matrix-figure">
+              <figcaption>Fixed → moving affine (matrix | offset)</figcaption>
+              <table id="registration-matrix" class="registration-matrix"></table>
+            </figure>
+          </div>
+        </wa-card>
       </div>
 
       <!-- The view controls: the slice layout picker (shown for a 3D pair only),

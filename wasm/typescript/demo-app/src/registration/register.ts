@@ -1,13 +1,17 @@
 // Affine registration with elastix: the standard translation -> rigid ->
 // affine stage sequence, each stage using its elastix default parameter map.
 // Every pipeline call runs inside one itk-wasm web worker so the UI thread
-// stays responsive; the worker is terminated when the run ends.
+// stays responsive; the worker is terminated when the run ends, and
+// terminating it is also how a run is cancelled (src/registration/
+// abortable.ts): elastix cannot be interrupted from outside.
 import { defaultParameterMap, elastix } from '@itk-wasm/elastix'
 import { createWebWorker, type Image, type JsonCompatible } from 'itk-wasm'
 
+import { abortable } from './abortable'
 import {
   AFFINE_STAGES,
   AFFINE_STAGES_LABEL,
+  DEFAULT_NUMBER_OF_RESOLUTIONS,
   type AffineParameterOptions,
   type RegisterAffineOptions,
   type RegistrationResult,
@@ -18,6 +22,7 @@ import {
 export {
   AFFINE_STAGES,
   AFFINE_STAGES_LABEL,
+  DEFAULT_NUMBER_OF_RESOLUTIONS,
   type AffineParameterOptions,
   type AffineStage,
   type RegisterAffineOptions,
@@ -27,8 +32,6 @@ export {
   type RegistrationStatus,
   type RegistrationStatusCallback,
 } from './types'
-
-export const DEFAULT_NUMBER_OF_RESOLUTIONS = 3
 
 /**
  * Turn whatever a pipeline call rejected with into an `Error` with a
@@ -84,14 +87,32 @@ export async function buildAffineParameterObject(
 }
 
 /**
+ * A fresh itk-wasm worker for one run. Should the run be aborted while the
+ * worker is still being created, the worker is terminated on arrival, since
+ * the abandoned promise is the only thing that will ever see it.
+ */
+async function createOwnedWorker(signal?: AbortSignal): Promise<Worker> {
+  const worker = await createWebWorker()
+  if (signal?.aborted) {
+    worker.terminate()
+  }
+  return worker
+}
+
+/**
  * Register `moving` onto `fixed` with elastix and return the resampled
  * moving image, the fixed-to-moving `TransformList` (a `Composite` marker
  * followed by the stage transforms), the optimized elastix transform
- * parameter maps, and the wall-clock time the run took.
+ * parameter maps, the wall-clock time the run took, and the number of
+ * resolutions the default maps were built with.
  *
  * Both images must be scalar and of the same dimension (2D or 3D). itk-wasm
  * posts copies of their pixel buffers to the worker, so the inputs stay
  * usable afterwards.
+ *
+ * Aborting `options.signal` rejects with its reason at once and terminates
+ * the worker, which is the only way to stop elastix mid-run; the abandoned
+ * pipeline promise never settles and is left to the garbage collector.
  */
 export async function registerAffine(
   fixed: Image,
@@ -99,6 +120,8 @@ export async function registerAffine(
   options: RegisterAffineOptions = {},
   onStatus?: RegistrationStatusCallback,
 ): Promise<RegistrationResult> {
+  const { signal } = options
+  signal?.throwIfAborted()
   const startedAt = performance.now()
   const elapsed = () => performance.now() - startedAt
   const report = (stage: RegistrationStage, message: string) => {
@@ -106,21 +129,21 @@ export async function registerAffine(
   }
 
   const ownsWorker = options.webWorker === undefined
-  const webWorker = options.webWorker ?? (await createWebWorker())
+  const webWorker = options.webWorker ?? (await abortable(createOwnedWorker(signal), signal))
   try {
+    const numberOfResolutions = options.numberOfResolutions ?? DEFAULT_NUMBER_OF_RESOLUTIONS
     report('parameters', `Building ${AFFINE_STAGES_LABEL} parameter maps…`)
     const parameterObject =
       options.parameterObject ??
-      (await buildAffineParameterObject({ numberOfResolutions: options.numberOfResolutions }, webWorker))
+      (await abortable(buildAffineParameterObject({ numberOfResolutions }, webWorker), signal))
 
     report('register', `Registering ${AFFINE_STAGES_LABEL}…`)
-    const { result, transform, transformParameterObject } = await elastix(parameterObject, {
-      fixed,
-      moving,
-      webWorker,
-    }).catch((error: unknown) => {
-      throw toRegistrationError(error)
-    })
+    const { result, transform, transformParameterObject } = await abortable(
+      elastix(parameterObject, { fixed, moving, webWorker }).catch((error: unknown) => {
+        throw toRegistrationError(error)
+      }),
+      signal,
+    )
     // elastix() throws on a non-zero exit with stderr text; guard the silent
     // failure case where the outputs simply never arrived.
     if (result === undefined || transform === undefined) {
@@ -128,9 +151,17 @@ export async function registerAffine(
     }
     const elapsedMs = elapsed()
     report('done', `Registered in ${(elapsedMs / 1000).toFixed(1)} s`)
-    return { image: result, transform, transformParameterObject, elapsedMs }
+    return {
+      image: result,
+      transform,
+      transformParameterObject,
+      elapsedMs,
+      numberOfResolutions: options.parameterObject === undefined ? numberOfResolutions : undefined,
+    }
   } finally {
-    if (ownsWorker) {
+    // A cancelled run's worker is still busy inside elastix; terminating it
+    // is what makes the cancellation real.
+    if (ownsWorker || signal?.aborted) {
       webWorker.terminate()
     }
   }

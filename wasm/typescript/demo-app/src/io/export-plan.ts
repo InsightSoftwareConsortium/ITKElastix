@@ -76,17 +76,23 @@ export function transformFilename(format: TransformFormat): string {
 }
 
 /**
- * The elastix transform parameter maps as UTF-8 JSON bytes, pretty-printed
- * with two spaces: the `transformParameterObject` elastix returned, one map
- * per optimized stage with its `TransformParameters`, in the layout
- * itk-wasm's elastix pipeline reads a parameter object back in from.
+ * The elastix transform parameter maps as JSON text, pretty-printed with
+ * two spaces: the `transformParameterObject` elastix returned, one map per
+ * optimized stage with its `TransformParameters`, in the layout itk-wasm's
+ * elastix pipeline reads a parameter object back in from. What the
+ * registration summary's copy button puts on the clipboard.
  */
-export function elastixParametersJson(transformParameterObject: JsonCompatible): Uint8Array {
+export function elastixParametersText(transformParameterObject: JsonCompatible): string {
   const json = JSON.stringify(transformParameterObject, null, 2)
   if (json === undefined) {
     throw new Error('The registration result carries no elastix transform parameter maps')
   }
-  return new TextEncoder().encode(json)
+  return json
+}
+
+/** {@link elastixParametersText} as UTF-8 bytes, for the download. */
+export function elastixParametersJson(transformParameterObject: JsonCompatible): Uint8Array {
+  return new TextEncoder().encode(elastixParametersText(transformParameterObject))
 }
 
 /**

@@ -1,8 +1,10 @@
 // Application state: the two loaded inputs, the registration result, the
+// registration options (resolutions and the pixel budget the inputs were
+// loaded under), whether a run or a budget reload is in progress, the
 // display toggles (the result switch and overlay mode with its opacity),
 // the download formats chosen in the pickers, and which outputs are being
-// written, held in a tiny synchronous store the shell renders from. Keep this module free of DOM access so the node unit tests
-// can exercise it.
+// written, held in a tiny synchronous store the shell renders from. Keep
+// this module free of DOM access so the node unit tests can exercise it.
 import type { Image } from 'itk-wasm'
 
 import {
@@ -14,7 +16,9 @@ import {
   type TransformFormatId,
 } from './io/formats.ts'
 import type { LoadedImage } from './io/load-image'
-import type { RegistrationResult } from './registration/types'
+import { PIXEL_BUDGET_BYTES } from './io/scale-select.ts'
+import { DEFAULT_NUMBER_OF_RESOLUTIONS, type RegistrationResult } from './registration/types.ts'
+import { clampResolutions } from './ui/registration-options.ts'
 import { DEFAULT_OVERLAY_OPACITY, clampOpacity } from './viewer/overlay-options.ts'
 
 /** The two outputs a registration result can be downloaded as. */
@@ -31,6 +35,15 @@ export interface AppState {
   showResult: boolean
   /** True while elastix is running; blocks another run and input changes. */
   registering: boolean
+  /** True while both inputs are being loaded again under a new pixel budget; blocks runs and input changes. */
+  reloading: boolean
+  /** Multi-resolution pyramid levels per elastix stage for the next run (elastix `NumberOfResolutions`). */
+  numberOfResolutions: number
+  /**
+   * Pixel budget, in bytes, the loaded inputs were read under and any new
+   * input will be read under. Changed only by a completed budget reload.
+   */
+  budgetBytes: number
   /** Whether the fixed panel blends the moving panel's content over the fixed image (overlay mode). */
   overlay: boolean
   /** Opacity the overlay is blended at, 0 to 1. Outlives the inputs, like a colormap choice. */
@@ -62,6 +75,9 @@ export function createStore(initial: Partial<AppState> = {}): AppStore {
   let state: Readonly<AppState> = {
     showResult: false,
     registering: false,
+    reloading: false,
+    numberOfResolutions: DEFAULT_NUMBER_OF_RESOLUTIONS,
+    budgetBytes: PIXEL_BUDGET_BYTES,
     overlay: false,
     overlayOpacity: DEFAULT_OVERLAY_OPACITY,
     imageFormat: DEFAULT_IMAGE_FORMAT.id,
@@ -107,14 +123,58 @@ export function hasResult(state: Readonly<AppState>): state is Readonly<AppState
   return state.result !== undefined
 }
 
-/** Registration may be started: both inputs are loaded and no run is active. */
+/** Registration may be started: both inputs are loaded, no run is active, and no reload is replacing them. */
 export function canRegister(state: Readonly<AppState>): boolean {
-  return hasInputs(state) && !state.registering
+  return hasInputs(state) && !state.registering && !state.reloading
 }
 
-/** Inputs may be (re)loaded: no registration is running against them. */
+/** A run may be cancelled: one is active. */
+export function canCancelRegistration(state: Readonly<AppState>): boolean {
+  return state.registering
+}
+
+/** Inputs may be (re)loaded: no registration is running against them and no reload is already under way. */
 export function canLoadInputs(state: Readonly<AppState>): boolean {
-  return !state.registering
+  return !state.registering && !state.reloading
+}
+
+/**
+ * The inputs may be loaded again under another pixel budget: both are
+ * loaded, both remember the File or URL they came from, and nothing else
+ * is using them.
+ */
+export function canReloadInputs(state: Readonly<AppState>): boolean {
+  return (
+    hasInputs(state) &&
+    state.fixed.source !== undefined &&
+    state.moving.source !== undefined &&
+    !state.registering &&
+    !state.reloading
+  )
+}
+
+/** Patch for the resolutions picker; the value is clamped to the picker's range (see `clampResolutions`). */
+export function resolutionsChosen(value: unknown): Partial<AppState> {
+  return { numberOfResolutions: clampResolutions(value) }
+}
+
+/** Patch for the start of a budget reload. */
+export function reloadStarted(): Partial<AppState> {
+  return { reloading: true }
+}
+
+/** Patch for a reload that ended without replacing the inputs; the budget in effect stays. */
+export function reloadFailed(): Partial<AppState> {
+  return { reloading: false }
+}
+
+/**
+ * Patch for a completed budget reload: the freshly loaded pair (which, like
+ * any new pair, drops the result and resets the display toggles), the
+ * budget it was read under, and the end of the reload.
+ */
+export function budgetApplied(fixed: LoadedImage, moving: LoadedImage, budgetBytes: number): Partial<AppState> {
+  return { ...inputsLoaded(fixed, moving), budgetBytes, reloading: false }
 }
 
 /** The registered result is both available and selected for display. */

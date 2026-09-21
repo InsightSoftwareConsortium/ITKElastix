@@ -4,13 +4,18 @@ import { test } from 'node:test'
 
 import type { LoadedImage } from './io/load-image.ts'
 import type { RegistrationResult } from './registration/types.ts'
+import { PIXEL_BUDGET_BYTES } from './io/scale-select.ts'
+import { DEFAULT_NUMBER_OF_RESOLUTIONS } from './registration/types.ts'
 import {
   OUTPUT_KINDS,
   RESULT_NAME,
+  budgetApplied,
+  canCancelRegistration,
   canDownload,
   canLoadInputs,
   canOverlay,
   canRegister,
+  canReloadInputs,
   createStore,
   fixedPanelContent,
   formatChosen,
@@ -25,6 +30,9 @@ import {
   overlayToggled,
   registrationFailed,
   registrationStarted,
+  reloadFailed,
+  reloadStarted,
+  resolutionsChosen,
   resultReady,
   selectedFormatId,
   writingFinished,
@@ -47,6 +55,9 @@ test('starts empty with the result hidden, the overlay off, the OME-Zarr formats
   assert.deepEqual(store.state, {
     showResult: false,
     registering: false,
+    reloading: false,
+    numberOfResolutions: DEFAULT_NUMBER_OF_RESOLUTIONS,
+    budgetBytes: PIXEL_BUDGET_BYTES,
     overlay: false,
     overlayOpacity: DEFAULT_OVERLAY_OPACITY,
     imageFormat: 'ozx',
@@ -56,12 +67,73 @@ test('starts empty with the result hidden, the overlay off, the OME-Zarr formats
   assert.equal(hasInputs(store.state), false)
   assert.equal(hasResult(store.state), false)
   assert.equal(canRegister(store.state), false)
+  assert.equal(canCancelRegistration(store.state), false)
+  assert.equal(canReloadInputs(store.state), false)
   assert.equal(canOverlay(store.state), false)
   assert.equal(overlayContent(store.state), undefined)
   for (const kind of OUTPUT_KINDS) {
     assert.equal(canDownload(store.state, kind), false, kind)
     assert.equal(isWriting(store.state, kind), false, kind)
   }
+})
+
+test('resolutionsChosen clamps the picker value to 2..5 and falls back to the default', () => {
+  const store = createStore()
+  store.update(resolutionsChosen('5'))
+  assert.equal(store.state.numberOfResolutions, 5)
+  store.update(resolutionsChosen(1))
+  assert.equal(store.state.numberOfResolutions, 2)
+  store.update(resolutionsChosen(null))
+  assert.equal(store.state.numberOfResolutions, DEFAULT_NUMBER_OF_RESOLUTIONS)
+})
+
+test('a run can be cancelled only while it is active', () => {
+  const store = createStore({ fixed: fakeImage('a'), moving: fakeImage('b') })
+  assert.equal(canCancelRegistration(store.state), false)
+  store.update(registrationStarted())
+  assert.equal(canCancelRegistration(store.state), true)
+  store.update(registrationFailed())
+  assert.equal(canCancelRegistration(store.state), false)
+})
+
+test('the inputs can be reloaded only when both remember a source and nothing is using them', () => {
+  const withSource = (name: string) => ({ ...fakeImage(name), source: { url: `/${name}`, name } }) as LoadedImage
+  const store = createStore({ fixed: withSource('a'), moving: fakeImage('b') })
+  assert.equal(canReloadInputs(store.state), false, 'the moving image has no source')
+  store.update({ moving: withSource('b') })
+  assert.equal(canReloadInputs(store.state), true)
+  store.update(registrationStarted())
+  assert.equal(canReloadInputs(store.state), false, 'not during a run')
+  store.update(registrationFailed())
+  store.update(reloadStarted())
+  assert.equal(canReloadInputs(store.state), false, 'not during a reload')
+  assert.equal(canRegister(store.state), false, 'a reload blocks Register')
+  assert.equal(canLoadInputs(store.state), false, 'a reload blocks Load images')
+  store.update(reloadFailed())
+  assert.equal(canReloadInputs(store.state), true)
+  assert.equal(canRegister(store.state), true)
+  assert.equal(canLoadInputs(store.state), true)
+})
+
+test('budgetApplied commits the reloaded pair and the budget together, dropping the result and ending the reload', () => {
+  const store = createStore({
+    fixed: fakeImage('a'),
+    moving: fakeImage('b'),
+    result: fakeResult(),
+    showResult: true,
+    overlay: true,
+    reloading: true,
+  })
+  const fixed = fakeImage('a-again')
+  const moving = fakeImage('b-again')
+  store.update(budgetApplied(fixed, moving, 10 * 1024 * 1024))
+  assert.equal(store.state.fixed, fixed)
+  assert.equal(store.state.moving, moving)
+  assert.equal(store.state.budgetBytes, 10 * 1024 * 1024)
+  assert.equal(store.state.reloading, false)
+  assert.equal(store.state.result, undefined)
+  assert.equal(store.state.showResult, false)
+  assert.equal(store.state.overlay, false)
 })
 
 test('accepts initial values', () => {

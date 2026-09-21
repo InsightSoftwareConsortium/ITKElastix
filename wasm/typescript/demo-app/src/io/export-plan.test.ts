@@ -11,6 +11,7 @@ import {
   EXPORT_LEVEL_CAP,
   canUseDeflateWorkers,
   elastixParametersJson,
+  elastixParametersText,
   exportScaleFactors,
   inPlaneScaleFactors,
   omeTiffPlaneCount,
@@ -66,6 +67,13 @@ test('transformFilename names the transform files after their stem in the format
   for (const format of TRANSFORM_FORMATS) {
     assert.ok(transformFilename(format).endsWith(format.extension), `${format.id} keeps its extension`)
   }
+})
+
+test('elastixParametersText is the pretty-printed JSON the copy button puts on the clipboard', () => {
+  const maps = [{ Transform: ['AffineTransform'], TransformParameters: ['1', '0'] }]
+  assert.equal(elastixParametersText(maps), JSON.stringify(maps, null, 2))
+  assert.equal(new TextDecoder().decode(elastixParametersJson(maps)), elastixParametersText(maps))
+  assert.throws(() => elastixParametersText(undefined as never), /no elastix transform parameter maps/)
 })
 
 test('elastixParametersJson pretty-prints the parameter maps as UTF-8', () => {

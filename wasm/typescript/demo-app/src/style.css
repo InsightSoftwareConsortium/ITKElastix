@@ -134,6 +134,114 @@ body {
   white-space: pre-line;
 }
 
+/* Registration panel ------------------------------------------------------ */
+
+/* The row between the status and the view controls (src/ui/registration-
+   panel.ts): the options details on the left and, once a result exists, the
+   summary card on the right. Both are compact so the viewers keep their
+   space; the card wraps under the details on a narrow window. */
+.registration-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s) var(--wa-space-m);
+  padding: 0 var(--wa-space-m) var(--wa-space-s);
+  font-size: var(--wa-font-size-s);
+}
+
+.registration-options {
+  flex: 0 1 auto;
+  min-width: 0;
+  --spacing: var(--wa-space-s);
+}
+
+.registration-options-summary {
+  font-weight: var(--wa-font-weight-semibold);
+}
+
+.registration-options-form {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s);
+}
+
+/* Wide enough for "Resolutions per stage" and "100 MB" to read in full. */
+.registration-picker {
+  width: 11rem;
+}
+
+.registration-summary {
+  flex: 1 1 24rem;
+  min-width: 0;
+  --spacing: var(--wa-space-s);
+}
+
+.registration-summary-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--wa-space-2xs) var(--wa-space-s);
+  min-width: 0;
+}
+
+.registration-summary-title {
+  font-weight: var(--wa-font-weight-semibold);
+}
+
+.registration-summary-brief {
+  color: var(--wa-color-text-quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The summary rows beside the matrix, wrapping under it when narrow. */
+.registration-summary-body {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s) var(--wa-space-l);
+}
+
+.registration-matrix-figure {
+  margin: 0;
+  min-width: 0;
+  overflow: auto;
+}
+
+.registration-matrix-figure figcaption {
+  margin-bottom: var(--wa-space-2xs);
+  color: var(--wa-color-text-quiet);
+  white-space: nowrap;
+}
+
+/* The affine: axis labels down the side and across the top, the offset in
+   its own column set off by a rule, every number right-aligned in
+   tabular figures so the columns line up. */
+.registration-matrix {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.registration-matrix th,
+.registration-matrix td {
+  padding: var(--wa-space-3xs) var(--wa-space-xs);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.registration-matrix th {
+  color: var(--wa-color-text-quiet);
+  font-weight: var(--wa-font-weight-normal);
+}
+
+.registration-matrix thead th {
+  border-bottom: 1px solid var(--wa-color-surface-border);
+}
+
+.registration-matrix .registration-matrix-offset {
+  border-left: 1px solid var(--wa-color-surface-border);
+}
+
 /* View controls ----------------------------------------------------------- */
 
 /* The row between the status and the viewers (src/ui/view-controls.ts):
