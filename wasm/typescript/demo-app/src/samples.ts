@@ -3,6 +3,8 @@
 export interface Sample {
   id: string
   label: string
+  /** One line shown next to the sample button in the splash dialog. */
+  description: string
   dimension: 2 | 3
   /** URL of the fixed image, already resolved against the app's base path. */
   fixed: string
@@ -24,6 +26,7 @@ export const samples: readonly Sample[] = [
   {
     id: 'ct-2d-head',
     label: '2D CT head',
+    description: '2D CT head slices, fixed to moving; registers in about a second.',
     dimension: 2,
     fixed: resolveAssetUrl('samples/CT_2D_head_fixed.mha'),
     moving: resolveAssetUrl('samples/CT_2D_head_moving.mha'),
@@ -31,6 +34,7 @@ export const samples: readonly Sample[] = [
   {
     id: 'mni-3d',
     label: '3D MNI T2w to T1w',
+    description: '3D MNI152 T2w template to MNI305 T1w template; a 3D registration takes longer.',
     dimension: 3,
     fixed: resolveAssetUrl('samples/tpl-MNI152NLin2009aSym_res-1_T2w.nii.gz'),
     moving: resolveAssetUrl('samples/tpl-MNI305_T1w.nii.gz'),

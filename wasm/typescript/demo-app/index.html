@@ -46,7 +46,7 @@
             <p class="splash-hint">
               Everything runs in your browser; nothing is uploaded. Start with a bundled pair:
             </p>
-            <div id="sample-buttons" class="splash-buttons"></div>
+            <div id="sample-buttons" class="splash-samples"></div>
           </section>
 
           <wa-divider></wa-divider>
@@ -54,33 +54,72 @@
           <section class="splash-section">
             <h3>Your images</h3>
             <p class="splash-hint">
-              Any format ITK reads (NIfTI, NRRD, MetaImage, DICOM, PNG, …). Both images must be 2D or both 3D.
+              For each image, drop a file on its box, choose one, or enter a URL. OME-Zarr (a
+              <code>.ome.zarr</code> URL or a zipped <code>.ozx</code>), TIFF and OME-TIFF, and any format ITK reads
+              (NIfTI, NRRD, MetaImage, DICOM, PNG, …). Both images must be 2D or both 3D.
             </p>
-            <div class="splash-pickers">
-              <div class="splash-picker">
-                <wa-button id="pick-fixed" appearance="outlined">Choose fixed image</wa-button>
-                <span id="fixed-file-name" class="splash-file-name">No file chosen</span>
-                <input id="fixed-file" type="file" hidden />
+            <div class="splash-slots">
+              <div id="fixed-slot" class="splash-slot" data-role="fixed">
+                <div class="splash-slot-header">
+                  <wa-badge variant="neutral">Fixed</wa-badge>
+                  <span class="splash-slot-drop-hint">Drop a file here</span>
+                </div>
+                <div class="splash-slot-url">
+                  <wa-input
+                    id="fixed-url"
+                    type="url"
+                    size="s"
+                    label="URL"
+                    placeholder="https://example.org/fixed.ome.zarr"
+                    with-clear
+                  ></wa-input>
+                  <wa-button id="fixed-url-load" size="s" appearance="outlined" disabled>Load</wa-button>
+                </div>
+                <div class="splash-slot-file">
+                  <wa-button id="pick-fixed" size="s" appearance="outlined">Choose fixed image</wa-button>
+                  <input id="fixed-file" type="file" hidden />
+                </div>
+                <div id="fixed-status" class="splash-slot-status" data-state="empty">
+                  <wa-spinner class="splash-slot-spinner"></wa-spinner>
+                  <span id="fixed-status-text">Nothing loaded yet</span>
+                </div>
+                <dl id="fixed-summary" class="splash-summary summary-list" hidden></dl>
               </div>
-              <div class="splash-picker">
-                <wa-button id="pick-moving" appearance="outlined">Choose moving image</wa-button>
-                <span id="moving-file-name" class="splash-file-name">No file chosen</span>
-                <input id="moving-file" type="file" hidden />
+
+              <div id="moving-slot" class="splash-slot" data-role="moving">
+                <div class="splash-slot-header">
+                  <wa-badge variant="brand">Moving</wa-badge>
+                  <span class="splash-slot-drop-hint">Drop a file here</span>
+                </div>
+                <div class="splash-slot-url">
+                  <wa-input
+                    id="moving-url"
+                    type="url"
+                    size="s"
+                    label="URL"
+                    placeholder="https://example.org/moving.ome.zarr"
+                    with-clear
+                  ></wa-input>
+                  <wa-button id="moving-url-load" size="s" appearance="outlined" disabled>Load</wa-button>
+                </div>
+                <div class="splash-slot-file">
+                  <wa-button id="pick-moving" size="s" appearance="outlined">Choose moving image</wa-button>
+                  <input id="moving-file" type="file" hidden />
+                </div>
+                <div id="moving-status" class="splash-slot-status" data-state="empty">
+                  <wa-spinner class="splash-slot-spinner"></wa-spinner>
+                  <span id="moving-status-text">Nothing loaded yet</span>
+                </div>
+                <dl id="moving-summary" class="splash-summary summary-list" hidden></dl>
               </div>
+            </div>
+            <wa-callout id="splash-error" variant="danger" hidden></wa-callout>
+            <div class="splash-pair-actions">
+              <wa-button id="swap-images" size="s" appearance="outlined" disabled>Swap fixed and moving</wa-button>
             </div>
           </section>
-
-          <div id="splash-progress" class="splash-progress" hidden>
-            <wa-spinner class="splash-spinner"></wa-spinner>
-            <div class="splash-progress-lines">
-              <span id="splash-progress-fixed"></span>
-              <span id="splash-progress-moving"></span>
-            </div>
-          </div>
-
-          <wa-callout id="splash-error" variant="danger" hidden></wa-callout>
         </div>
-        <wa-button slot="footer" id="start" variant="brand" disabled>Start</wa-button>
+        <wa-button slot="footer" id="start-registration-inputs" variant="brand" disabled>Start</wa-button>
       </wa-dialog>
     </div>
     <script type="module" src="/src/main.ts"></script>

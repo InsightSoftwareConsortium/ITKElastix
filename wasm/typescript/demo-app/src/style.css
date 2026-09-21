@@ -180,7 +180,7 @@ body {
 /* Splash dialog ----------------------------------------------------------- */
 
 #splash {
-  --width: 38rem;
+  --width: 46rem;
 }
 
 /* Until both images exist the dialog cannot be dismissed, so hide the X. */
@@ -206,68 +206,147 @@ body {
   color: var(--wa-color-text-quiet);
 }
 
-.splash-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--wa-space-s);
+.splash-hint code {
+  font-size: 0.9em;
 }
 
-.splash-pickers {
-  display: flex;
-  flex-direction: column;
-  gap: var(--wa-space-s);
-}
-
-.splash-picker {
-  display: flex;
+/* Sample pairs: a column of buttons with their descriptions lined up beside them. */
+.splash-samples {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
-  gap: var(--wa-space-s);
-  min-width: 0;
+  gap: var(--wa-space-xs) var(--wa-space-s);
 }
 
-.splash-picker wa-button {
-  flex: none;
-  min-width: 13rem;
+.splash-sample {
+  display: contents;
 }
 
-.splash-file-name {
+.splash-sample wa-button {
+  min-width: 11rem;
+}
+
+.splash-sample-description {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: var(--wa-font-size-s);
   color: var(--wa-color-text-quiet);
 }
 
-.splash-progress {
-  display: flex;
-  align-items: center;
+/* Input slots: one drop zone per image, side by side when there is room. */
+.splash-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
   gap: var(--wa-space-m);
-  padding: var(--wa-space-s) var(--wa-space-m);
-  border-radius: var(--wa-border-radius-m);
-  background: var(--wa-color-surface-lowered);
 }
 
-.splash-spinner {
-  flex: none;
-  font-size: 1.75rem;
-}
-
-.splash-progress-lines {
+.splash-slot {
   display: flex;
   flex-direction: column;
-  gap: var(--wa-space-3xs);
+  gap: var(--wa-space-s);
   min-width: 0;
+  padding: var(--wa-space-s);
+  border: 2px dashed var(--wa-color-surface-border);
+  border-radius: var(--wa-border-radius-m);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.splash-slot[data-dragover] {
+  border-color: var(--wa-color-brand-border-loud);
+  background: var(--wa-color-brand-fill-quiet);
+}
+
+.splash-slot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wa-space-s);
+}
+
+.splash-slot-drop-hint {
+  font-size: var(--wa-font-size-xs);
+  color: var(--wa-color-text-quiet);
+}
+
+.splash-slot-url {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--wa-space-xs);
+}
+
+.splash-slot-url wa-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.splash-slot-url wa-button,
+.splash-slot-file wa-button {
+  flex: none;
+}
+
+.splash-slot-status {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-xs);
+  min-height: 1.5rem;
   font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
   font-variant-numeric: tabular-nums;
 }
 
-.splash-progress-lines span {
+.splash-slot-status span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.splash-slot-status[data-state='failed'] {
+  color: var(--wa-color-danger-on-quiet);
+}
+
+.splash-slot-spinner {
+  flex: none;
+  font-size: 1.25rem;
+}
+
+.splash-slot-status:not([data-state='loading']) .splash-slot-spinner {
+  display: none;
+}
+
+/* Summary rows (src/ui/summary-list.ts): a two-column label/value grid. */
+.summary-list {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--wa-space-3xs) var(--wa-space-s);
+  margin: 0;
+  font-size: var(--wa-font-size-s);
+}
+
+.summary-list .summary-row {
+  display: contents;
+}
+
+.summary-list dt {
+  color: var(--wa-color-text-quiet);
+  white-space: nowrap;
+}
+
+.summary-list dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.splash-pair-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--wa-space-s);
+}
+
 #splash-error {
+  margin-top: var(--wa-space-s);
   white-space: pre-line;
 }

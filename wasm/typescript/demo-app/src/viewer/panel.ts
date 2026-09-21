@@ -8,6 +8,7 @@ import { iwi2nii } from '@niivue/cbor-loader'
 
 import { imageToIwiCborBytes } from '../io/iwi-cbor'
 import type { AppStore } from '../state'
+import type { Splash } from '../ui/splash'
 import { promoteTo3d } from './promote-to-3d'
 
 /** File extension itk-wasm uses for CBOR-serialized images. */
@@ -23,6 +24,8 @@ export interface DemoGlobals {
   moving?: NiiVue
   /** The application state store (see src/state.ts); published by main.ts. */
   state?: AppStore
+  /** The splash dialog (see src/ui/splash.ts); published by main.ts. */
+  splash?: Splash
 }
 
 declare global {

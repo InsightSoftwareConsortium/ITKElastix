@@ -8,6 +8,7 @@ import '@awesome.me/webawesome/dist/styles/webawesome.css'
 import '@awesome.me/webawesome/dist/styles/themes/default.css'
 import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
+import '@awesome.me/webawesome/dist/components/input/input.js'
 import '@awesome.me/webawesome/dist/components/split-panel/split-panel.js'
 import '@awesome.me/webawesome/dist/components/switch/switch.js'
 import '@awesome.me/webawesome/dist/components/select/select.js'
@@ -88,6 +89,9 @@ async function bootstrap(root: HTMLElement): Promise<void> {
       })
     },
   })
+
+  // The Playwright input specs read the splash's pending slots from here.
+  exposeDemoGlobals({ splash })
 
   shell.setStatus({ message: 'Load a fixed and a moving image to begin.' })
   splash.open()
