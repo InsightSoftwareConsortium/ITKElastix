@@ -6,12 +6,18 @@
 // A panel keeps the view choices made for it (the slice layout for 3D
 // content and the colormap) and re-applies them whenever its volume is
 // replaced, so the result toggle swapping the moving panel's volume does
-// not undo them. Two panels joined with `linkPanels` navigate together
-// through niivue's broadcast API: on every redraw the source panel copies
-// its crosshair (through world millimetres, so different grids agree), 2D
-// pan and zoom, 3D camera, and clip planes onto its peer.
+// not undo them. It can also blend a second image over its base volume
+// (overlay mode, src/viewer/overlay.ts); the overlay is content rather than
+// a view choice, so replacing the base drops it and the owner adds it back
+// from the state. Every change to a panel's volumes runs on the panel's own
+// queue, one after another, so the shell, the overlay, and the view
+// controls need not order their calls against each other. Two panels joined
+// with `linkPanels` navigate together through niivue's broadcast API: on
+// every redraw the source panel copies its crosshair (through world
+// millimetres, so different grids agree), 2D pan and zoom, 3D camera, and
+// clip planes onto its peer.
 import type { Image } from 'itk-wasm'
-import { NiiVue, SLICE_TYPE, type BackendType, type SyncOpts } from '@niivue/niivue'
+import { NiiVue, SLICE_TYPE, type BackendType, type NVImage, type SyncOpts } from '@niivue/niivue'
 import { iwi2nii } from '@niivue/cbor-loader'
 
 import { imageToIwiCborBytes } from '../io/iwi-cbor'
@@ -75,6 +81,16 @@ export function exposeDemoGlobals(globals: Partial<DemoGlobals>): DemoGlobals {
   return target
 }
 
+/** A second image blended over a panel's base volume. */
+export interface OverlayContent {
+  image: Image
+  name: string
+  /** A name from `nv.colormaps`. */
+  colormap: string
+  /** 0 (invisible) to 1 (opaque). */
+  opacity: number
+}
+
 export interface ViewerPanel {
   /** Caption shown to the user (for example "Fixed"). */
   readonly label: string
@@ -82,6 +98,8 @@ export interface ViewerPanel {
   readonly nv: NiiVue
   /** Name of the volume currently displayed, or null when the panel is empty. */
   readonly currentName: string | null
+  /** Name of the volume blended over the base, or null when there is none. */
+  readonly overlayName: string | null
   /** Spatial dimension of the displayed image, or null when the panel is empty. */
   readonly dimension: 2 | 3 | null
   /** The niivue `SLICE_TYPE` the panel is drawn in. */
@@ -91,10 +109,11 @@ export interface ViewerPanel {
   /** The panel this one broadcasts its navigation to, or null. */
   readonly peer: ViewerPanel | null
   /**
-   * Display `image` under `name`, replacing whatever was shown before. 2D
-   * images are promoted to single-slice 3D volumes for display only and shown
-   * axially; 3D images are shown in the chosen slice layout. The colormap is
-   * kept, and a linked peer's view is adopted once the volume is in place.
+   * Display `image` under `name`, replacing whatever was shown before, the
+   * overlay included. 2D images are promoted to single-slice 3D volumes
+   * for display only and shown axially; 3D images are shown in the chosen
+   * slice layout. The colormap is kept, and a linked peer's view is adopted
+   * once the volume is in place.
    */
   show(image: Image, name: string): Promise<void>
   /** Remove every volume from the viewer. */
@@ -108,6 +127,16 @@ export interface ViewerPanel {
   /** Draw the displayed image, and every later one, with the colormap `name`. */
   setColormap(name: string): Promise<void>
   /**
+   * Blend `overlay.image` over the base volume in its colormap at its
+   * opacity, replacing any earlier overlay; null removes it. The same image
+   * under the same name only has its colormap and opacity brought up to
+   * date. niivue reslices the overlay onto the base's grid through world
+   * coordinates, so an image on its own grid lands where it belongs, and
+   * the crosshair keeps its world position while the scene extents grow or
+   * shrink to fit both volumes. Rejects without a base to overlay on.
+   */
+  setOverlay(overlay: OverlayContent | null): Promise<void>
+  /**
    * Return the crosshair, 2D pan and zoom, and 3D camera to niivue's
    * defaults. A linked peer follows on the next frame unless `broadcast` is
    * false, which lets the peer's own reset win (see {@link resetLinkedViews}).
@@ -118,6 +147,8 @@ export interface ViewerPanel {
    * panels (or use {@link linkPanels}) for a two-way link.
    */
   link(peer: ViewerPanel | null): void
+  /** Resolves once every volume change queued so far has finished. */
+  settled(): Promise<void>
   /** Release GPU resources and detach the canvas. */
   destroy(): void
 }
@@ -161,6 +192,23 @@ export function imageToIwiCborBlob(image: Image): Blob {
 }
 
 /**
+ * The `File` niivue loads `image` from, and the dimension it was. 2D images
+ * are promoted to single-slice 3D volumes for display. niivue selects the
+ * reader from the extension of the URL string itself (a bare blob: URL has
+ * none), so the file's name ends in .iwi.cbor. No object URL is created,
+ * so there is nothing to revoke.
+ */
+function displayFile(image: Image, name: string): { file: File; dimension: 2 | 3 } {
+  const { dimension } = image.imageType
+  if (dimension !== 2 && dimension !== 3) {
+    throw new Error(`Cannot display a ${dimension}D image (${name})`)
+  }
+  const displayImage = dimension === 2 ? promoteTo3d(image) : image
+  const blob = imageToIwiCborBlob(displayImage)
+  return { file: new File([blob], iwiCborFileName(name), { type: IWI_CBOR_MIME_TYPE }), dimension }
+}
+
+/**
  * Create a niivue viewer inside `container`. The canvas fills the container
  * (see `.viewer-canvas` in style.css) and niivue tracks its size with a
  * ResizeObserver, so the container must have a definite height.
@@ -198,6 +246,18 @@ export async function createViewerPanel(
   let chosenSliceType = DEFAULT_SLICE_TYPE
   let colormap = DEFAULT_COLORMAP
   let peer: ViewerPanel | null = null
+  /** The overlay in place and the niivue volume that carries it. */
+  let overlay: { content: OverlayContent; volume: NVImage } | null = null
+
+  // Volume changes run one after another: niivue's loaders are asynchronous,
+  // and the callers do not know about each other.
+  let queue: Promise<void> = Promise.resolve()
+  function enqueue(task: () => Promise<void>): Promise<void> {
+    const run = queue.then(task)
+    // A failed task rejects its caller's promise but must not stall the rest.
+    queue = run.catch(() => undefined)
+    return run
+  }
 
   // `broadcastTo` replaces niivue's target list and clears its pending-sync
   // flag, so applying the link also discards any push a redraw queued
@@ -210,12 +270,19 @@ export async function createViewerPanel(
     }
   }
 
+  function sameOverlay(current: OverlayContent, next: OverlayContent): boolean {
+    return current.image === next.image && current.name === next.name
+  }
+
   const panel: ViewerPanel = {
     label,
     canvas,
     nv,
     get currentName() {
       return nv.volumes[0]?.name ?? null
+    },
+    get overlayName() {
+      return overlay?.volume.name ?? null
     },
     get dimension() {
       return dimension
@@ -229,43 +296,39 @@ export async function createViewerPanel(
     get peer() {
       return peer
     },
-    async show(image, name) {
-      const { dimension: imageDimension } = image.imageType
-      if (imageDimension !== 2 && imageDimension !== 3) {
-        throw new Error(`Cannot display a ${imageDimension}D image (${name})`)
-      }
-      const displayImage = imageDimension === 2 ? promoteTo3d(image) : image
-      const blob = imageToIwiCborBlob(displayImage)
-      const fileName = iwiCborFileName(name)
-      // niivue selects the reader from the extension of the URL string itself
-      // (a bare blob: URL has none), so hand it a File whose name ends in
-      // .iwi.cbor. No object URL is created, so there is nothing to revoke.
-      const file = new File([blob], fileName, { type: IWI_CBOR_MIME_TYPE })
-      // Stop broadcasting while the volume is replaced: a redraw niivue
-      // queues mid-load would otherwise push this panel's half-updated scene
-      // onto the peer.
-      nv.broadcastTo()
-      // loadVolumes replaces the volumes already shown. The scene (crosshair,
-      // pan, camera) is left as it was.
-      await nv.loadVolumes([{ url: file, name: fileName, colormap }])
-      dimension = imageDimension
-      const sliceType = sliceTypeForDimension(imageDimension, chosenSliceType)
-      if (nv.sliceType !== sliceType) {
-        nv.sliceType = sliceType
-      }
-      applyLink()
-      // The peer's view wins after a swap: its next frame pushes the crosshair
-      // (through world mm, so a result on the fixed grid lands where the
-      // moving image's crosshair was), pan, zoom, and camera onto this panel.
-      if (peer && peer.currentName !== null) {
-        peer.nv.drawScene()
-      }
+    show(image, name) {
+      return enqueue(async () => {
+        const { file, dimension: imageDimension } = displayFile(image, name)
+        // Stop broadcasting while the volume is replaced: a redraw niivue
+        // queues mid-load would otherwise push this panel's half-updated scene
+        // onto the peer.
+        nv.broadcastTo()
+        // loadVolumes replaces the volumes already shown, the overlay among
+        // them. The scene (crosshair, pan, camera) is left as it was.
+        await nv.loadVolumes([{ url: file, name: file.name, colormap }])
+        overlay = null
+        dimension = imageDimension
+        const sliceType = sliceTypeForDimension(imageDimension, chosenSliceType)
+        if (nv.sliceType !== sliceType) {
+          nv.sliceType = sliceType
+        }
+        applyLink()
+        // The peer's view wins after a swap: its next frame pushes the crosshair
+        // (through world mm, so a result on the fixed grid lands where the
+        // moving image's crosshair was), pan, zoom, and camera onto this panel.
+        if (peer && peer.currentName !== null) {
+          peer.nv.drawScene()
+        }
+      })
     },
-    async clear() {
-      nv.broadcastTo()
-      await nv.removeAllVolumes()
-      dimension = null
-      applyLink()
+    clear() {
+      return enqueue(async () => {
+        nv.broadcastTo()
+        await nv.removeAllVolumes()
+        overlay = null
+        dimension = null
+        applyLink()
+      })
     },
     setSliceType(sliceType) {
       chosenSliceType = sliceType
@@ -273,11 +336,69 @@ export async function createViewerPanel(
         nv.sliceType = sliceType
       }
     },
-    async setColormap(name) {
-      if (nv.volumes.length > 0) {
-        await nv.setVolume(0, { colormap: name })
-      }
-      colormap = name
+    setColormap(name) {
+      return enqueue(async () => {
+        if (nv.volumes.length > 0) {
+          await nv.setVolume(0, { colormap: name })
+        }
+        colormap = name
+      })
+    },
+    setOverlay(next) {
+      return enqueue(async () => {
+        if (overlay && next && sameOverlay(overlay.content, next)) {
+          const changes: { colormap?: string; opacity?: number } = {}
+          if (overlay.content.colormap !== next.colormap) {
+            changes.colormap = next.colormap
+          }
+          if (overlay.content.opacity !== next.opacity) {
+            changes.opacity = next.opacity
+          }
+          if (Object.keys(changes).length > 0) {
+            await nv.setVolume(nv.volumes.indexOf(overlay.volume), changes)
+          }
+          overlay = { content: next, volume: overlay.volume }
+          return
+        }
+        if (!overlay && !next) {
+          return
+        }
+        // The scene extents niivue frames the view in span every volume, so
+        // the crosshair, a fraction of them, would drift in world mm when
+        // the overlay's grid differs from the base's. Carry it across in mm,
+        // and keep the intermediate draws from pushing the drift onto the
+        // peer.
+        const crosshairMm = nv.model.scene2mm(nv.crosshairPos)
+        nv.broadcastTo()
+        try {
+          if (overlay) {
+            const index = nv.volumes.indexOf(overlay.volume)
+            overlay = null
+            if (index > 0) {
+              await nv.removeVolume(index)
+            }
+          }
+          if (next) {
+            if (nv.volumes.length === 0) {
+              throw new Error(`No image to overlay ${next.name} on`)
+            }
+            const { file } = displayFile(next.image, next.name)
+            await nv.addVolume({ url: file, name: file.name, colormap: next.colormap, opacity: next.opacity })
+            overlay = { content: next, volume: nv.volumes[nv.volumes.length - 1]! }
+          }
+        } finally {
+          const restored = nv.model.mm2scene(crosshairMm)
+          nv.crosshairPos = [0, 1, 2].map((axis) => Math.min(1, Math.max(0, restored[axis]!))) as [
+            number,
+            number,
+            number,
+          ]
+          // Re-linking drops the pushes the draws above queued; the redraw
+          // then broadcasts the restored position.
+          applyLink()
+          nv.drawScene()
+        }
+      })
     },
     resetView({ broadcast = true } = {}) {
       nv.crosshairPos = [...DEFAULT_VIEW.crosshairPos]
@@ -297,6 +418,9 @@ export async function createViewerPanel(
     link(next) {
       peer = next
       applyLink()
+    },
+    settled() {
+      return queue
     },
     destroy() {
       peer = null

@@ -55,14 +55,31 @@
       </div>
 
       <!-- The view controls: the slice layout picker (shown for a 3D pair only),
-           "Reset view", and a colormap picker per panel. src/ui/view-controls.ts
-           fills the pickers and forwards the choices to the two panels, which
-           always navigate together. -->
+           "Reset view", the overlay switch with its opacity slider, and a colormap
+           picker per panel. src/ui/view-controls.ts fills the pickers and forwards
+           the choices to the two panels, which always navigate together;
+           src/viewer/overlay.ts drives the overlay on the fixed panel. -->
       <div id="view-controls" class="view-controls">
         <div class="view-controls-group">
           <wa-select id="slice-type" class="view-picker" size="s" label="View" placement="bottom" hidden></wa-select>
           <wa-button id="reset-view" size="s" appearance="outlined">Reset view</wa-button>
           <wa-tooltip for="reset-view">Recenter both panels and return the zoom and 3D camera to their defaults</wa-tooltip>
+          <wa-switch id="overlay-toggle" class="overlay-toggle" size="s" disabled>Overlay on fixed</wa-switch>
+          <wa-tooltip for="overlay-toggle">
+            Blend the moving image, or the registered result while it is shown, over the fixed image in red
+          </wa-tooltip>
+          <wa-slider
+            id="overlay-opacity"
+            class="overlay-opacity"
+            size="s"
+            label="Overlay opacity"
+            min="0"
+            max="1"
+            step="0.05"
+            value="0.5"
+            with-tooltip
+            disabled
+          ></wa-slider>
         </div>
         <div class="view-controls-group">
           <wa-select id="fixed-colormap" class="view-picker" size="s" label="Fixed colormap" placement="bottom"></wa-select>

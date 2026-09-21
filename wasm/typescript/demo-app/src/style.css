@@ -162,6 +162,19 @@ body {
   width: 11rem;
 }
 
+/* Overlay mode (src/viewer/overlay.ts): the switch sits on the controls'
+   line, centred on the buttons beside it, and the slider keeps its label
+   above the track like the pickers do. */
+.overlay-toggle {
+  align-self: center;
+  margin-top: var(--wa-form-control-label-line-height, 1.5em);
+  white-space: nowrap;
+}
+
+.overlay-opacity {
+  width: 10rem;
+}
+
 /* Viewers ----------------------------------------------------------------- */
 
 .viewers {

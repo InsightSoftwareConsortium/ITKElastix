@@ -1,7 +1,7 @@
 // Application state: the two loaded inputs, the registration result, the
-// display toggle, the download formats chosen in the pickers, and which
-// outputs are being written, held in a tiny synchronous store the shell
-// renders from. Keep this module free of DOM access so the node unit tests
+// display toggles (the result switch and overlay mode with its opacity),
+// the download formats chosen in the pickers, and which outputs are being
+// written, held in a tiny synchronous store the shell renders from. Keep this module free of DOM access so the node unit tests
 // can exercise it.
 import type { Image } from 'itk-wasm'
 
@@ -15,6 +15,7 @@ import {
 } from './io/formats.ts'
 import type { LoadedImage } from './io/load-image'
 import type { RegistrationResult } from './registration/types'
+import { DEFAULT_OVERLAY_OPACITY, clampOpacity } from './viewer/overlay-options.ts'
 
 /** The two outputs a registration result can be downloaded as. */
 export type OutputKind = 'image' | 'transform'
@@ -30,6 +31,10 @@ export interface AppState {
   showResult: boolean
   /** True while elastix is running; blocks another run and input changes. */
   registering: boolean
+  /** Whether the fixed panel blends the moving panel's content over the fixed image (overlay mode). */
+  overlay: boolean
+  /** Opacity the overlay is blended at, 0 to 1. Outlives the inputs, like a colormap choice. */
+  overlayOpacity: number
   /** Format the registered image is downloaded in: an id from src/io/formats.ts. */
   imageFormat: ImageFormatId
   /** Format the fixed-to-moving transform is downloaded in: an id from src/io/formats.ts. */
@@ -57,6 +62,8 @@ export function createStore(initial: Partial<AppState> = {}): AppStore {
   let state: Readonly<AppState> = {
     showResult: false,
     registering: false,
+    overlay: false,
+    overlayOpacity: DEFAULT_OVERLAY_OPACITY,
     imageFormat: DEFAULT_IMAGE_FORMAT.id,
     transformFormat: DEFAULT_TRANSFORM_FORMAT.id,
     writing: { image: false, transform: false },
@@ -117,10 +124,26 @@ export function isShowingResult(state: Readonly<AppState>): boolean {
 
 /**
  * Patch for a freshly loaded input pair. Any earlier result belongs to the
- * previous inputs, so it is dropped and the display toggle reset.
+ * previous inputs, so it is dropped and the display toggles reset; the
+ * overlay opacity, a preference, stays.
  */
 export function inputsLoaded(fixed: LoadedImage, moving: LoadedImage): Partial<AppState> {
-  return { fixed, moving, result: undefined, showResult: false }
+  return { fixed, moving, result: undefined, showResult: false, overlay: false }
+}
+
+/** Overlay mode may be switched on: both inputs are loaded. */
+export function canOverlay(state: Readonly<AppState>): boolean {
+  return hasInputs(state)
+}
+
+/** Patch for the overlay switch. */
+export function overlayToggled(overlay: boolean): Partial<AppState> {
+  return { overlay }
+}
+
+/** Patch for the opacity slider; its value is clamped to 0..1 (see `clampOpacity`). */
+export function overlayOpacityChanged(opacity: unknown): Partial<AppState> {
+  return { overlayOpacity: clampOpacity(opacity) }
 }
 
 /** Patch for the start of a registration run. */
@@ -210,4 +233,14 @@ export function movingPanelContent(state: Readonly<AppState>): PanelContent | un
     return { image: state.result!.image, name: RESULT_NAME }
   }
   return state.moving ? { image: state.moving.itkImage, name: state.moving.name } : undefined
+}
+
+/**
+ * Content blended over the fixed image while overlay mode is on: whatever
+ * the moving panel shows, so the registered result while it is selected
+ * for display and the moving input otherwise. Undefined while the mode is
+ * off or the inputs are missing.
+ */
+export function overlayContent(state: Readonly<AppState>): PanelContent | undefined {
+  return state.overlay && canOverlay(state) ? movingPanelContent(state) : undefined
 }

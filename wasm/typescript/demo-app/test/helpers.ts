@@ -11,8 +11,8 @@
 import { fileURLToPath } from 'node:url'
 
 import { expect, type Download, type Locator, type Page } from '@playwright/test'
-import type WaButton from '@awesome.me/webawesome/dist/components/button/button.js'
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js'
+import type WaSlider from '@awesome.me/webawesome/dist/components/slider/slider.js'
 import type WaSwitch from '@awesome.me/webawesome/dist/components/switch/switch.js'
 
 import type { LoadedImage } from '../src/io/load-image'
@@ -65,6 +65,26 @@ export function volumeName(page: Page, role: SlotRole): Promise<string | undefin
 /** Colormap of the first volume the `role` panel shows (a canonical niivue name such as `Gray`). */
 export function volumeColormap(page: Page, role: SlotRole): Promise<string | undefined> {
   return page.evaluate((role) => window.__demo?.[role]?.volumes[0]?.colormap, role)
+}
+
+/** How one niivue volume is drawn. niivue fills in both display fields on load, but types them as optional. */
+export interface VolumeFacts {
+  name: string
+  colormap?: string
+  opacity?: number
+}
+
+/** Every volume the `role` panel shows, the base first and an overlay after it. */
+export function volumeFacts(page: Page, role: SlotRole): Promise<VolumeFacts[] | undefined> {
+  return page.evaluate(
+    (role) =>
+      window.__demo?.[role]?.volumes.map((volume) => ({
+        name: volume.name,
+        colormap: volume.colormap,
+        opacity: volume.opacity,
+      })),
+    role,
+  )
 }
 
 /** The niivue `SLICE_TYPE` value the `role` panel is drawn in. */
@@ -190,11 +210,28 @@ export function imageFacts(page: Page, holder: ImageHolder, role: SlotRole): Pro
 }
 
 /**
- * `wa-button` keeps `disabled` as a property without reflecting it, so
- * Playwright's `toBeEnabled` cannot see it; read the property instead.
+ * WebAwesome controls (`wa-button`, `wa-slider`, ...) keep `disabled` as a
+ * property without reflecting it, so Playwright's `toBeEnabled` cannot see
+ * it; read the property instead.
  */
-export function isDisabled(button: Locator): Promise<boolean> {
-  return button.evaluate((element: WaButton) => element.disabled)
+export function isDisabled(control: Locator): Promise<boolean> {
+  return control.evaluate((element: HTMLElement & { disabled: boolean }) => element.disabled)
+}
+
+/** The value of a `wa-slider`; a property, like the switch's state. */
+export function sliderValue(slider: Locator): Promise<number> {
+  return slider.evaluate((element: WaSlider) => element.value)
+}
+
+/**
+ * Give a `wa-slider` the keyboard. `locator.focus()` uses the browser's
+ * native focus, which the host (no tabindex) ignores; the component's own
+ * `focus()` forwards to the thumb inside its shadow root, which then takes
+ * arrow, Home, and End keys. Mind that a `wa-switch` left focused by a
+ * click takes ArrowLeft/ArrowRight as uncheck/check.
+ */
+export function focusSlider(slider: Locator): Promise<void> {
+  return slider.evaluate((element: WaSlider) => element.focus())
 }
 
 /** The `disabled` and `checked` properties of a `wa-switch`, neither of which is reflected. */

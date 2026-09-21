@@ -2,10 +2,12 @@
 // (the crosshair through world millimetres, the 2D pan and zoom, the 3D
 // camera), the link survives the result toggle swapping the moving panel's
 // volume, "Reset view" restores the defaults on both, the slice layout
-// picker is hidden for a 2D pair and drives both panels for a 3D pair, and
+// picker is hidden for a 2D pair and drives both panels for a 3D pair,
 // each panel's colormap picker applies to that panel only and outlives a
-// swap. Elements are found by their stable ids; niivue state is read
-// through `window.__demo` with the helpers in test/helpers.ts.
+// swap, and overlay mode blends the moving image (or the result) over the
+// fixed image at the slider's opacity. Elements are found by their stable
+// ids; niivue state is read through `window.__demo` with the helpers in
+// test/helpers.ts.
 import { expect, test, type Page } from '@playwright/test'
 import { SLICE_TYPE } from '@niivue/niivue'
 
@@ -16,13 +18,18 @@ import {
   MNI_SAMPLE_BUTTON,
   REGISTRATION_TIMEOUT,
   collectPageErrors,
+  focusSlider,
+  isDisabled,
   loadSample,
   navigate,
   selectValue,
   sliceType,
+  sliderValue,
   switchState,
   viewFacts,
   volumeColormap,
+  volumeCount,
+  volumeFacts,
   volumeName,
 } from './helpers'
 
@@ -248,6 +255,97 @@ test('the slice layout picker drives both panels and the 3D camera is linked for
     await pick(page, 'slice-type', 'multiplanar')
     await expect.poll(() => sliceType(page, 'fixed')).toBe(SLICE_TYPE.MULTIPLANAR)
     await expect.poll(() => sliceType(page, 'moving')).toBe(SLICE_TYPE.MULTIPLANAR)
+  })
+
+  expect(pageErrors).toEqual([])
+})
+
+test('overlay mode blends the moving image, then the registered result, over the fixed image', async ({ page }) => {
+  const pageErrors: string[] = []
+  collectPageErrors(page, pageErrors)
+  const toggle = page.locator('#overlay-toggle')
+  const slider = page.locator('#overlay-opacity')
+  const showResult = page.locator('#show-result')
+
+  /** The overlay volume of the fixed panel, or undefined while there is none. */
+  async function overlayFacts() {
+    return (await volumeFacts(page, 'fixed'))?.[1]
+  }
+
+  await test.step('the switch waits for a pair; the slider waits for the switch', async () => {
+    await page.goto('/')
+    expect(await switchState(toggle)).toEqual({ disabled: true, checked: false })
+    await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+    await expect.poll(() => switchState(toggle)).toEqual({ disabled: false, checked: false })
+    expect(await isDisabled(slider)).toBe(true)
+    expect(await sliderValue(slider)).toBe(0.5)
+    expect(await volumeCount(page, 'fixed')).toBe(1)
+  })
+
+  await test.step('switching it on adds the moving image to the fixed panel in red, half transparent', async () => {
+    const before = (await viewFacts(page, 'fixed'))!
+    await toggle.click()
+    await expect.poll(() => volumeCount(page, 'fixed')).toBe(2)
+    const [base, overlay] = (await volumeFacts(page, 'fixed'))!
+    expect(base!.name).toContain('CT_2D_head_fixed')
+    expect(base!.colormap).toBe('Gray')
+    expect(overlay!.name).toContain('CT_2D_head_moving')
+    expect(overlay!.colormap).toBe('Red')
+    expect(overlay!.opacity).toBeCloseTo(0.5)
+    // The moving panel is untouched, the link holds, and the crosshair
+    // stays put in world mm although the scene now spans both grids.
+    expect(await volumeCount(page, 'moving')).toBe(1)
+    await expectPanelsToAgree(page)
+    expect(closeTo((await viewFacts(page, 'fixed'))!.crosshairMm, before.crosshairMm)).toBe(true)
+    await expect.poll(() => isDisabled(slider)).toBe(false)
+  })
+
+  await test.step('the opacity slider drives the overlay volume', async () => {
+    // Two steps down from the default (see OVERLAY_OPACITY_STEP).
+    await focusSlider(slider)
+    await page.keyboard.press('ArrowLeft')
+    await page.keyboard.press('ArrowLeft')
+    await expect.poll(() => sliderValue(slider)).toBeCloseTo(0.4)
+    await expect.poll(async () => (await overlayFacts())?.opacity).toBeCloseTo(0.4)
+    expect((await volumeFacts(page, 'fixed'))![0]!.opacity).toBe(1)
+  })
+
+  await test.step('the result toggle swaps the overlay for the registered result, and back', async () => {
+    await page.locator('#register').click()
+    await expect
+      .poll(async () => (await switchState(showResult)).disabled, { timeout: REGISTRATION_TIMEOUT })
+      .toBe(false)
+    await expect.poll(() => volumeName(page, 'moving')).toContain('registered')
+    await expect.poll(async () => (await overlayFacts())?.name).toContain('registered')
+    const overlay = (await overlayFacts())!
+    expect(overlay.colormap).toBe('Red')
+    expect(overlay.opacity).toBeCloseTo(0.4)
+    expect(await volumeCount(page, 'fixed')).toBe(2)
+    await expectPanelsToAgree(page)
+
+    await showResult.click()
+    await expect.poll(() => volumeName(page, 'moving')).not.toContain('registered')
+    await expect.poll(async () => (await overlayFacts())?.name).toContain('CT_2D_head_moving')
+    expect(await volumeCount(page, 'fixed')).toBe(2)
+  })
+
+  await test.step('switching it off removes the overlay and disables the slider', async () => {
+    await toggle.click()
+    await expect.poll(() => volumeCount(page, 'fixed')).toBe(1)
+    expect(await volumeColormap(page, 'fixed')).toBe('Gray')
+    await expect.poll(() => isDisabled(slider)).toBe(true)
+    await expectPanelsToAgree(page)
+  })
+
+  await test.step('a new pair resets the switch but keeps the opacity', async () => {
+    await toggle.click()
+    await expect.poll(() => volumeCount(page, 'fixed')).toBe(2)
+    await page.locator('#load-images').click()
+    await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+    await expect.poll(() => switchState(toggle)).toEqual({ disabled: false, checked: false })
+    expect(await volumeCount(page, 'fixed')).toBe(1)
+    expect(await isDisabled(slider)).toBe(true)
+    expect(await sliderValue(slider)).toBeCloseTo(0.4)
   })
 
   expect(pageErrors).toEqual([])

@@ -6,7 +6,8 @@
 // button's spinner while its file is written is a state change, not a call
 // into this module. The two panels are linked so they navigate together
 // (src/viewer/panel.ts), and a freshly loaded pair opens on the default
-// view; the view controls in src/ui/view-controls.ts drive the rest.
+// view; the view controls in src/ui/view-controls.ts and the overlay in
+// src/viewer/overlay.ts drive the rest.
 import type WaBadge from '@awesome.me/webawesome/dist/components/badge/badge.js'
 import type WaButton from '@awesome.me/webawesome/dist/components/button/button.js'
 import type WaCallout from '@awesome.me/webawesome/dist/components/callout/callout.js'
@@ -82,7 +83,10 @@ export interface Shell {
   readonly fixedPanel: ViewerPanel
   readonly movingPanel: ViewerPanel
   setStatus(options: StatusOptions): void
-  /** Resolves once every panel update queued so far has finished. */
+  /**
+   * Resolves once every panel update queued so far has finished, the
+   * shell's own and those other modules (the overlay) queued on the panels.
+   */
   settled(): Promise<void>
   destroy(): void
 }
@@ -321,7 +325,7 @@ export async function createShell(root: ParentNode, store: AppStore, handlers: S
     movingPanel,
     setStatus,
     async settled() {
-      await Promise.all(pending.values())
+      await Promise.all([...pending.values(), fixedPanel.settled(), movingPanel.settled()])
     },
     destroy() {
       unsubscribe()
