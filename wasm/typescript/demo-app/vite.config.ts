@@ -34,6 +34,9 @@ export default defineConfig({
       '@thewtex/zstddec',
       '@fideus-labs/ngff-zarr',
       '@fideus-labs/fiff',
+      // fiff imports geotiff from node_modules; the app's own import (the
+      // SubIFD shim in src/io/tiff-store.ts) must resolve to that same copy.
+      'geotiff',
       '@awesome.me/webawesome',
     ],
     include: ['@fideus-labs/worker-pool'],

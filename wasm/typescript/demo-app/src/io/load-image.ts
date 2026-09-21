@@ -6,8 +6,10 @@
 //
 // - `itk`: any ITK-Wasm-readable File or URL -> `readImage` ->
 //   `itkImageToNgffImage` -> `toMultiscales` (Phase 01 path).
-// - `tiff`: read by ITK-Wasm's TIFF reader until the `@fideus-labs/fiff`
-//   TiffStore head lands.
+// - `tiff`: a TIFF or OME-TIFF File or URL -> `@fideus-labs/fiff`'s
+//   TiffStore (src/io/tiff-store.ts), which synthesizes OME-Zarr 0.5
+//   metadata over the IFDs -> `fromOmeZarr`, with deflate decoding on a
+//   `@fideus-labs/worker-pool` pool.
 // - `ozx`: a zipped OME-Zarr (RFC-9) File or URL -> bytes -> `unzipSync`
 //   into a `MemoryStore` (src/io/ozx-store.ts) -> `fromOmeZarr`.
 // - `ome-zarr-url`: an OME-Zarr directory store URL -> `fromOmeZarr`, which
@@ -17,6 +19,7 @@
 // (`convertImage`). Keep this module free of DOM access so tests and web
 // workers can reuse it; UI code lives in src/ui/.
 import type { Image } from 'itk-wasm'
+import { WorkerPool } from '@fideus-labs/worker-pool'
 import { readImage } from '@itk-wasm/image-io'
 import {
   bytesOnlyCodecs,
@@ -39,6 +42,7 @@ import {
   selectScaleForBudget,
 } from './scale-select'
 import { detectSourceKind, nameFromUrl, type SourceKind } from './source-kind'
+import { isOmeTiffStore, openTiffStore, TIFF_STORE_VERSION, tiffPoolSize, tiffStoreAsOmeZarrStore } from './tiff-store'
 
 export { PIXEL_BUDGET_BYTES } from './scale-select'
 export { detectSourceKind, nameFromUrl, type SourceKind } from './source-kind'
@@ -252,8 +256,7 @@ type SourceLoader = (source: ImageSource, name: string, options: LoadImageOption
 
 const sourceLoaders: Record<SourceKind, SourceLoader> = {
   itk: loadItkSource,
-  // ITK-Wasm's TIFF reader stands in until the fiff-backed TiffStore head lands.
-  tiff: loadItkSource,
+  tiff: loadTiffSource,
   ozx: loadOzxSource,
   'ome-zarr-url': loadOmeZarrUrlSource,
 }
@@ -290,6 +293,43 @@ async function loadOzxSource(source: ImageSource, name: string, options: LoadIma
   report('read', `Reading OME-Zarr metadata from ${name}…`)
   const multiscales = await fromOmeZarr(store, { version, cache: chunkCache })
   return finalizeFromMultiscales(name, multiscales, options.budgetBytes, options.onProgress, 'ozx')
+}
+
+/**
+ * The `tiff` head: a TIFF or OME-TIFF opened as a fiff `TiffStore`
+ * (`fromBlob` for a File, `fromUrl` for a URL, which is then read with
+ * HTTP range requests rather than downloaded whole) and handed to
+ * `fromOmeZarr` as the OME-Zarr 0.5 store it synthesizes, exactly as
+ * fidnii's `fromTiff` does. Plain TIFF, OME-TIFF, and SubIFD pyramids all
+ * arrive this way; only the level {@link finalizeFromMultiscales} selects
+ * is decoded.
+ *
+ * Deflate-compressed tiles are decoded on a worker pool sized to the core
+ * count so the main thread stays free. The pool is created per load and
+ * its workers terminated once the registration scale has been converted
+ * (`return await` keeps the `finally` after the conversion). fiff registers
+ * the pool with geotiff globally, and a terminated pool only loses its idle
+ * workers, so a later read of another level from this image's
+ * `multiscales` still works: the pool spawns fresh workers on demand.
+ */
+async function loadTiffSource(source: ImageSource, name: string, options: LoadImageOptions): Promise<LoadedImage> {
+  const report = makeReporter(options.onProgress)
+  const pool = new WorkerPool(tiffPoolSize())
+  try {
+    report('fetch', source instanceof File ? `Opening ${name}…` : `Opening ${name} with range requests…`)
+    const store = await openTiffStore(source instanceof File ? source : absoluteStoreUrl(source.url), { pool })
+
+    const flavor = isOmeTiffStore(store) ? 'OME-TIFF' : 'TIFF'
+    const levels = `${store.levels} level${store.levels === 1 ? '' : 's'}`
+    report('read', `Reading ${flavor} metadata from ${name} (${levels})…`)
+    const multiscales = await fromOmeZarr(tiffStoreAsOmeZarrStore(store), {
+      version: TIFF_STORE_VERSION,
+      cache: chunkCache,
+    })
+    return await finalizeFromMultiscales(name, multiscales, options.budgetBytes, options.onProgress, 'tiff')
+  } finally {
+    pool.terminateWorkers()
+  }
 }
 
 /**

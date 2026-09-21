@@ -81,6 +81,9 @@ importers:
       fflate:
         specifier: ^0.8.2
         version: 0.8.3
+      geotiff:
+        specifier: ^3.0.5
+        version: 3.0.5
       itk-wasm:
         specifier: ^1.0.0-b.201
         version: 1.0.0-b.201(debug@4.4.3)
