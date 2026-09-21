@@ -44,9 +44,19 @@ export interface ExportProgress {
 
 export type ExportProgressCallback = (progress: ExportProgress) => void
 
-/** Signature of `exportRegisteredImage` (src/io/export-image.ts), for injecting a stand-in. */
-export type ExportRegisteredImageFunction = (
+/**
+ * Signature shared by the two registry-driven exporters: the state holding
+ * the result and its inputs, a format id from src/io/formats.ts (typically a
+ * picker's value), and an optional progress callback.
+ */
+export type ExportRegisteredFunction = (
   state: ExportableState,
   formatId: string,
   onProgress?: ExportProgressCallback,
 ) => Promise<ExportedFile>
+
+/** Signature of `exportRegisteredImage` (src/io/export-image.ts), for injecting a stand-in. */
+export type ExportRegisteredImageFunction = ExportRegisteredFunction
+
+/** Signature of `exportRegisteredTransform` (src/io/export-transform.ts), for injecting a stand-in. */
+export type ExportRegisteredTransformFunction = ExportRegisteredFunction

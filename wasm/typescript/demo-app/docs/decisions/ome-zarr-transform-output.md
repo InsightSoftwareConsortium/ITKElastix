@@ -135,7 +135,11 @@ validates instead, and checks more than the schema would.)
 The document is written into a one-entry `MemoryStore` and zipped with
 ngff-zarr's `memoryStoreToZip` at version `0.6`, so the archive is an RFC-9
 `.ozx` with the version in its ZIP comment, and `src/io/ozx-store.ts` reads it
-back.
+back. The transform picker's `ozx-transform` entry reaches it through
+`exportRegisteredTransform` (`src/io/export-transform.ts`), which also serves
+the ITK-Wasm transform formats and the elastix parameter JSON; those two
+carry the elastix stages as they are, and only the OME-Zarr outputs hold the
+single composed affine described here.
 
 ## The list is prepared before ngff-zarr sees it
 

@@ -44,9 +44,13 @@ export async function exportImage(image: Image, filename: string = RESULT_IMAGE_
  * Write `transform` in the format `filename`'s extension selects and return
  * the file bytes. The list may start with elastix's `Composite` marker;
  * itk-wasm skips its (address-string) parameters when posting the list, and
- * ITK writes the stages that follow as one composite transform. Zero-count
- * parameter fields are given empty typed arrays first (see
- * `withTypedParameterArrays`), or the writer rejects the list.
+ * ITK drops the marker and writes the stages that follow as a flat sequence
+ * of transforms (`#Transform 0`, `#Transform 1`, … in the text format, with
+ * no CompositeTransform wrapper), which its readers return as a list in the
+ * same order. Zero-count parameter fields are given empty typed arrays first
+ * (see `withTypedParameterArrays`), or the writer rejects the list. `tfm` is
+ * absent from transform-io's extension table, so the writer probes each
+ * format for it and ITK's text writer takes it.
  */
 export async function exportTransform(
   transform: TransformList,
@@ -57,7 +61,7 @@ export async function exportTransform(
     const { serializedTransform } = await writeTransform(withTypedParameterArrays(transform), filename, {
       webWorker,
     }).catch((error: unknown) => {
-      throw toWriterError(error, filename)
+      throw toWriterError(error, filename, 'transform')
     })
     return { filename, bytes: toPlainUint8Array(serializedTransform.data) }
   } finally {

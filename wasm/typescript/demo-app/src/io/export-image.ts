@@ -39,13 +39,15 @@ import {
   exportScaleFactors,
   inPlaneScaleFactors,
   omeTiffPlaneCount,
+  progressReporter,
   registrationOutputs,
   resultAddsAnatomicalOrientation,
   resultFilename,
   type ExportableState,
+  type ProgressReporter as Reporter,
   type RegistrationOutputs,
 } from './export-plan'
-import type { ExportedFile, ExportProgress, ExportProgressCallback, ExportStage } from './export-types'
+import type { ExportedFile, ExportProgressCallback } from './export-types'
 import { imageFormatById, type ImageFormat } from './formats'
 import { imageToIwiCborBytes } from './iwi-cbor'
 import { INGEST_CHUNK_SIZE } from './load-image'
@@ -60,15 +62,6 @@ export {
   type RegistrationOutputs,
 } from './export-plan'
 export type { ExportProgress, ExportProgressCallback, ExportStage } from './export-types'
-
-/** Progress reporter bound to one export; `extra` carries the counts. */
-type Reporter = (stage: ExportStage, message: string, extra?: Partial<ExportProgress>) => void
-
-function makeReporter(onProgress?: ExportProgressCallback): Reporter {
-  return (stage, message, extra = {}) => {
-    onProgress?.({ stage, message, ...extra })
-  }
-}
 
 /**
  * Serialize the registration result in `state` as the image format
@@ -87,7 +80,7 @@ export async function exportRegisteredImage(
   const format = imageFormatById(formatId)
   const outputs = registrationOutputs(state)
   const filename = resultFilename(format)
-  const report = makeReporter(onProgress)
+  const report = progressReporter(onProgress)
 
   let bytes: Uint8Array
   switch (format.kind) {

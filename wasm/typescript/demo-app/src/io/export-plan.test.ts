@@ -3,19 +3,26 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
+import type { JsonCompatible, Transform, TransformList } from 'itk-wasm'
+
+import type { ExportProgress } from './export-types.ts'
 import type { LoadedImage } from './load-image.ts'
 import {
   EXPORT_LEVEL_CAP,
   canUseDeflateWorkers,
+  elastixParametersJson,
   exportScaleFactors,
   inPlaneScaleFactors,
   omeTiffPlaneCount,
+  progressReporter,
   registrationOutputs,
   resultAddsAnatomicalOrientation,
   resultFilename,
   toWriterError,
+  transformFilename,
+  unsupportedTransformFormatReason,
 } from './export-plan.ts'
-import { imageFormatById } from './formats.ts'
+import { imageFormatById, TRANSFORM_FORMATS, transformFormatById } from './formats.ts'
 import type { ImageShapeInfo } from './scale-select.ts'
 
 /** The fields of a loaded input the plan reads, as a stand-in `LoadedImage`. */
@@ -48,6 +55,75 @@ test('resultFilename names the file after the result in the format extension', (
   assert.equal(resultFilename(imageFormatById('nrrd')), 'registered.nrrd')
   assert.equal(resultFilename(imageFormatById('nii.gz')), 'registered.nii.gz')
   assert.equal(resultFilename(imageFormatById('iwi.cbor')), 'registered.iwi.cbor')
+})
+
+test('transformFilename names the transform files after their stem in the format extension', () => {
+  assert.equal(transformFilename(transformFormatById('ozx-transform')), 'transform.ome.zarr.ozx')
+  assert.equal(transformFilename(transformFormatById('h5')), 'transform.h5')
+  assert.equal(transformFilename(transformFormatById('tfm')), 'transform.tfm')
+  assert.equal(transformFilename(transformFormatById('iwt.cbor')), 'transform.iwt.cbor')
+  assert.equal(transformFilename(transformFormatById('elastix-json')), 'transform-parameters.json')
+  for (const format of TRANSFORM_FORMATS) {
+    assert.ok(transformFilename(format).endsWith(format.extension), `${format.id} keeps its extension`)
+  }
+})
+
+test('elastixParametersJson pretty-prints the parameter maps as UTF-8', () => {
+  const maps: JsonCompatible = [{ Transform: ['TranslationTransform'], TransformParameters: [1.5, -2] }, { Note: ['µm'] }]
+  const bytes = elastixParametersJson(maps)
+  const text = new TextDecoder().decode(bytes)
+  assert.equal(text, JSON.stringify(maps, null, 2))
+  assert.match(text, /^\[\n  \{\n    "Transform": \[/)
+  assert.deepEqual(JSON.parse(text), maps)
+  // 'µ' is two bytes in UTF-8, so the byte count exceeds the character count.
+  assert.equal(bytes.byteLength, text.length + 1)
+  assert.throws(() => elastixParametersJson(undefined as never), /no elastix transform parameter maps/)
+})
+
+/** A stand-in stage of an elastix list; `Composite` markers use it too. */
+function stage(parameterization: string, dimension: number): Transform {
+  return { transformType: { transformParameterization: parameterization, inputDimension: dimension } } as Transform
+}
+
+function elastixList(dimension: number): TransformList {
+  return [
+    stage('Composite', dimension),
+    stage('Translation', dimension),
+    stage(dimension === 2 ? 'Euler2D' : 'Euler3D', dimension),
+    stage('Affine', dimension),
+  ]
+}
+
+test('unsupportedTransformFormatReason lets every format but xfm try the multi-stage list', () => {
+  for (const format of TRANSFORM_FORMATS.filter((format) => format.id !== 'xfm')) {
+    assert.equal(unsupportedTransformFormatReason(format, elastixList(2)), undefined, format.id)
+    assert.equal(unsupportedTransformFormatReason(format, elastixList(3)), undefined, format.id)
+  }
+})
+
+test('unsupportedTransformFormatReason refuses xfm unless the list is one 3D transform', () => {
+  const xfm = transformFormatById('xfm')
+  assert.match(unsupportedTransformFormatReason(xfm, elastixList(3))!, /single 3D linear transform.*3 stages in 3D/)
+  assert.match(unsupportedTransformFormatReason(xfm, elastixList(2))!, /3 stages in 2D/)
+  assert.match(unsupportedTransformFormatReason(xfm, [stage('Affine', 2)])!, /a 2D transform/)
+  assert.match(unsupportedTransformFormatReason(xfm, [stage('Composite', 2), stage('Affine', 2)])!, /a 2D transform/)
+  assert.match(unsupportedTransformFormatReason(xfm, [])!, /0 stages;/)
+  assert.equal(unsupportedTransformFormatReason(xfm, [stage('Affine', 3)]), undefined)
+  assert.equal(unsupportedTransformFormatReason(xfm, [stage('Composite', 3), stage('Euler3D', 3)]), undefined)
+})
+
+test('progressReporter forwards the stage, message, and counts, and is inert without a callback', () => {
+  const events: ExportProgress[] = []
+  const report = progressReporter((progress) => events.push(progress))
+  report('package', 'Writing…')
+  report('package', 'Writing chunk 2 of 5…', { completed: 2, total: 5 })
+  report('done', 'Wrote it')
+  assert.deepEqual(events, [
+    { stage: 'package', message: 'Writing…' },
+    { stage: 'package', message: 'Writing chunk 2 of 5…', completed: 2, total: 5 },
+    { stage: 'done', message: 'Wrote it' },
+  ])
+  assert.doesNotThrow(() => progressReporter()('done', 'nothing listens'))
 })
 
 test('resultAddsAnatomicalOrientation never tags a 2D result', () => {
@@ -124,7 +200,12 @@ test('toWriterError keeps an Error and makes an Emscripten exception pointer rea
   const fromNumber = toWriterError(452728, 'registered.png')
   assert.match(fromNumber.message, /registered\.png/)
   assert.match(fromNumber.message, /code 452728/)
-  assert.match(fromNumber.message, /pixel type or dimension/)
+  assert.match(fromNumber.message, /image’s pixel type or dimension/)
+
+  const fromTransformWriter = toWriterError(708496, 'transform.xfm', 'transform')
+  assert.match(fromTransformWriter.message, /transform\.xfm/)
+  assert.match(fromTransformWriter.message, /code 708496/)
+  assert.match(fromTransformWriter.message, /transform’s type, number of stages, or dimension/)
 
   assert.equal(toWriterError('nope', 'registered.nrrd').message, 'Could not write registered.nrrd: nope')
 })
