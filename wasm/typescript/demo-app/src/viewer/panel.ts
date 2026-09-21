@@ -7,6 +7,7 @@ import { NiiVue, SLICE_TYPE, type BackendType } from '@niivue/niivue'
 import { iwi2nii } from '@niivue/cbor-loader'
 
 import { imageToIwiCborBytes } from '../io/iwi-cbor'
+import type { AppStore } from '../state'
 import { promoteTo3d } from './promote-to-3d'
 
 /** File extension itk-wasm uses for CBOR-serialized images. */
@@ -20,8 +21,8 @@ export type DemoPanelRole = 'fixed' | 'moving'
 export interface DemoGlobals {
   fixed?: NiiVue
   moving?: NiiVue
-  /** Application state; populated by the shell once `src/state.ts` exists. */
-  state?: unknown
+  /** The application state store (see src/state.ts); published by main.ts. */
+  state?: AppStore
 }
 
 declare global {

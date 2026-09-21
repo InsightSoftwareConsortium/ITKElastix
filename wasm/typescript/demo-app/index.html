@@ -7,7 +7,82 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <header class="app-header">
+        <div class="app-title">
+          <img class="app-logo" src="/logo.svg" alt="" width="28" height="28" />
+          <h1>elastix affine registration</h1>
+        </div>
+        <div class="app-toolbar">
+          <wa-button id="load-images" appearance="outlined">Load images</wa-button>
+          <wa-button id="register" variant="brand" disabled>Register</wa-button>
+          <wa-tooltip for="register">Run translation → rigid → affine registration in a web worker</wa-tooltip>
+          <wa-switch id="show-result" disabled>Show registered result</wa-switch>
+          <wa-divider orientation="vertical" class="app-toolbar-divider"></wa-divider>
+          <wa-button id="download-image" appearance="outlined" disabled>Download image</wa-button>
+          <wa-button id="download-transform" appearance="outlined" disabled>Download transform</wa-button>
+        </div>
+      </header>
+
+      <div id="status" class="status-row" role="status" aria-live="polite">
+        <wa-progress-bar id="status-progress" indeterminate label="Working" hidden></wa-progress-bar>
+        <span id="status-message" class="status-message">Starting…</span>
+        <wa-callout id="status-callout" class="status-callout" size="s" hidden></wa-callout>
+      </div>
+
+      <wa-split-panel id="viewers" class="viewers">
+        <section slot="start" class="viewer-panel" data-panel="fixed">
+          <wa-badge id="fixed-caption" class="viewer-caption" variant="neutral">Fixed</wa-badge>
+        </section>
+        <section slot="end" class="viewer-panel" data-panel="moving">
+          <wa-badge id="moving-caption" class="viewer-caption" variant="brand">Moving</wa-badge>
+        </section>
+      </wa-split-panel>
+
+      <wa-dialog id="splash" label="Load fixed and moving images" data-locked>
+        <div class="splash-body">
+          <section class="splash-section">
+            <h3>Sample data</h3>
+            <p class="splash-hint">
+              Everything runs in your browser; nothing is uploaded. Start with a bundled pair:
+            </p>
+            <div id="sample-buttons" class="splash-buttons"></div>
+          </section>
+
+          <wa-divider></wa-divider>
+
+          <section class="splash-section">
+            <h3>Your images</h3>
+            <p class="splash-hint">
+              Any format ITK reads (NIfTI, NRRD, MetaImage, DICOM, PNG, …). Both images must be 2D or both 3D.
+            </p>
+            <div class="splash-pickers">
+              <div class="splash-picker">
+                <wa-button id="pick-fixed" appearance="outlined">Choose fixed image</wa-button>
+                <span id="fixed-file-name" class="splash-file-name">No file chosen</span>
+                <input id="fixed-file" type="file" hidden />
+              </div>
+              <div class="splash-picker">
+                <wa-button id="pick-moving" appearance="outlined">Choose moving image</wa-button>
+                <span id="moving-file-name" class="splash-file-name">No file chosen</span>
+                <input id="moving-file" type="file" hidden />
+              </div>
+            </div>
+          </section>
+
+          <div id="splash-progress" class="splash-progress" hidden>
+            <wa-spinner class="splash-spinner"></wa-spinner>
+            <div class="splash-progress-lines">
+              <span id="splash-progress-fixed"></span>
+              <span id="splash-progress-moving"></span>
+            </div>
+          </div>
+
+          <wa-callout id="splash-error" variant="danger" hidden></wa-callout>
+        </div>
+        <wa-button slot="footer" id="start" variant="brand" disabled>Start</wa-button>
+      </wa-dialog>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -1,3 +1,6 @@
+/* Application styles. WebAwesome supplies the theme tokens (--wa-*), the
+   component chrome, and the dark palette (html.wa-dark). */
+
 *,
 *::before,
 *::after {
@@ -11,9 +14,15 @@ body {
 }
 
 body {
-  font-family: system-ui, sans-serif;
-  background: var(--wa-color-surface-lowered, #f4f4f5);
-  color: var(--wa-color-text-normal, #18181b);
+  font-family: var(--wa-font-family-body, system-ui, sans-serif);
+  background: var(--wa-color-surface-lowered);
+  color: var(--wa-color-text-normal);
+}
+
+/* Custom elements set their own display in shadow styles; document rules
+   still win, so this keeps the `hidden` attribute meaningful on them. */
+[hidden] {
+  display: none !important;
 }
 
 #app {
@@ -22,56 +31,133 @@ body {
   flex-direction: column;
 }
 
-/* Temporary layout until the WebAwesome shell replaces it. */
-.placeholder {
-  flex: 1 1 auto;
-  min-height: 0;
+/* Header ------------------------------------------------------------------ */
+
+.app-header {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s) var(--wa-space-l);
+  padding: var(--wa-space-s) var(--wa-space-m);
+  background: var(--wa-color-surface-default);
+  border-bottom: 1px solid var(--wa-color-surface-border);
 }
 
-.placeholder-header {
-  padding: 0.5rem 1rem;
+.app-title {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-s);
+  min-width: 0;
 }
 
-.placeholder-header h1 {
+.app-logo {
+  display: block;
+  flex: none;
+}
+
+.app-title h1 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: var(--wa-font-size-l);
+  font-weight: var(--wa-font-weight-semibold);
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
-.placeholder-header p {
-  margin: 0.25rem 0 0;
-  color: var(--wa-color-text-quiet, #52525b);
+.app-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s);
 }
 
-.placeholder-panels {
+.app-toolbar-divider {
+  align-self: stretch;
+  --spacing: var(--wa-space-2xs);
+}
+
+/* Status row -------------------------------------------------------------- */
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-s);
+  min-height: 2.5rem;
+  padding: var(--wa-space-2xs) var(--wa-space-m);
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+}
+
+#status-progress {
+  flex: none;
+  width: 10rem;
+  --track-height: 0.5rem;
+}
+
+.status-message {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-callout {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Viewers ----------------------------------------------------------------- */
+
+.viewers {
   flex: 1 1 auto;
   min-height: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  padding: 0 0.5rem 0.5rem;
+  margin: 0 var(--wa-space-s) var(--wa-space-s);
+  --divider-width: var(--wa-space-2xs);
+  --min: 15%;
+  --max: 85%;
 }
 
-/* One niivue viewer: a caption above a canvas that fills the remaining space. */
-.viewer-panel {
-  position: relative;
+/* The split panel is a grid whose two cells stretch to the host's height;
+   give each cell a column flex context so the slotted panel can fill it. */
+.viewers::part(panel) {
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+}
+
+.viewers::part(divider) {
+  border-radius: var(--wa-border-radius-pill);
+}
+
+/* One niivue viewer: a caption over a canvas that fills the remaining space. */
+.viewer-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
   height: 100%;
   background: #000;
-  border-radius: var(--wa-border-radius-m, 0.375rem);
+  border-radius: var(--wa-border-radius-m);
   overflow: hidden;
 }
 
 .viewer-caption {
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
+  top: var(--wa-space-s);
+  left: var(--wa-space-s);
   z-index: 1;
+  max-width: calc(100% - 2 * var(--wa-space-s));
   pointer-events: none;
+}
+
+.viewer-caption::part(badge) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* niivue resizes its drawing buffer from the canvas's CSS box, so the canvas
@@ -84,4 +170,99 @@ body {
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
+}
+
+/* Splash dialog ----------------------------------------------------------- */
+
+#splash {
+  --width: 38rem;
+}
+
+/* Until both images exist the dialog cannot be dismissed, so hide the X. */
+#splash[data-locked]::part(close-button) {
+  display: none;
+}
+
+.splash-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wa-space-m);
+}
+
+.splash-section h3 {
+  margin: 0 0 var(--wa-space-2xs);
+  font-size: var(--wa-font-size-m);
+  font-weight: var(--wa-font-weight-semibold);
+}
+
+.splash-hint {
+  margin: 0 0 var(--wa-space-s);
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+}
+
+.splash-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s);
+}
+
+.splash-pickers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wa-space-s);
+}
+
+.splash-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-s);
+  min-width: 0;
+}
+
+.splash-picker wa-button {
+  flex: none;
+  min-width: 13rem;
+}
+
+.splash-file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+}
+
+.splash-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-m);
+  padding: var(--wa-space-s) var(--wa-space-m);
+  border-radius: var(--wa-border-radius-m);
+  background: var(--wa-color-surface-lowered);
+}
+
+.splash-spinner {
+  flex: none;
+  font-size: 1.75rem;
+}
+
+.splash-progress-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wa-space-3xs);
+  min-width: 0;
+  font-size: var(--wa-font-size-s);
+  font-variant-numeric: tabular-nums;
+}
+
+.splash-progress-lines span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#splash-error {
+  white-space: pre-line;
 }

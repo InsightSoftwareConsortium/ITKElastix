@@ -1,46 +1,85 @@
 // Pipeline base URLs must be configured before any itk-wasm module runs.
 import './pipelines'
+
+// WebAwesome: base styles, the default theme, and the components the shell
+// and splash dialog use. Components register their custom elements on import
+// and upgrade the markup already present in index.html.
+import '@awesome.me/webawesome/dist/styles/webawesome.css'
+import '@awesome.me/webawesome/dist/styles/themes/default.css'
+import '@awesome.me/webawesome/dist/components/button/button.js'
+import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
+import '@awesome.me/webawesome/dist/components/split-panel/split-panel.js'
+import '@awesome.me/webawesome/dist/components/switch/switch.js'
+import '@awesome.me/webawesome/dist/components/select/select.js'
+import '@awesome.me/webawesome/dist/components/option/option.js'
+import '@awesome.me/webawesome/dist/components/progress-bar/progress-bar.js'
+import '@awesome.me/webawesome/dist/components/spinner/spinner.js'
+import '@awesome.me/webawesome/dist/components/callout/callout.js'
+import '@awesome.me/webawesome/dist/components/badge/badge.js'
+import '@awesome.me/webawesome/dist/components/divider/divider.js'
+import '@awesome.me/webawesome/dist/components/tooltip/tooltip.js'
+
 import './style.css'
 
-import { createViewerPanel } from './viewer/panel'
+import { samples } from './samples'
+import { createStore, inputsLoaded } from './state'
+import { createShell } from './ui/shell'
+import { createSplash } from './ui/splash'
+import { exposeDemoGlobals } from './viewer/panel'
+
+// Follow the browser/OS color scheme; WebAwesome's dark palette is keyed on
+// the `wa-dark` class of the root element.
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
+function applyColorScheme(prefersDark: boolean): void {
+  document.documentElement.classList.toggle('wa-dark', prefersDark)
+}
+applyColorScheme(darkQuery.matches)
+darkQuery.addEventListener('change', (event) => applyColorScheme(event.matches))
 
 const app = document.querySelector<HTMLDivElement>('#app')
 if (!app) {
   throw new Error('Missing #app root element')
 }
 
-// Placeholder until the WebAwesome application shell and splash dialog land.
-app.innerHTML = `
-  <main class="placeholder">
-    <header class="placeholder-header">
-      <h1>elastix affine registration</h1>
-      <p data-status>Loading…</p>
-    </header>
-    <div class="placeholder-panels">
-      <section class="viewer-panel" data-panel="fixed"><span class="viewer-caption">Fixed</span></section>
-      <section class="viewer-panel" data-panel="moving"><span class="viewer-caption">Moving</span></section>
-    </div>
-  </main>
-`
+async function bootstrap(root: HTMLElement): Promise<void> {
+  const store = createStore()
+  // Playwright reads the store (and the two NiiVue instances the panels
+  // publish) from window.__demo.
+  exposeDemoGlobals({ state: store })
 
-function requireElement<T extends HTMLElement>(selector: string): T {
-  const element = app!.querySelector<T>(selector)
-  if (!element) {
-    throw new Error(`Missing ${selector}`)
-  }
-  return element
+  const shell = await createShell(root, store, {
+    onLoadImages: () => splash.open(),
+    // Replaced once src/registration/register.ts exists.
+    onRegister: () => shell.setStatus({ message: 'Registration is not wired up yet.', variant: 'warning' }),
+  })
+
+  const splash = createSplash(root, {
+    store,
+    samples,
+    async onLoaded(fixed, moving) {
+      if (fixed.dimension !== moving.dimension) {
+        throw new Error(
+          `The fixed image is ${fixed.dimension}D but the moving image is ${moving.dimension}D; elastix needs both to match.`,
+        )
+      }
+      store.update(inputsLoaded(fixed, moving))
+      shell.setStatus({ message: `Displaying ${fixed.name} and ${moving.name}…`, busy: true })
+      await shell.settled()
+      shell.setStatus({
+        message: `Loaded ${fixed.name} (fixed) and ${moving.name} (moving), ${fixed.dimension}D. Ready to register.`,
+      })
+    },
+  })
+
+  shell.setStatus({ message: 'Load a fixed and a moving image to begin.' })
+  splash.open()
 }
 
-async function bootstrap(): Promise<void> {
-  const status = requireElement<HTMLParagraphElement>('[data-status]')
-  try {
-    await createViewerPanel(requireElement('[data-panel="fixed"]'), 'Fixed', { role: 'fixed' })
-    await createViewerPanel(requireElement('[data-panel="moving"]'), 'Moving', { role: 'moving' })
-    status.textContent = 'Viewer ready'
-  } catch (error) {
-    status.textContent = `Viewer failed to start: ${error instanceof Error ? error.message : String(error)}`
-    throw error
+void bootstrap(app).catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error)
+  const status = document.querySelector<HTMLElement>('#status-message')
+  if (status) {
+    status.textContent = `The demo failed to start: ${message}`
   }
-}
-
-void bootstrap()
+  console.error(error)
+})
