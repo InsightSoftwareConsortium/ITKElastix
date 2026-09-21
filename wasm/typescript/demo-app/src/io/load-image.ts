@@ -1,6 +1,15 @@
-// Ingest pipeline foundation: any ITK-Wasm-readable image (File or URL) ->
-// ITK-Wasm Image -> in-memory OME-Zarr multiscales (ngff-zarr) -> the finest
-// scale that fits the pixel budget -> scalar 2D/3D ITK-Wasm Image for elastix.
+// Ingest pipeline: a source router with a shared tail. Every input format
+// converges on the same last steps ("multiscales -> the finest scale under
+// the pixel budget -> scalar 2D/3D ITK-Wasm Image for elastix"), and
+// {@link finalizeFromMultiscales} is that tail. Each source kind
+// ({@link detectSourceKind}) has its own head that produces the multiscales:
+//
+// - `itk`: any ITK-Wasm-readable File or URL -> `readImage` ->
+//   `itkImageToNgffImage` -> `toMultiscales` (Phase 01 path).
+// - `tiff`: read by ITK-Wasm's TIFF reader until the `@fideus-labs/fiff`
+//   TiffStore head lands.
+// - `ozx`, `ome-zarr-url`: rejected with a descriptive error until the
+//   `@fideus-labs/ngff-zarr` store heads land.
 //
 // This follows the read side of fidnii's examples/convert/converter.ts
 // (`convertImage`). Keep this module free of DOM access so tests and web
@@ -23,8 +32,10 @@ import {
   planScaleFactors,
   selectScaleForBudget,
 } from './scale-select'
+import { detectSourceKind, nameFromUrl, type SourceKind } from './source-kind'
 
 export { PIXEL_BUDGET_BYTES } from './scale-select'
+export { detectSourceKind, nameFromUrl, type SourceKind } from './source-kind'
 
 /** Everything the app keeps for one loaded input image. */
 export interface LoadedImage {
@@ -42,6 +53,8 @@ export interface LoadedImage {
   itkImage: Image
   /** Byte size of `itkImage.data`. */
   registrationBytes: number
+  /** Pixel budget, in bytes, that scale selection used for this image. */
+  budgetBytes: number
 }
 
 /** A user-picked File or a URL plus the file name to read it as. */
@@ -59,6 +72,16 @@ export interface LoadProgress {
 }
 
 export type LoadProgressCallback = (progress: LoadProgress) => void
+
+export interface LoadImageOptions {
+  /**
+   * Largest buffer, in bytes, handed to elastix; the pyramid is extended
+   * and the registration scale chosen so the image fits. Defaults to
+   * {@link PIXEL_BUDGET_BYTES}; `?budget=<MiB>` on the page URL overrides it.
+   */
+  budgetBytes?: number
+  onProgress?: LoadProgressCallback
+}
 
 /** Zarr chunk edge length for the in-memory arrays. */
 export const INGEST_CHUNK_SIZE = 128
@@ -102,13 +125,6 @@ export function hasOrientationExtension(name: string): boolean {
     return true
   }
   return !base.includes('.') || /\.\d+$/.test(base)
-}
-
-/** File name portion of a URL, without query or fragment. */
-export function nameFromUrl(url: string): string {
-  const path = url.split(/[?#]/, 1)[0]
-  const name = path.slice(path.lastIndexOf('/') + 1)
-  return decodeURIComponent(name) || 'image'
 }
 
 /**
@@ -161,66 +177,100 @@ export async function fetchBytes(
   return bytes
 }
 
-async function readSourceBytes(
-  source: ImageSource,
-  report: (message: string, loadedBytes: number, totalBytes?: number) => void,
-): Promise<{ name: string; data: Uint8Array }> {
-  if (source instanceof File) {
-    const data = new Uint8Array(await source.arrayBuffer())
-    report(`Read ${formatBytes(data.byteLength)} from ${source.name}`, data.byteLength, data.byteLength)
-    return { name: source.name, data }
+/** Display name of a source: the File's name or the URL's last segment. */
+export function sourceName(source: ImageSource): string {
+  return source instanceof File ? source.name : source.name || nameFromUrl(source.url)
+}
+
+/** URL a source is fetched from, or undefined for a local File. */
+export function sourceUrl(source: ImageSource): string | undefined {
+  return source instanceof File ? undefined : source.url
+}
+
+/** Progress reporter bound to one load; `extra` carries byte counts. */
+type Reporter = (stage: LoadStage, message: string, extra?: Partial<LoadProgress>) => void
+
+function makeReporter(onProgress?: LoadProgressCallback): Reporter {
+  return (stage, message, extra = {}) => {
+    onProgress?.({ stage, message, ...extra })
   }
-  const name = source.name || nameFromUrl(source.url)
-  const data = await fetchBytes(source.url, (loadedBytes, totalBytes) => {
+}
+
+/** Read a File or fetch a URL into memory, reporting byte progress. */
+export async function readSourceBytes(source: ImageSource, onProgress?: LoadProgressCallback): Promise<Uint8Array> {
+  const report = makeReporter(onProgress)
+  const name = sourceName(source)
+  if (source instanceof File) {
+    report('fetch', `Reading ${name}…`)
+    const data = new Uint8Array(await source.arrayBuffer())
+    report('fetch', `Read ${formatBytes(data.byteLength)} from ${name}`, {
+      loadedBytes: data.byteLength,
+      totalBytes: data.byteLength,
+    })
+    return data
+  }
+  report('fetch', `Fetching ${name}…`)
+  return fetchBytes(source.url, (loadedBytes, totalBytes) => {
     const total = totalBytes === undefined ? '' : ` / ${formatBytes(totalBytes)}`
-    report(`Downloading ${name}: ${formatBytes(loadedBytes)}${total}`, loadedBytes, totalBytes)
+    report('fetch', `Downloading ${name}: ${formatBytes(loadedBytes)}${total}`, { loadedBytes, totalBytes })
   })
-  return { name, data }
 }
 
 /**
  * Load an image from a File or URL and prepare it for registration.
  *
- * Steps: fetch bytes -> `readImage` (ITK-Wasm, worker terminated afterwards)
- * -> `itkImageToNgffImage` -> `toMultiscales` with isotropic factors chosen
- * so the last level fits {@link PIXEL_BUDGET_BYTES} -> pick the finest level
- * that fits -> `ngffImageToItkImage` at t=0, c=0 so elastix always receives a
- * scalar 2D or 3D image.
+ * Routes on {@link detectSourceKind} to a format-specific head that builds
+ * the multiscales pyramid, then finishes with {@link finalizeFromMultiscales}
+ * so every kind yields the same {@link LoadedImage}.
  */
-export async function loadImageSource(
-  source: ImageSource,
-  onProgress?: LoadProgressCallback,
-): Promise<LoadedImage> {
-  const report = (stage: LoadStage, message: string, extra: Partial<LoadProgress> = {}) => {
-    onProgress?.({ stage, message, ...extra })
-  }
+export async function loadImageSource(source: ImageSource, options: LoadImageOptions = {}): Promise<LoadedImage> {
+  const name = sourceName(source)
+  const kind = detectSourceKind(name, sourceUrl(source))
+  return sourceLoaders[kind](source, name, options)
+}
 
-  report('fetch', source instanceof File ? `Reading ${source.name}…` : `Fetching ${source.name}…`)
-  const { name, data } = await readSourceBytes(source, (message, loadedBytes, totalBytes) => {
-    report('fetch', message, { loadedBytes, totalBytes })
-  })
+/** Head for one source kind: everything up to and including the shared tail. */
+type SourceLoader = (source: ImageSource, name: string, options: LoadImageOptions) => Promise<LoadedImage>
+
+function unsupportedSource(description: string): SourceLoader {
+  return (_source, name) => Promise.reject(new Error(`${description} is not supported yet (${name})`))
+}
+
+const sourceLoaders: Record<SourceKind, SourceLoader> = {
+  itk: loadItkSource,
+  // ITK-Wasm's TIFF reader stands in until the fiff-backed TiffStore head lands.
+  tiff: loadItkSource,
+  ozx: unsupportedSource('Loading a zipped OME-Zarr (.ozx) store'),
+  'ome-zarr-url': unsupportedSource('Loading an OME-Zarr directory store URL'),
+}
+
+/**
+ * The `itk` head: bytes -> `readImage` (ITK-Wasm; its worker is terminated
+ * afterwards) -> {@link ingestItkImage}.
+ */
+async function loadItkSource(source: ImageSource, name: string, options: LoadImageOptions): Promise<LoadedImage> {
+  const report = makeReporter(options.onProgress)
+  const data = await readSourceBytes(source, options.onProgress)
 
   report('read', `Decoding ${name}…`)
   const { image, webWorker } = await readImage({ data, path: name })
   ;(webWorker as Worker | null)?.terminate()
 
-  return ingestItkImage(image, name, onProgress)
+  return ingestItkImage(image, name, options)
 }
 
 /**
- * Run the ingest steps that follow `readImage` on an in-memory ITK-Wasm
- * image: OME-Zarr conversion, budgeted multiscale generation, scale
- * selection, and extraction of the scalar 2D/3D image elastix receives.
- * Later phases feed images from non-file sources through here.
+ * Build the budgeted multiscales pyramid for an in-memory ITK-Wasm image:
+ * `itkImageToNgffImage`, then `toMultiscales` with isotropic factors chosen
+ * so the last level fits the budget. Returns the pyramid for
+ * {@link finalizeFromMultiscales}.
  */
-export async function ingestItkImage(
+export async function multiscalesFromItkImage(
   image: Image,
   name: string,
-  onProgress?: LoadProgressCallback,
-): Promise<LoadedImage> {
-  const report = (stage: LoadStage, message: string) => {
-    onProgress?.({ stage, message })
-  }
+  { budgetBytes = PIXEL_BUDGET_BYTES, onProgress }: LoadImageOptions = {},
+): Promise<Multiscales> {
+  const report = makeReporter(onProgress)
 
   report('convert', 'Converting to OME-Zarr…')
   const sourceDimension = image.imageType.dimension
@@ -229,25 +279,51 @@ export async function ingestItkImage(
     chunks: INGEST_CHUNK_SIZE,
   })
 
-  const scaleFactors = planScaleFactors(baseImage, PIXEL_BUDGET_BYTES)
+  const scaleFactors = planScaleFactors(baseImage, budgetBytes)
   report(
     'downsample',
     scaleFactors.length === 0
-      ? `Image fits the ${formatBytes(PIXEL_BUDGET_BYTES)} budget; keeping full resolution`
+      ? `Image fits the ${formatBytes(budgetBytes)} budget; keeping full resolution`
       : `Downsampling ${scaleFactors.length} level${scaleFactors.length === 1 ? '' : 's'} (÷${scaleFactors.join(', ÷')})…`,
   )
   // An empty scaleFactors array yields a single-level pyramid holding the
   // base image (verified in ngff-zarr 0.33 downsampleItkWasm), so no separate
   // createMultiscales path is needed.
-  const multiscales = await toMultiscales(baseImage, {
+  return toMultiscales(baseImage, {
     scaleFactors,
     method: Methods.ITKWASM_GAUSSIAN,
     codecs: bytesOnlyCodecs(),
     chunks: INGEST_CHUNK_SIZE,
   })
+}
+
+/**
+ * Run the ingest steps that follow `readImage` on an in-memory ITK-Wasm
+ * image: {@link multiscalesFromItkImage}, then the shared tail. Images that
+ * arrive from non-file sources can be fed through here.
+ */
+export async function ingestItkImage(image: Image, name: string, options: LoadImageOptions = {}): Promise<LoadedImage> {
+  const multiscales = await multiscalesFromItkImage(image, name, options)
+  return finalizeFromMultiscales(name, multiscales, options.budgetBytes, options.onProgress)
+}
+
+/**
+ * The shared tail of every ingest path. Picks the finest pyramid level that
+ * fits `budgetBytes`, extracts it with `ngffImageToItkImage` at t=0, c=0 so
+ * elastix always receives a scalar image, and checks that the result is 2D
+ * or 3D. Only the chosen level's chunks are read, so a lazily backed
+ * pyramid (a remote store) never has to be pulled whole.
+ */
+export async function finalizeFromMultiscales(
+  name: string,
+  multiscales: Multiscales,
+  budgetBytes: number = PIXEL_BUDGET_BYTES,
+  onProgress?: LoadProgressCallback,
+): Promise<LoadedImage> {
+  const report = makeReporter(onProgress)
 
   report('select', 'Selecting registration scale…')
-  const scaleIndex = selectScaleForBudget(multiscales, PIXEL_BUDGET_BYTES)
+  const scaleIndex = selectScaleForBudget(multiscales, budgetBytes)
   const ngffImage = multiscales.images[scaleIndex]
   const itkImage = await ngffImageToItkImage(ngffImage, {
     tIndex: ngffImage.dims.includes('t') ? 0 : undefined,
@@ -261,7 +337,7 @@ export async function ingestItkImage(
 
   report(
     'done',
-    `Loaded ${name}: ${dimension}D ${itkImage.size.join('×')} at scale ${scaleIndex} (${formatBytes(registrationBytes)})`,
+    `Loaded ${name}: ${dimension}D ${itkImage.size.join('×')} at scale ${scaleIndex} of ${multiscales.images.length} (${formatBytes(registrationBytes)})`,
   )
-  return { name, dimension, multiscales, scaleIndex, ngffImage, itkImage, registrationBytes }
+  return { name, dimension, multiscales, scaleIndex, ngffImage, itkImage, registrationBytes, budgetBytes }
 }

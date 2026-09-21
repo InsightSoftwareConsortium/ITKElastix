@@ -23,6 +23,7 @@ import './style.css'
 
 import { downloadBytes } from './io/download'
 import { exportImage, exportTransform } from './io/export'
+import { budgetBytesFromQuery } from './io/scale-select'
 import { registerAffine } from './registration/register'
 import { samples } from './samples'
 import { createStore, inputsLoaded } from './state'
@@ -69,9 +70,14 @@ async function bootstrap(root: HTMLElement): Promise<void> {
   const runRegistration = createRegisterFlow(store, shell, { register: registerAffine })
   const downloads = createDownloadFlow(store, shell, { exportImage, exportTransform, download: downloadBytes })
 
+  // `?budget=<MiB>` on the page URL shrinks the pixel budget so tests and
+  // developers can force the ingest pipeline to downsample.
+  const budgetBytes = budgetBytesFromQuery(window.location.search)
+
   const splash = createSplash(root, {
     store,
     samples,
+    budgetBytes,
     async onLoaded(fixed, moving) {
       if (fixed.dimension !== moving.dimension) {
         throw new Error(

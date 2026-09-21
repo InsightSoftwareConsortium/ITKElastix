@@ -6,6 +6,7 @@ import { test } from 'node:test'
 
 import {
   PIXEL_BUDGET_BYTES,
+  budgetBytesFromQuery,
   bytesPerElement,
   estimateLevelBytes,
   ngffImageBytes,
@@ -85,4 +86,19 @@ test('selectScaleForBudget picks the finest level that fits, else the coarsest',
 
 test('selectScaleForBudget rejects an empty pyramid', () => {
   assert.throws(() => selectScaleForBudget({ images: [] }), /empty multiscales/)
+})
+
+test('budgetBytesFromQuery reads ?budget=<MiB> and falls back otherwise', () => {
+  assert.equal(budgetBytesFromQuery(''), PIXEL_BUDGET_BYTES)
+  assert.equal(budgetBytesFromQuery('?other=1'), PIXEL_BUDGET_BYTES)
+  assert.equal(budgetBytesFromQuery('?budget=4'), 4 * MiB)
+  assert.equal(budgetBytesFromQuery('budget=4'), 4 * MiB)
+  assert.equal(budgetBytesFromQuery('?x=1&budget=0.5'), MiB / 2)
+  assert.equal(budgetBytesFromQuery('?budget=abc'), PIXEL_BUDGET_BYTES)
+  assert.equal(budgetBytesFromQuery('?budget=0'), PIXEL_BUDGET_BYTES)
+  assert.equal(budgetBytesFromQuery('?budget=-3'), PIXEL_BUDGET_BYTES)
+  assert.equal(budgetBytesFromQuery('?budget='), PIXEL_BUDGET_BYTES)
+  assert.equal(budgetBytesFromQuery('?budget=abc', 7), 7)
+  // Tiny values never round down to a zero budget.
+  assert.equal(budgetBytesFromQuery('?budget=0.0000001'), 1)
 })

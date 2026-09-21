@@ -9,14 +9,15 @@ import {
   loadImageSource,
   nameFromUrl,
   type ImageSource,
-  type LoadProgress,
+  type LoadImageOptions,
   type LoadedImage,
 } from '../io/load-image'
 import type { Sample } from '../samples'
 import { hasInputs, type AppStore } from '../state'
 import { requireElement } from './shell'
 
-export type ImageLoader = (source: ImageSource, onProgress?: (progress: LoadProgress) => void) => Promise<LoadedImage>
+/** Signature of {@link loadImageSource}, for injecting a stand-in. */
+export type ImageLoader = (source: ImageSource, options?: LoadImageOptions) => Promise<LoadedImage>
 
 export interface SplashOptions {
   store: AppStore
@@ -28,6 +29,11 @@ export interface SplashOptions {
   onLoaded: (fixed: LoadedImage, moving: LoadedImage) => void | Promise<void>
   /** Defaults to {@link loadImageSource}; injectable for tests. */
   loadImage?: ImageLoader
+  /**
+   * Pixel budget passed to every load; the default of
+   * {@link loadImageSource} applies when omitted.
+   */
+  budgetBytes?: number
 }
 
 export interface Splash {
@@ -65,7 +71,7 @@ async function settle<T>(task: () => Promise<T>): Promise<PromiseSettledResult<T
 }
 
 export function createSplash(root: ParentNode, options: SplashOptions): Splash {
-  const { store, samples, onLoaded } = options
+  const { store, samples, onLoaded, budgetBytes } = options
   const loadImage = options.loadImage ?? loadImageSource
 
   const dialog = requireElement<WaDialog>(root, '#splash')
@@ -139,8 +145,11 @@ export function createSplash(root: ParentNode, options: SplashOptions): Splash {
 
   async function loadOne(role: 'Fixed' | 'Moving', source: ImageSource, line: HTMLElement): Promise<LoadedImage> {
     line.textContent = `${role}: starting…`
-    const image = await loadImage(source, (update) => {
-      line.textContent = `${role}: ${update.message}`
+    const image = await loadImage(source, {
+      budgetBytes,
+      onProgress: (update) => {
+        line.textContent = `${role}: ${update.message}`
+      },
     })
     line.textContent = `${role}: ${image.name} ready (${image.dimension}D ${image.itkImage.size.join('×')})`
     return image

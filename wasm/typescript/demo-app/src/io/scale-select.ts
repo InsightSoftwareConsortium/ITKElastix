@@ -9,6 +9,27 @@ import type { NgffImage } from '@fideus-labs/ngff-zarr/browser'
 /** Largest image buffer, in bytes, that elastix is handed for registration. */
 export const PIXEL_BUDGET_BYTES = 50 * 1024 * 1024
 
+/** Name of the URL query parameter that overrides the budget, in MiB. */
+export const BUDGET_QUERY_PARAM = 'budget'
+
+/**
+ * Pixel budget requested by a page URL's query string: `?budget=<MiB>`
+ * (fractional values allowed, so `?budget=0.5` is 512 KiB) lets tests and
+ * developers force downsampling. A missing, non-numeric, or non-positive
+ * value yields `fallback`.
+ */
+export function budgetBytesFromQuery(search: string, fallback: number = PIXEL_BUDGET_BYTES): number {
+  const raw = new URLSearchParams(search).get(BUDGET_QUERY_PARAM)
+  if (raw === null) {
+    return fallback
+  }
+  const megabytes = Number.parseFloat(raw.trim())
+  if (!Number.isFinite(megabytes) || megabytes <= 0) {
+    return fallback
+  }
+  return Math.max(1, Math.round(megabytes * 1024 * 1024))
+}
+
 /** Dimensions that downsampling shrinks; 'c' and 't' are carried through. */
 export const SPATIAL_DIMS: readonly string[] = ['x', 'y', 'z']
 
