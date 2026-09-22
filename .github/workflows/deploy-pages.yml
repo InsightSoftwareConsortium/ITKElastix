@@ -1,0 +1,89 @@
+name: GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# `pages: write` and `id-token: write` are what actions/deploy-pages needs to
+# publish the artifact (and what actions/configure-pages needs to enable Pages
+# on the first run). Everything else only reads the repository.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel an in-flight deploy: a half-published site is worse than a
+# stale one. Queued runs wait for the running one to finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build-demo
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # No `version` input: the action reads `packageManager` from the root
+    # package.json, so CI always runs the pnpm the lockfile was written with.
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: pnpm
+
+    # The demo depends on the published @itk-wasm/elastix@2.0.0 (see
+    # pnpm-lock.yaml), so the workspace install is all the build needs: no
+    # Emscripten toolchain and no pixi.
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    # --strict turns a failed sample download into a failed build instead of
+    # publishing a site whose sample images are missing.
+    - name: Fetch sample images
+      run: pnpm --filter itk-elastix-demo fetch-samples -- --strict
+
+    # The project site is served from
+    # https://insightsoftwareconsortium.github.io/ITKElastix/, so every asset,
+    # worker, pipeline, and sample URL has to be rooted at /ITKElastix/
+    # (vite.config.ts reads VITE_BASE_URL into `base`).
+    - name: Build demo
+      env:
+        VITE_BASE_URL: /ITKElastix/
+      run: pnpm --filter itk-elastix-demo build
+
+    - name: Configure GitHub Pages
+      uses: actions/configure-pages@v5
+      with:
+        enablement: true
+
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: wasm/typescript/demo-app/dist
+
+  deploy:
+    name: deploy-pages
+    needs: build
+    # Pull requests build only. Pushes to main and manual dispatches from main
+    # publish the artifact the build job uploaded.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
