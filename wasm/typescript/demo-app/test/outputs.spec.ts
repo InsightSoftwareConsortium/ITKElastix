@@ -9,8 +9,7 @@
 // them in src/io/export-plan.ts.
 import { readFile } from 'node:fs/promises'
 
-import { expect, test as base, type Download, type Page } from '@playwright/test'
-import { strFromU8, unzipSync } from 'fflate'
+import { expect, test as base, type Page } from '@playwright/test'
 
 import type { LoadedImage } from '../src/io/load-image'
 import type { OutputKind } from '../src/state'
@@ -19,8 +18,8 @@ import {
   CT_SAMPLE_BUTTON,
   LOAD_TIMEOUT,
   REGISTRATION_TIMEOUT,
-  clickForDownload,
   collectPageErrors,
+  downloadOutput,
   imageFacts,
   loadSample,
   splashDialog,
@@ -29,6 +28,7 @@ import {
   volumeName,
   waitForSlot,
 } from './helpers'
+import { expectAffineMatrix, parseOzx, type OzxContents } from './ome-zarr'
 
 const IMAGE_OZX = 'registered.ome.zarr.ozx'
 const IMAGE_OME_TIFF = 'registered.ome.tif'
@@ -132,34 +132,12 @@ function selectedFormat(page: Page, kind: OutputKind): Promise<string | undefine
   }, kind)
 }
 
-/** Whether the download button for `kind` is usable: a result exists and no write of that output is under way. */
-function canDownload(page: Page, kind: OutputKind): Promise<boolean> {
-  return page.evaluate((kind) => {
-    const state = window.__demo?.state?.state
-    return state?.result !== undefined && !state.writing[kind]
-  }, kind)
-}
-
 /** Choose `id` in the `kind` picker as the user would and wait for the store to take it. */
 async function chooseFormat(page: Page, kind: OutputKind, id: string): Promise<void> {
   const picker = page.locator(`#${kind}-format`)
   await picker.click()
   await picker.locator(`wa-option[value="${id}"]`).click()
   await expect.poll(() => selectedFormat(page, kind), { message: `the ${kind} picker should take ${id}` }).toBe(id)
-}
-
-/**
- * Click the download button for `kind` once it is usable and wait for
- * both the browser to receive the file and the app to finish writing.
- * `wa-button` keeps `disabled` as a property, so Playwright would
- * otherwise click a still-disabled button and wait for a download that
- * never comes.
- */
-async function downloadOutput(page: Page, kind: OutputKind): Promise<Download> {
-  await expect.poll(() => canDownload(page, kind), { message: `the ${kind} download should be usable` }).toBe(true)
-  const download = await clickForDownload(page, page.locator(`#download-${kind}`))
-  await expect.poll(() => canDownload(page, kind), { message: `writing the ${kind} should finish` }).toBe(true)
-  return download
 }
 
 /** Choose `id`, download it, check the file, and keep its bytes for the tests that follow. */
@@ -177,60 +155,13 @@ async function downloadAs(session: Session, kind: OutputKind, id: string, filena
   files.set(filename, bytes)
 }
 
-/** The RFC-5 fields these tests read from a coordinate system. */
-interface CoordinateSystemDoc {
-  name: string
-  axes: { name: string }[]
-}
-
-/** The RFC-5 fields these tests read from a coordinate transformation. */
-interface TransformationDoc {
-  type: string
-  name?: string
-  input?: { name?: string; path?: string }
-  output?: { name?: string; path?: string }
-  affine?: number[][]
-}
-
-/** The parts of an OME-Zarr 0.6 root `zarr.json` these tests read. */
-interface OzxRootDoc {
-  zarr_format: number
-  node_type: string
-  attributes: {
-    ome: {
-      version: string
-      /** Transformations between images: where the transform-only store keeps its affine. */
-      scene?: { coordinateSystems?: CoordinateSystemDoc[]; coordinateTransformations: TransformationDoc[] }
-      /** The image pyramid: where the registered image's store keeps its affine. */
-      multiscales?: { coordinateSystems: CoordinateSystemDoc[]; coordinateTransformations?: TransformationDoc[] }[]
-    }
-  }
-}
-
-/** Entry names in archive order and the parsed root `zarr.json` of the downloaded OZX `filename`. */
-function readOzx(files: ReadonlyMap<string, Buffer>, filename: string): { entries: string[]; root: OzxRootDoc } {
+/** The downloaded OZX `filename`, unzipped and its root `zarr.json` parsed (see test/ome-zarr.ts). */
+function readOzx(files: ReadonlyMap<string, Buffer>, filename: string): OzxContents {
   const bytes = files.get(filename)
   if (!bytes) {
     throw new Error(`${filename} was not downloaded earlier in this file`)
   }
-  const unzipped = unzipSync(bytes)
-  const entries = Object.keys(unzipped)
-  const rootBytes = unzipped['zarr.json']
-  if (!rootBytes) {
-    throw new Error(`${filename} has no root zarr.json; its entries are ${entries.join(', ')}`)
-  }
-  return { entries, root: JSON.parse(strFromU8(rootBytes)) as OzxRootDoc }
-}
-
-/** `matrix` is the M x (M+1) block of an RFC-5 affine over `dimension` axes, with finite entries. */
-function expectAffineMatrix(matrix: number[][] | undefined, dimension: number): void {
-  expect(matrix).toHaveLength(dimension)
-  for (const row of matrix ?? []) {
-    expect(row).toHaveLength(dimension + 1)
-    for (const value of row) {
-      expect(Number.isFinite(value), `${value} in row ${JSON.stringify(row)} should be a finite number`).toBe(true)
-    }
-  }
+  return parseOzx(bytes, filename)
 }
 
 test('registers the 2D CT pair once for the whole file', ({ session }) => {

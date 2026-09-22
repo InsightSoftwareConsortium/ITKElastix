@@ -5,9 +5,12 @@
 // picker is hidden for a 2D pair and drives both panels for a 3D pair,
 // each panel's colormap picker applies to that panel only and outlives a
 // swap, and overlay mode blends the moving image (or the result) over the
-// fixed image at the slider's opacity. Elements are found by their stable
-// ids; niivue state is read through `window.__demo` with the helpers in
-// test/helpers.ts.
+// fixed image at the slider's opacity. The responsive split (a 700 px
+// viewport stacks the panels) and the theme toggle persisting across a
+// reload are in test/layout.spec.ts, and the 3D run from sample to
+// downloads is in test/register-3d.spec.ts. Elements are found by their
+// stable ids; niivue state is read through `window.__demo` with the
+// helpers in test/helpers.ts.
 import { expect, test, type Page } from '@playwright/test'
 import { SLICE_TYPE } from '@niivue/niivue'
 

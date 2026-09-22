@@ -16,6 +16,7 @@ import type WaSlider from '@awesome.me/webawesome/dist/components/slider/slider.
 import type WaSwitch from '@awesome.me/webawesome/dist/components/switch/switch.js'
 
 import type { LoadedImage } from '../src/io/load-image'
+import type { OutputKind } from '../src/state'
 import type { ToastVariant } from '../src/ui/notify-options'
 import type { SlotRole } from '../src/ui/splash-slots'
 
@@ -36,6 +37,12 @@ export const LOAD_TIMEOUT = 60_000
 export const LOAD_TIMEOUT_3D = 120_000
 /** Registering the 2D CT pair takes about a second locally; CI can be far slower. */
 export const REGISTRATION_TIMEOUT = 150_000
+/**
+ * Registering the 3D MNI pair at full resolution takes under ten seconds
+ * locally; elastix runs single-threaded in wasm, so a slow CI runner needs
+ * minutes. Fits inside the ten-minute ceiling of test/register-3d.spec.ts.
+ */
+export const REGISTRATION_TIMEOUT_3D = 480_000
 
 /**
  * Page errors that are not the app's: Chromium reports this benign layout
@@ -291,6 +298,28 @@ export async function start(page: Page): Promise<void> {
 /** Click `button` and return the download it triggers. */
 export async function clickForDownload(page: Page, button: Locator): Promise<Download> {
   const [download] = await Promise.all([page.waitForEvent('download'), button.click()])
+  return download
+}
+
+/** Whether the download button for `kind` is usable: a result exists and no write of that output is under way. */
+export function canDownload(page: Page, kind: OutputKind): Promise<boolean> {
+  return page.evaluate((kind) => {
+    const state = window.__demo?.state?.state
+    return state?.result !== undefined && !state.writing[kind]
+  }, kind)
+}
+
+/**
+ * Click the download button for `kind` once it is usable and wait for
+ * both the browser to receive the file and the app to finish writing.
+ * `wa-button` keeps `disabled` as a property, so Playwright would
+ * otherwise click a still-disabled button and wait for a download that
+ * never comes.
+ */
+export async function downloadOutput(page: Page, kind: OutputKind): Promise<Download> {
+  await expect.poll(() => canDownload(page, kind), { message: `the ${kind} download should be usable` }).toBe(true)
+  const download = await clickForDownload(page, page.locator(`#download-${kind}`))
+  await expect.poll(() => canDownload(page, kind), { message: `writing the ${kind} should finish` }).toBe(true)
   return download
 }
 
