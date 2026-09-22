@@ -17,7 +17,9 @@ Provides an [ITK](https://www.itk.org) Python, JavaScript, and WebAssembly inter
 
 elastix is open source software, based on the well-known [Insight Toolkit (ITK)](https://discourse.itk.org). The software consists of a collection of algorithms that are commonly used to solve (medical) image registration problems. The modular design of elastix allows the user to quickly configure, test, and compare different registration methods for a specific application.
 
-[👨‍💻 **Live JavaScript API Demo** ✨](https://itk-wasm-elastix-app-js.on.fleek.co/ ':include :type=iframe width=100% height=800px')
+The demo performs affine registration with elastix entirely in the browser: it takes OME-Zarr, OME-TIFF, or any ITK-readable images as input, renders the fixed, moving, and registered images with niivue, and writes the registered image and the fixed-to-moving transform back out as OME-Zarr.
+
+[👨‍💻 **Live Demo** ✨](https://insightsoftwareconsortium.github.io/ITKElastix/)
 
 Installation
 ------------
