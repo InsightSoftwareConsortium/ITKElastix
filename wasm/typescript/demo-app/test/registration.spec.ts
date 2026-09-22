@@ -123,7 +123,7 @@ test('exposes the options, summarizes each run, keeps the toggles across a re-ru
   const summary = page.locator('#registration-summary')
 
   await test.step('load the 2D CT pair: defaults in the pickers, Cancel disabled, no summary', async () => {
-    await page.goto('/')
+    await page.goto('./')
     await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
     expect(await registrationFacts(page)).toMatchObject({
       registering: false,
@@ -246,7 +246,7 @@ test('downsamples the 3D pair under a smaller budget and cancels a run mid-way',
   const cancel = page.locator('#cancel-registration')
 
   await test.step('load the 3D MNI pair at the default budget: full resolution', async () => {
-    await page.goto('/')
+    await page.goto('./')
     await loadSample(page, MNI_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
     expect((await imageFacts(page, 'store', 'fixed'))!.scaleIndex).toBe(0)
   })

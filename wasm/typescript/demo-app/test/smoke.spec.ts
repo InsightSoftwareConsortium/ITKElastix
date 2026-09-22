@@ -25,7 +25,7 @@ test('loads the 2D CT head pair, registers it, and downloads the result and tran
   const showResult = page.locator('#show-result')
 
   await test.step('load the sample pair from the splash dialog', async () => {
-    await page.goto('/')
+    await page.goto('./')
     await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
     expect(await switchState(showResult)).toEqual({ disabled: true, checked: false })
   })

@@ -99,7 +99,7 @@ const test = base.extend<{}, { session: Session }>({
       const page = await browser.newPage()
       const errors: string[] = []
       collectPageErrors(page, errors)
-      await page.goto('/')
+      await page.goto('./')
       await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
       await page.locator('#register').click()
       await expect

@@ -47,6 +47,13 @@ jobs:
       run: |
         pixi run bindgen-build-python
 
+    # The Playwright web server does not download the sample images when CI
+    # is set (see wasm/typescript/demo-app/playwright.config.ts), so fetch
+    # them here, where --strict fails the job on a bad download instead of
+    # leaving the browser tests to fail on missing files.
+    - name: Fetch demo sample images
+      run: pnpm --filter itk-elastix-demo fetch-samples -- --strict
+
     - name: Test TypeScript
       run: |
         pixi run test-typescript

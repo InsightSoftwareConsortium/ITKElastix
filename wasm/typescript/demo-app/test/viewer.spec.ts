@@ -85,7 +85,7 @@ test('links navigation both ways, across the result toggle, and resets it for a 
   collectPageErrors(page, pageErrors)
 
   await test.step('load the 2D CT pair: no layout picker, both panels axial and in agreement', async () => {
-    await page.goto('/')
+    await page.goto('./')
     await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
     await expect(page.locator('#slice-type')).toBeHidden()
     expect(await sliceType(page, 'fixed')).toBe(SLICE_TYPE.AXIAL)
@@ -161,7 +161,7 @@ test('the colormap pickers apply per panel and survive the result toggle', async
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
 
-  await page.goto('/')
+  await page.goto('./')
   await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
 
   await test.step('both panels start on Gray and the pickers say so', async () => {
@@ -210,7 +210,7 @@ test('the slice layout picker drives both panels and the 3D camera is linked for
   collectPageErrors(page, pageErrors)
 
   await test.step('load the 3D MNI pair: the picker shows, both panels multiplanar', async () => {
-    await page.goto('/')
+    await page.goto('./')
     await loadSample(page, MNI_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
     await expect(page.locator('#slice-type')).toBeVisible()
     expect(await selectValue(page.locator('#slice-type'))).toBe('multiplanar')
@@ -276,7 +276,7 @@ test('overlay mode blends the moving image, then the registered result, over the
   }
 
   await test.step('the switch waits for a pair; the slider waits for the switch', async () => {
-    await page.goto('/')
+    await page.goto('./')
     expect(await switchState(toggle)).toEqual({ disabled: true, checked: false })
     await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
     await expect.poll(() => switchState(toggle)).toEqual({ disabled: false, checked: false })

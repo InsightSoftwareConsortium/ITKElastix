@@ -43,7 +43,7 @@ function raise(page: Page, variant: 'success' | 'warning' | 'danger', message: s
 test('reports registration and download outcomes as toasts that dismiss themselves or on click', async ({ page }) => {
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
-  await page.goto('/')
+  await page.goto('./')
   await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
   expect(await toastFacts(page)).toEqual([])
 
@@ -87,7 +87,7 @@ test('reports registration and download outcomes as toasts that dismiss themselv
 test('a toast shows above the splash dialog, and the oldest toast gives way beyond the limit', async ({ page }) => {
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
-  await page.goto('/')
+  await page.goto('./')
   await expect(splashDialog(page)).toBeVisible()
 
   await test.step('a toast raised while the modal dialog is open is on show and goes on its own', async () => {
@@ -145,7 +145,7 @@ test('a browser without WebGL2 gets a persistent danger message instead of the s
       return type === 'webgl2' ? null : getContext.call(this, type, options)
     } as typeof HTMLCanvasElement.prototype.getContext
   })
-  await page.goto('/')
+  await page.goto('./')
 
   await expect(toasts(page, 'danger')).toHaveCount(1)
   expect(await toastFacts(page)).toEqual([

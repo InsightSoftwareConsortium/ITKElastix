@@ -59,7 +59,7 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
   let imageAffine: number[][] | undefined
 
   await test.step('load the 3D MNI pair from the splash at full resolution', async () => {
-    await page.goto('/')
+    await page.goto('./')
     await loadSample(page, MNI_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
     expect(await imageFacts(page, 'store', 'fixed')).toMatchObject({ name: MNI_FIXED, dimension: 3, scaleIndex: 0 })
     expect(await imageFacts(page, 'store', 'moving')).toMatchObject({ name: MNI_MOVING, dimension: 3, scaleIndex: 0 })

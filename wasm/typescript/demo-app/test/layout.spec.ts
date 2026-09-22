@@ -72,7 +72,7 @@ test('stacks the viewers below 800 px and keeps the canvases drawn at the size o
   collectPageErrors(page, pageErrors)
 
   await page.setViewportSize(WIDE)
-  await page.goto('/')
+  await page.goto('./')
   await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
   expect(await orientation(page)).toBe('horizontal')
   await expectCanvasesToFit(page)
@@ -109,7 +109,7 @@ test.describe('with a dark operating system', () => {
     const toggle = page.locator('#theme-toggle')
     const label = page.locator('#theme-toggle-label')
 
-    await page.goto('/')
+    await page.goto('./')
     // Set by the inline script in index.html before the app module runs.
     expect(await isDark(page)).toBe(true)
     expect(await storedTheme(page)).toBeNull()
@@ -153,7 +153,7 @@ test.describe('with a dark operating system', () => {
 })
 
 test('the footer links ITKElastix, elastix, niivue, ngff-zarr, and Web Awesome', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   const links = page.locator('footer.app-footer nav a')
   await expect(links).toHaveText(['ITKElastix', 'elastix', 'niivue', 'ngff-zarr', 'Web Awesome'])
   const hrefs = await links.evaluateAll((anchors) => anchors.map((a) => (a as HTMLAnchorElement).href))

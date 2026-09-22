@@ -81,7 +81,7 @@ async function pickFile(page: Page, role: SlotRole, fileName: string): Promise<v
 
 test.describe('3D MNI sample', () => {
   test('loads both volumes at full resolution under the default budget', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('./')
     await loadSample(page, MNI_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
 
     const fixed = await imageFacts(page, 'store', 'fixed')
@@ -101,7 +101,7 @@ test.describe('3D MNI sample', () => {
   })
 
   test(`downsamples both volumes under ?${BUDGET_QUERY_PARAM}=${SMALL_BUDGET_MIB}`, async ({ page }) => {
-    await page.goto(`/?${BUDGET_QUERY_PARAM}=${SMALL_BUDGET_MIB}`)
+    await page.goto(`./?${BUDGET_QUERY_PARAM}=${SMALL_BUDGET_MIB}`)
     await loadSample(page, MNI_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
 
     const fixed = await imageFacts(page, 'store', 'fixed')
@@ -121,7 +121,7 @@ test.describe('3D MNI sample', () => {
 })
 
 test('loads the CT pair from the URL fields, by the Load button and by Enter', async ({ page, baseURL }) => {
-  await page.goto('/')
+  await page.goto('./')
   await expect(splashDialog(page)).toBeVisible()
   const startButton = page.locator('#start-registration-inputs')
   expect(await isDisabled(startButton)).toBe(true)
@@ -147,7 +147,7 @@ test('loads the CT pair from the URL fields, by the Load button and by Enter', a
 })
 
 test('loads the CT pair from the file pickers', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await expect(splashDialog(page)).toBeVisible()
 
   await pickFile(page, 'fixed', CT_FIXED)
@@ -170,7 +170,7 @@ test('loads the CT pair from the file pickers', async ({ page }) => {
 })
 
 test('rejects a 2D fixed with a 3D moving image, keeps the dialog open, and swaps the slots', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   await expect(splashDialog(page)).toBeVisible()
   const callout = page.locator('#splash-error')
   const startButton = page.locator('#start-registration-inputs')
