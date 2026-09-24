@@ -14,7 +14,10 @@
 // - the byte size elastix is handed is measured on that final image
 //   ({@link registrationBytesOf});
 // - a pair whose dimensions differ is rejected with a readable error
-//   ({@link assertCompatiblePair}) before it reaches the app.
+//   ({@link assertCompatiblePair}) before it reaches the app;
+// - a level whose metadata carries a scale but no translation gets an
+//   explicit origin of 0 ({@link fillMissingTranslation}), the origin
+//   ngff-zarr already gives its ITK image.
 //
 // Keep this module free of DOM access and of value imports from
 // load-image.ts so the Node unit tests can import it. Display code that
@@ -158,6 +161,29 @@ export function squeezeSingletonAxis(image: Image): SqueezeResult {
     return { image, squeezedAxis: undefined }
   }
   return { image: squeezeAxis(image, axis), squeezedAxis: SPATIAL_AXES[axis] }
+}
+
+/** The part of an NgffImage {@link fillMissingTranslation} reads and fills. */
+export interface TranslatedImage {
+  readonly dims: readonly string[]
+  readonly translation: Record<string, number>
+}
+
+/**
+ * Give every spatial axis of `image` a translation entry, 0 where the
+ * OME-Zarr metadata had none (a scale-only transform is valid). ngff-zarr
+ * reads a missing entry as an origin of 0 when it builds the ITK image,
+ * but its RFC-5 helpers refuse an image without the entry, so the summary
+ * card and the transform export would fail on such an input. Fills the
+ * record in place and returns the image.
+ */
+export function fillMissingTranslation<T extends TranslatedImage>(image: T): T {
+  for (const dim of image.dims) {
+    if ((SPATIAL_AXES as readonly string[]).includes(dim) && !(dim in image.translation)) {
+      image.translation[dim] = 0
+    }
+  }
+  return image
 }
 
 /**

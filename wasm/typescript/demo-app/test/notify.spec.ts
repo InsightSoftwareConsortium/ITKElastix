@@ -17,9 +17,9 @@ import {
   WEBGL2_UNAVAILABLE_STATUS,
 } from '../src/ui/notify-options'
 import {
-  CT_SAMPLE_BUTTON,
   LOAD_TIMEOUT,
   REGISTRATION_TIMEOUT,
+  TAILBUD_2D_SAMPLE_BUTTON,
   collectPageErrors,
   holdRegistration,
   isDisabled,
@@ -46,7 +46,7 @@ test('reports registration and download outcomes as toasts that dismiss themselv
   collectPageErrors(page, pageErrors)
   const releaseRegistration = await holdRegistration(page)
   await page.goto('./')
-  await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+  await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
   expect(await toastFacts(page)).toEqual([])
 
   await test.step('the registration the load started raises a success toast and colours the status line', async () => {
@@ -66,15 +66,16 @@ test('reports registration and download outcomes as toasts that dismiss themselv
   })
 
   await test.step('a failed download raises a danger toast; its button dismisses it and the download is usable again', async () => {
-    // ITK's PNG writer rejects the int16 CT result (see src/io/export-plan.ts).
+    // ITK's JPEG writer takes 8-bit pixels only, so it rejects the uint16
+    // tailbud result (see src/io/export-plan.ts).
     await page.locator('#image-format').click()
-    await page.locator('#image-format wa-option[value="png"]').click()
-    await expect.poll(() => selectValue(page.locator('#image-format'))).toBe('png')
+    await page.locator('#image-format wa-option[value="jpg"]').click()
+    await expect.poll(() => selectValue(page.locator('#image-format'))).toBe('jpg')
     await page.locator('#download-image').click()
     await expect(toasts(page, 'danger')).toHaveCount(1, { timeout: LOAD_TIMEOUT })
     const [toast] = await toastFacts(page)
     expect(toast).toMatchObject({ variant: 'danger', persistent: false, dismissible: true, role: null })
-    expect(toast!.message).toMatch(/^Could not write registered\.png: /)
+    expect(toast!.message).toMatch(/^Could not write registered\.jpg: /)
     expect(await statusText(page)).toBe(toast!.message)
     await expect(page.locator('#status')).toHaveAttribute('data-variant', 'danger')
     await expect.poll(() => isDisabled(page.locator('#download-image'))).toBe(false)
@@ -119,7 +120,7 @@ test('a toast shows above the splash dialog, and the oldest toast gives way beyo
   await test.step('beyond the limit the oldest toast gives way, and a click dismisses one', async () => {
     // Parked, the registration the load starts raises no toast of its own.
     await holdRegistration(page)
-    await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+    await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
     for (let index = 1; index <= MAX_TOASTS + 1; index += 1) {
       await raise(page, 'success', `Toast ${index}`)
     }

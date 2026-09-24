@@ -135,6 +135,14 @@ Either way `src/main.ts` starts a registration once the new pair is on
 screen; the splash closes without waiting for it.
 `?budget=<MiB>` on the page URL sets the initial budget for tests.
 
+**Scale-only metadata.** OME-Zarr allows a multiscales level with a scale
+and no translation, as the bundled zebrafish samples have. ngff-zarr gives
+such a level an origin of 0 when it builds the ITK image but leaves the
+`NgffImage`'s translation empty, and its RFC-5 helpers refuse an image
+without the entry; `finalizeFromMultiscales` therefore fills in 0 for each
+spatial axis of every level (`fillMissingTranslation` in `normalize.ts`), so
+the summary card and the transform export agree with the ITK origin.
+
 ## Registration flow
 
 `registerAffine(fixed, moving, { numberOfResolutions, parameterObject?,
@@ -210,7 +218,9 @@ niivue's broadcast API: on every redraw the source copies its crosshair
 camera, and clip planes onto the others, which redraw without broadcasting
 back. A panel draws no crosshair over a 2D image
 (`crosshairWidthForDimension` in `src/ui/view-options.ts`), where the lines
-would only cover the picture. The view controls (`src/ui/view-controls.ts`) offer the slice layouts
+would only cover the picture, and ray-marches a 3D volume with niivue's
+gradient opacity (`gradientOpacityForDimension`, 0.25), which fades flat
+regions such as a template's non-zero background and keeps surfaces solid. The view controls (`src/ui/view-controls.ts`) offer the slice layouts
 for a 3D pair, a reset that also centres both dividers, and a colormap per
 side (applied to that side of both comparisons); each panel watches its
 container and resizes its drawing buffer when the split panel flips or is

@@ -2,7 +2,7 @@
 // download buttons for the formats named in the Phase 03 playbook, the
 // RFC-5 metadata of the two OME-Zarr archives (read in Node from the
 // downloaded bytes), and the OZX and OME-TIFF round trips back through the
-// fixed file picker. One registration of the 2D CT sample serves the whole
+// fixed file picker. One registration of the 2D tailbud sample serves the whole
 // file: the tests run serially on a page a worker fixture prepares once,
 // and every download's bytes are kept for the tests after it. The file
 // names asserted here are the ones the user sees; the exporter derives
@@ -14,10 +14,10 @@ import { expect, test as base, type Page } from '@playwright/test'
 import type { LoadedImage } from '../src/io/load-image'
 import type { OutputKind } from '../src/state'
 import {
-  CT_MOVING,
-  CT_SAMPLE_BUTTON,
   LOAD_TIMEOUT,
   REGISTRATION_TIMEOUT,
+  TAILBUD_2D_MOVING,
+  TAILBUD_2D_SAMPLE_BUTTON,
   collectPageErrors,
   downloadOutput,
   holdRegistration,
@@ -103,7 +103,7 @@ const test = base.extend<{}, { session: Session }>({
       collectPageErrors(page, errors)
       await page.goto('./')
       // The pair starts registering as soon as it is on screen.
-      await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+      await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
       await expect
         .poll(() => resultFacts(page), { message: 'registration should finish', timeout: REGISTRATION_TIMEOUT })
         .toBeDefined()
@@ -166,7 +166,7 @@ function readOzx(files: ReadonlyMap<string, Buffer>, filename: string): OzxConte
   return parseOzx(bytes, filename)
 }
 
-test('registers the 2D CT pair once for the whole file', ({ session }) => {
+test('registers the 2D tailbud pair once for the whole file', ({ session }) => {
   expect(session.registered.dimension).toBe(2)
   expect(session.registered.size).toHaveLength(2)
   for (const extent of session.registered.size) {
@@ -258,7 +258,7 @@ test.describe('round trips through the fixed picker', () => {
       expect(bytes, `${filename} is downloaded earlier in this file`).toBeDefined()
 
       // The reopened dialog starts from the pair the app holds, so only
-      // the fixed slot changes; the moving slice stays for the pair check.
+      // the fixed slot changes; the moving plane stays for the pair check.
       await page.locator('#load-images').click()
       await expect(splashDialog(page)).toBeVisible()
       await page.locator('#fixed-file').setInputFiles({ name: filename, mimeType, buffer: bytes ?? Buffer.alloc(0) })
@@ -271,7 +271,7 @@ test.describe('round trips through the fixed picker', () => {
       const releaseRegistration = await holdRegistration(page)
       await start(page)
       expect(await imageFacts(page, 'store', 'fixed')).toMatchObject(expected)
-      expect((await imageFacts(page, 'store', 'moving'))?.name).toBe(CT_MOVING)
+      expect((await imageFacts(page, 'store', 'moving'))?.name).toBe(TAILBUD_2D_MOVING)
       await expect.poll(() => volumeName(page, 'inputs-fixed')).toContain(filename)
       // A new pair drops the result it did not come from and starts registering afresh.
       expect(await page.evaluate(() => window.__demo?.state?.state.result)).toBeUndefined()

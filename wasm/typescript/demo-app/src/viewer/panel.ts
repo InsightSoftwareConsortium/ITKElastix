@@ -32,6 +32,7 @@ import {
   DEFAULT_COLORMAP,
   DEFAULT_SLICE_TYPE,
   crosshairWidthForDimension,
+  gradientOpacityForDimension,
   sliceTypeForDimension,
 } from '../ui/view-options'
 import { panelLabel, type DemoPanelRole } from './comparison-options'
@@ -117,7 +118,7 @@ export interface ViewerPanel {
    * Display `image` under `name`, replacing whatever was shown before. 2D
    * images are promoted to single-slice 3D volumes for display only and
    * shown axially without a crosshair; 3D images are shown in the chosen
-   * slice layout with one. The colormap is kept, and a linked peer's view
+   * slice layout with one, and with gradient opacity in the 3D render. The colormap is kept, and a linked peer's view
    * is adopted once the volume is in place.
    */
   show(image: Image, name: string): Promise<void>
@@ -296,10 +297,16 @@ export async function createViewerPanel(
         // queues mid-load would otherwise push this panel's half-updated scene
         // onto the peers.
         nv.broadcastTo()
-        // Set before the load so a 2D image's first frame is already drawn without one.
+        // Set before the load, so a 2D image's first frame is already drawn
+        // without a crosshair and a volume's gradient texture, which gradient
+        // opacity reads, is built as it uploads.
         const crosshairWidth = crosshairWidthForDimension(imageDimension)
         if (nv.crosshairWidth !== crosshairWidth) {
           nv.crosshairWidth = crosshairWidth
+        }
+        const gradientOpacity = gradientOpacityForDimension(imageDimension)
+        if (nv.volumeGradientOpacity !== gradientOpacity) {
+          nv.volumeGradientOpacity = gradientOpacity
         }
         // loadVolumes replaces the volume already shown. The scene (crosshair,
         // pan, camera) is left as it was.

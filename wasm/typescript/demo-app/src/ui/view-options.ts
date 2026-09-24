@@ -1,7 +1,8 @@
 // The decisions behind the view controls (src/ui/view-controls.ts): the
 // slice layouts a 3D pair can be shown in, when that picker applies, the
-// layout and crosshair a panel draws content of a given dimension with,
-// and the colormap list each panel's picker offers. Pure functions over niivue's constants
+// layout, crosshair, and 3D-render gradient opacity a panel draws content
+// of a given dimension with, and the colormap list each panel's picker
+// offers. Pure functions over niivue's constants
 // and the state, free of DOM access, so the node unit tests can cover them.
 // niivue's entry module imports cleanly in Node, so `SLICE_TYPE` is taken
 // from the package rather than copied.
@@ -69,6 +70,25 @@ export const CROSSHAIR_WIDTH = 1
  */
 export function crosshairWidthForDimension(dimension: 2 | 3): number {
   return dimension === 2 ? 0 : CROSSHAIR_WIDTH
+}
+
+/**
+ * niivue's gradient opacity for the 3D render of a volume, in [0, 1]: each
+ * ray-march sample's alpha is scaled by its gradient magnitude raised to
+ * eight times this, so flat regions (a template's non-zero background, a
+ * homogeneous interior) turn transparent and surfaces stay solid. 0.25
+ * clears the haze around the MNI templates without thinning the brain.
+ */
+export const VOLUME_GRADIENT_OPACITY = 0.25
+
+/**
+ * Gradient opacity a panel renders content of `dimension` with: none for a
+ * 2D image, which is never ray-marched (turning it on would only have
+ * niivue build a gradient texture nothing reads), {@link VOLUME_GRADIENT_OPACITY}
+ * for a 3D one.
+ */
+export function gradientOpacityForDimension(dimension: 2 | 3): number {
+  return dimension === 2 ? 0 : VOLUME_GRADIENT_OPACITY
 }
 
 /** The slice layout picker applies: the loaded pair is 3D (the pair check keeps both dimensions equal). */

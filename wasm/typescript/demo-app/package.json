@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "fetch-samples": "node scripts/fetch-samples.mjs",
     "test": "playwright test",
-    "test:unit": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test \"src/**/*.test.ts\""
+    "test:unit": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test \"src/**/*.test.ts\" \"scripts/**/*.test.mjs\""
   },
   "dependencies": {
     "@awesome.me/webawesome": "^3.13.0",

@@ -10,6 +10,7 @@ import {
   SPATIAL_AXES,
   assertCompatiblePair,
   channelAndTimepointInfo,
+  fillMissingTranslation,
   findSingletonAxis,
   normalizeForRegistration,
   registrationBytesOf,
@@ -275,4 +276,15 @@ test('assertCompatiblePair names both images and the word dimension when they di
 test('assertCompatiblePair rejects a vector image and says which one', () => {
   assert.throws(() => assertCompatiblePair(input('photo.png', 2, 3), input('b.mha', 2)), /fixed image photo.png has 3 components \(RGB\)/)
   assert.throws(() => assertCompatiblePair(input('a.mha', 2), input('photo.png', 2, 3)), /moving image photo.png has 3 components/)
+})
+
+test('fillMissingTranslation gives each spatial axis without one an origin of 0, in place', () => {
+  const image = { dims: ['t', 'c', 'z', 'y', 'x'], translation: { y: 4.5 } as Record<string, number> }
+  assert.equal(fillMissingTranslation(image), image)
+  // Time and channel axes have no origin; an existing entry is kept.
+  assert.deepEqual(image.translation, { y: 4.5, z: 0, x: 0 })
+
+  const complete = { dims: ['y', 'x'], translation: { y: -1, x: 2 } }
+  fillMissingTranslation(complete)
+  assert.deepEqual(complete.translation, { y: -1, x: 2 })
 })

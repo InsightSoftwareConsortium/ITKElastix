@@ -10,12 +10,12 @@ import type WaCopyButton from '@awesome.me/webawesome/dist/components/copy-butto
 import type WaDetails from '@awesome.me/webawesome/dist/components/details/details.js'
 
 import {
-  CT_MOVING,
-  CT_SAMPLE_BUTTON,
   LOAD_TIMEOUT,
   LOAD_TIMEOUT_3D,
   MNI_SAMPLE_BUTTON,
   REGISTRATION_TIMEOUT,
+  TAILBUD_2D_MOVING,
+  TAILBUD_2D_SAMPLE_BUTTON,
   collectPageErrors,
   holdRegistration,
   imageFacts,
@@ -129,9 +129,9 @@ test('registers each pair on load, exposes the options, summarizes each run, and
   const summary = page.locator('#registration-summary')
   let releaseRegistration = await holdRegistration(page)
 
-  await test.step('load the 2D CT pair: a run at the defaults starts right away, with Cancel enabled and no summary', async () => {
+  await test.step('load the 2D tailbud pair: a run at the defaults starts right away, with Cancel enabled and no summary', async () => {
     await page.goto('./')
-    await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+    await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
     expect(await registrationFacts(page)).toMatchObject({
       registering: true,
       reloading: false,
@@ -187,7 +187,7 @@ test('registers each pair on load, exposes the options, summarizes each run, and
         expect(Number.isFinite(Number(cell)), `matrix cell ${cell}`).toBe(true)
       }
     }
-    // A registration of two nearby CT slices is close to the identity.
+    // Two frames 40 min apart differ by a modest rotation and shift, so the matrix stays near the identity.
     expect(Math.abs(Number(cells[0]![0]) - 1)).toBeLessThan(0.5)
     expect(Math.abs(Number(cells[1]![1]) - 1)).toBeLessThan(0.5)
   })
@@ -219,14 +219,14 @@ test('registers each pair on load, exposes the options, summarizes each run, and
     expect((await summaryRows(page)).resolutions).toBe('4')
     expect(await switchState(showResult)).toEqual({ disabled: false, checked: true })
     await expect.poll(() => volumeName(page, 'result-moving')).toContain('registered')
-    expect(await volumeName(page, 'inputs-moving')).toContain('CT_2D_head_moving')
+    expect(await volumeName(page, 'inputs-moving')).toContain(TAILBUD_2D_MOVING)
     expect(await isDisabled(cancel)).toBe(true)
   })
 
   await test.step('choosing a 10 MB budget reloads both inputs, drops the result, resets the switch, and registers again', async () => {
     releaseRegistration = await holdRegistration(page)
     await pick(page, 'pixel-budget', String(10 * MIB))
-    // The CT slices reload in well under a second, so the transient
+    // The tailbud planes reload in well under a second, so the transient
     // `reloading` flag cannot be caught; the committed budget marks the end.
     await expect
       .poll(async () => (await registrationFacts(page))?.budgetBytes, { message: 'the reload should finish', timeout: LOAD_TIMEOUT })
@@ -238,12 +238,12 @@ test('registers each pair on load, exposes the options, summarizes each run, and
     for (const role of ['fixed', 'moving'] as const) {
       const facts = (await imageFacts(page, 'store', role))!
       expect(facts.budgetBytes).toBe(10 * MIB)
-      // The CT slices are far under 10 MB, so the level does not change.
+      // The planes are far under 10 MB, so the level does not change.
       expect(facts.scaleIndex).toBe(0)
     }
     await expect(summary).toBeHidden()
     expect(await switchState(showResult)).toEqual({ disabled: true, checked: false })
-    await expect.poll(() => volumeName(page, 'result-moving')).toContain('CT_2D_head_moving')
+    await expect.poll(() => volumeName(page, 'result-moving')).toContain(TAILBUD_2D_MOVING)
     for (const role of PANEL_ROLES) {
       await expect.poll(() => volumeCount(page, role)).toBe(1)
     }
@@ -266,12 +266,12 @@ test('a budget reload that fails keeps the pair, the budget, and the result, and
   collectPageErrors(page, pageErrors)
 
   await page.goto('./')
-  await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+  await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
   await waitForResult(page)
   const before = (await registrationFacts(page))!
 
-  // The moving slice can no longer be fetched, so the reload fails part-way.
-  await page.route(`**/samples/${CT_MOVING}`, (route) => route.fulfill({ status: 404, body: 'Not Found' }))
+  // The moving plane's store can no longer be read, so the reload fails part-way.
+  await page.route(`**/samples/${TAILBUD_2D_MOVING}/**`, (route) => route.fulfill({ status: 404, body: 'Not Found' }))
   await openOptions(page)
   // Not `pick`: the failed reload puts the picker back on 50 MB within a frame or two.
   await page.locator('#pixel-budget').click()

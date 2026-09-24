@@ -41,6 +41,7 @@ import { formatBytes } from '../format'
 import { memoryStoreFromZip, omeZarrVersionOption } from './ozx-store'
 import {
   channelAndTimepointInfo,
+  fillMissingTranslation,
   normalizeForRegistration,
   registrationSliceOptions,
   type SpatialAxis,
@@ -462,6 +463,9 @@ export async function finalizeFromMultiscales(
 ): Promise<LoadedImage> {
   const report = makeReporter(onProgress)
 
+  for (const image of multiscales.images) {
+    fillMissingTranslation(image)
+  }
   report('select', 'Selecting registration scale…')
   const scaleIndex = selectScaleForBudget(multiscales, budgetBytes)
   const ngffImage = multiscales.images[scaleIndex]

@@ -1,5 +1,7 @@
 // Bundled sample image pairs served from public/samples/ (populated by
-// scripts/fetch-samples.mjs, which .gitignore keeps out of the repository).
+// scripts/fetch-samples.mjs, which .gitignore keeps out of the repository):
+// a zebrafish tailbud time-lapse from the OME-NGFF data resources, as one
+// plane and as whole z-stacks, and two MNI brain templates.
 export interface Sample {
   id: string
   label: string
@@ -24,12 +26,13 @@ export function resolveAssetUrl(path: string): string {
 
 export const samples: readonly Sample[] = [
   {
-    id: 'ct-2d-head',
-    label: '2D CT head',
-    description: '2D CT head slices, fixed to moving; registers in about a second.',
+    id: 'zebrafish-tailbud-2d',
+    label: '2D zebrafish tailbud',
+    description:
+      'One light-sheet plane of a zebrafish tailbud (H2B nuclei, IDR idr0051), 40 min apart as the tail extends; registers in about a second.',
     dimension: 2,
-    fixed: resolveAssetUrl('samples/CT_2D_head_fixed.mha'),
-    moving: resolveAssetUrl('samples/CT_2D_head_moving.mha'),
+    fixed: resolveAssetUrl('samples/zebrafish-tailbud-z100_t00.ome.zarr'),
+    moving: resolveAssetUrl('samples/zebrafish-tailbud-z100_t20.ome.zarr'),
   },
   {
     id: 'mni-3d',
@@ -38,5 +41,14 @@ export const samples: readonly Sample[] = [
     dimension: 3,
     fixed: resolveAssetUrl('samples/tpl-MNI152NLin2009aSym_res-1_T2w.nii.gz'),
     moving: resolveAssetUrl('samples/tpl-MNI305_T1w.nii.gz'),
+  },
+  {
+    id: 'zebrafish-tailbud-3d',
+    label: '3D zebrafish tailbud',
+    description:
+      'The same tailbud as whole light-sheet z-stacks, 40 min apart; a 3D registration at full resolution takes longer.',
+    dimension: 3,
+    fixed: resolveAssetUrl('samples/zebrafish-tailbud_t00.ome.zarr'),
+    moving: resolveAssetUrl('samples/zebrafish-tailbud_t20.ome.zarr'),
   },
 ]

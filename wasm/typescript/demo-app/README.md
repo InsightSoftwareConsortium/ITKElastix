@@ -11,8 +11,11 @@ in WebAssembly and web workers; nothing is uploaded.
 
 - **Inputs:** OME-Zarr (a directory store URL or a zipped `.ozx`), TIFF and
   OME-TIFF, and any format ITK reads (NIfTI, NRRD, MetaImage, DICOM, PNG, …),
-  from a local file, a drag-and-drop, or a URL. Two sample pairs are bundled:
-  2D CT head slices and the 3D MNI152 T2w and MNI305 T1w templates.
+  from a local file, a drag-and-drop, or a URL. Three sample pairs are
+  bundled: a zebrafish tailbud light-sheet time-lapse from the
+  [OME-NGFF data resources](https://ngff.openmicroscopy.org/resources/data/),
+  as one 2D plane and as 3D z-stacks at two time points, and the 3D MNI152
+  T2w and MNI305 T1w templates.
 - **Registration:** elastix's translation → rigid → affine stage sequence with
   its default parameter maps, run in a web worker and cancellable. It starts
   as soon as a loaded pair is on screen; Register runs it again. The number
@@ -26,8 +29,10 @@ in WebAssembly and web workers; nothing is uploaded.
   before/after of its own). The two dividers move together. The four niivue
   panels behind them navigate together (crosshair, pan and zoom, and 3D
   camera; 2D images are drawn without the crosshair), with axial, coronal,
-  sagittal, multiplanar, and 3D-render layouts for volumes, a colormap for
-  each side, and an "Image details" list under each comparison.
+  sagittal, multiplanar, and 3D-render layouts for volumes (the render uses
+  gradient opacity, so flat regions turn transparent and surfaces stay
+  solid), a colormap for each side, and an "Image details" list under each
+  comparison.
 - **Outputs:** the registered image as OME-Zarr OZX (the default, with the
   transform embedded as an [RFC-5](https://ngff.openmicroscopy.org/rfc/5/)
   affine), OME-TIFF, or any of 17 ITK formats; the transform as a standalone
@@ -70,7 +75,7 @@ package, so it needs neither the Emscripten toolchain nor a package build.
 | `typecheck`     | `tsc --noEmit` over `src/`, `test/`, and the two config files.                                |
 | `fetch-samples` | Download the sample images into `public/samples/`; `--strict` fails on a missing one.         |
 | `test`          | The Playwright end-to-end suite (starts the dev server itself).                               |
-| `test:unit`     | The `node:test` unit tests next to the DOM-free modules (`src/**/*.test.ts`).                 |
+| `test:unit`     | The `node:test` unit tests next to the DOM-free modules and scripts (`src/**/*.test.ts`, `scripts/**/*.test.mjs`). |
 
 Useful while developing:
 
@@ -84,22 +89,42 @@ Useful while developing:
 
 ### Sample images
 
-`scripts/fetch-samples.mjs` downloads four files into `public/samples/`,
+`scripts/fetch-samples.mjs` writes six samples into `public/samples/`,
 which `.gitignore` keeps out of the repository:
 
-| File                                      | Pair                 | Source                                        |
+| Sample                                    | Pair                 | Source                                        |
 | ----------------------------------------- | -------------------- | --------------------------------------------- |
-| `CT_2D_head_fixed.mha`                    | 2D CT head           | IPFS (w3s.link gateways)                      |
-| `CT_2D_head_moving.mha`                   | 2D CT head           | IPFS (w3s.link gateways)                      |
+| `zebrafish-tailbud-z100_t00.ome.zarr`     | 2D zebrafish tailbud | IDR idr0051 OME-Zarr 0.5, t = 0, z = 100      |
+| `zebrafish-tailbud-z100_t20.ome.zarr`     | 2D zebrafish tailbud | IDR idr0051 OME-Zarr 0.5, t = 20, z = 100     |
+| `zebrafish-tailbud_t00.ome.zarr`          | 3D zebrafish tailbud | IDR idr0051 OME-Zarr 0.5, t = 0               |
+| `zebrafish-tailbud_t20.ome.zarr`          | 3D zebrafish tailbud | IDR idr0051 OME-Zarr 0.5, t = 20              |
 | `tpl-MNI152NLin2009aSym_res-1_T2w.nii.gz` | 3D MNI T2w to T1w    | TemplateFlow's S3 bucket, then IPFS gateways  |
 | `tpl-MNI305_T1w.nii.gz`                   | 3D MNI T2w to T1w    | TemplateFlow's S3 bucket, then IPFS gateways  |
 
-Existing non-empty files are skipped, each gateway is tried with one retry
-under a 120 s timeout, and files are written atomically. Without `--strict` a
-failed download is only logged, so the dev server still starts offline;
-`--strict` (what CI and the Pages build pass) exits non-zero instead.
-`src/samples.ts` lists the pairs the splash offers and resolves their URLs
-against the app's base path.
+The zebrafish pairs come from IDR study
+[idr0051](https://idr.openmicroscopy.org/study/idr0051/) (Attardi et al.,
+*Development* 2018, [doi:10.1242/dev.166728](https://doi.org/10.1242/dev.166728);
+CC BY 4.0): light-sheet imaging of a zebrafish tailbud from the 18-somite
+stage with H2B-labelled nuclei, one frame every 2 minutes, listed among the
+[OME-NGFF data resources](https://ngff.openmicroscopy.org/resources/data/)
+as an IDR OME-Zarr sample. Each pair is the time points 0 and 20, 40 minutes
+apart, so the registration recovers how the tissue moved and extended in
+between; the 2D pair is the plane IDR shows by default (z = 100). The
+source is a 79-time-point OME-Zarr 0.5 store, so rather than download it the
+script writes each sample as its own OME-Zarr store holding one time point
+(`scripts/ome-zarr-select.mjs`): the encoded chunks are copied byte for byte,
+since each fixed axis has chunk extent 1, and a plane comes out of its z-stack
+shard through the shard index with HTTP range requests. Nothing is decoded,
+the pyramid's levels and scales carry over, and a `derivedFrom` attribute
+records the source URL and the time point and plane. A 3D stack is about
+17 MB, a plane about 115 KB.
+
+Existing non-empty files and stores are skipped, each download is tried with
+one retry, and files and stores are written atomically (a store is renamed
+into place once complete). Without `--strict` a failed download is only
+logged, so the dev server still starts offline; `--strict` (what CI and the
+Pages build pass) exits non-zero instead. `src/samples.ts` lists the pairs
+the splash offers and resolves their URLs against the app's base path.
 
 ## Build
 
@@ -147,7 +172,9 @@ control. The convention that makes this work: a module meant for the unit
 tests imports its siblings with explicit `.ts` specifiers and never touches
 the DOM or an ITK-Wasm pipeline package; the browser-only wiring next to it
 (`load-image.ts`, `export-image.ts`, `register.ts`, the `ui/` bindings)
-re-exports what it needs from there.
+re-exports what it needs from there. The same runner covers
+`scripts/ome-zarr-select.test.mjs`, the planner behind the one-time-point
+OME-Zarr samples.
 
 ### End-to-end tests
 
@@ -170,8 +197,8 @@ specs, all under `test/`:
 
 | Spec                    | Covers                                                                                                    |
 | ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| `smoke.spec.ts`         | Load the 2D CT pair, which registers on its own, toggle the result, download both outputs in their default OME-Zarr formats. |
-| `inputs.spec.ts`        | The 3D sample under the default and a forced budget, the URL fields, the file pickers, the pair check and swap. |
+| `smoke.spec.ts`         | Load the 2D tailbud pair, which registers on its own, toggle the result, download both outputs in their default OME-Zarr formats. |
+| `inputs.spec.ts`        | The 3D NIfTI sample under the default and a forced budget, the 3D OME-Zarr sample, the URL fields, the file pickers, the pair check and swap. |
 | `outputs.spec.ts`       | Every image and transform format, the RFC-5 metadata of the two OME-Zarr archives, OZX and OME-TIFF round trips. |
 | `registration.spec.ts`  | The run each loaded or reloaded pair starts, the options pickers, the summary card, and cancelling a run. |
 | `viewer.spec.ts`        | Linked navigation, colormaps, slice layouts, the comparison dividers and what each side shows.            |
@@ -272,7 +299,7 @@ Both download buttons have a format picker filled from the registry in
 | ----------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | OME-Zarr (default)            | `registered.ome.zarr.ozx` | An OME-Zarr 0.6 pyramid zipped as RFC-9, with the fixed-to-moving affine embedded as an RFC-5 transformation between the image's intrinsic and the moving coordinate systems. |
 | OME-TIFF                      | `registered.ome.tif`     | Deflate-compressed, one plane per IFD, sub-resolution levels as SubIFDs; a volume's pyramid shrinks in x and y only.                     |
-| NRRD, NIfTI, NIfTI compressed, MetaImage, VTK, HDF5, MGH, MINC, MRC, GIPL, BioRad PIC, Scanco AIM, Varian FDF, BMP, JPEG, PNG | `registered.<ext>` | Written by `@itk-wasm/image-io`. BMP and JPEG hold 2D 8-bit pixels only and PNG 2D unsigned 8- or 16-bit, so a signed 16-bit CT slice or a volume is refused with a message. |
+| NRRD, NIfTI, NIfTI compressed, MetaImage, VTK, HDF5, MGH, MINC, MRC, GIPL, BioRad PIC, Scanco AIM, Varian FDF, BMP, JPEG, PNG | `registered.<ext>` | Written by `@itk-wasm/image-io`. BMP and JPEG hold 2D 8-bit pixels only and PNG 2D unsigned 8- or 16-bit, so the 16-bit tailbud result as BMP or JPEG, a signed 16-bit slice as PNG, or a volume is refused with a message. |
 | ITK-Wasm image                | `registered.iwi.cbor`    | Encoded in JavaScript so multi-byte pixels keep their byte order.                                                                       |
 
 **Fixed-to-moving transform**
@@ -333,7 +360,8 @@ demo-app/
 ├── index.html               The shell markup; every control has a stable id.
 ├── vite.config.ts           Base path, worker format, pipeline vendoring, dev/preview ports.
 ├── playwright.config.ts     Web server selection, SwiftShader Chromium project.
-├── scripts/fetch-samples.mjs
+├── scripts/                 fetch-samples.mjs, and ome-zarr-select.mjs, which plans the
+│                            one-time-point OME-Zarr samples (with its node:test tests).
 ├── public/                  logo.svg; samples/ is downloaded and ignored.
 ├── src/
 │   ├── main.ts              Bootstrap: pipelines, WebAwesome, store, shell, flows.

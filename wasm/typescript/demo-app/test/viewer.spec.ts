@@ -8,7 +8,7 @@
 // outlives a swap, and each comparison puts the fixed image on the left of
 // a divider that reveals the moving image, or the registered result, on
 // the right, the two dividers moving together and a 2D pair drawn without
-// a crosshair. The responsive split (a 700 px viewport stacks the
+// a crosshair or gradient opacity; a 3D pair has both. The responsive split (a 700 px viewport stacks the
 // comparisons) and the theme toggle persisting across a reload are in
 // test/layout.spec.ts, and the 3D run from sample to downloads is in
 // test/register-3d.spec.ts. Elements are found by their stable ids; niivue
@@ -17,17 +17,20 @@
 import { expect, test, type Page } from '@playwright/test'
 import { SLICE_TYPE } from '@niivue/niivue'
 
-import { CROSSHAIR_WIDTH } from '../src/ui/view-options'
+import { CROSSHAIR_WIDTH, VOLUME_GRADIENT_OPACITY } from '../src/ui/view-options'
 import { COMPARISON_ROLES, PANEL_ROLES, type ComparisonRole } from '../src/viewer/comparison-options'
 import {
-  CT_SAMPLE_BUTTON,
   LOAD_TIMEOUT,
   LOAD_TIMEOUT_3D,
   MNI_SAMPLE_BUTTON,
+  TAILBUD_2D_FIXED,
+  TAILBUD_2D_MOVING,
+  TAILBUD_2D_SAMPLE_BUTTON,
   caption,
   collectPageErrors,
   comparisonPosition,
   crosshairWidth,
+  gradientOpacity,
   holdRegistration,
   loadSample,
   navigate,
@@ -104,9 +107,9 @@ test('links navigation across the four panels, across the result switch, and res
   collectPageErrors(page, pageErrors)
   const releaseRegistration = await holdRegistration(page)
 
-  await test.step('load the 2D CT pair: no layout picker, every panel axial and in agreement', async () => {
+  await test.step('load the 2D tailbud pair: no layout picker, every panel axial and in agreement', async () => {
     await page.goto('./')
-    await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+    await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
     await expect(page.locator('#slice-type')).toBeHidden()
     for (const role of PANEL_ROLES) {
       expect(await sliceType(page, role), role).toBe(SLICE_TYPE.AXIAL)
@@ -185,7 +188,7 @@ test('the colormap pickers apply to their side of both comparisons and survive t
   const releaseRegistration = await holdRegistration(page)
 
   await page.goto('./')
-  await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+  await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
 
   await test.step('every panel starts on Gray and the pickers say so', async () => {
     expect(await selectValue(page.locator('#fixed-colormap'))).toBe('Gray')
@@ -236,7 +239,7 @@ test('the slice layout picker drives every panel and the 3D camera is linked for
   // Parked for good: the 3D run the load starts would only compete with the panels for the CPU.
   await holdRegistration(page)
 
-  await test.step('load the 3D MNI pair: the picker shows, every panel multiplanar with a crosshair', async () => {
+  await test.step('load the 3D MNI pair: the picker shows, every panel multiplanar with a crosshair and gradient opacity', async () => {
     await page.goto('./')
     await loadSample(page, MNI_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
     await expect(page.locator('#slice-type')).toBeVisible()
@@ -244,6 +247,7 @@ test('the slice layout picker drives every panel and the 3D camera is linked for
     for (const role of PANEL_ROLES) {
       expect(await sliceType(page, role), role).toBe(SLICE_TYPE.MULTIPLANAR)
       expect(await crosshairWidth(page, role), role).toBe(CROSSHAIR_WIDTH)
+      expect(await gradientOpacity(page, role), role).toBe(VOLUME_GRADIENT_OPACITY)
     }
     await expectPanelsToAgree(page)
   })
@@ -311,19 +315,19 @@ test('each comparison puts the fixed image left of a divider that reveals the mo
     return panelAtPoint(page, comparison, x, 0.5)
   }
 
-  await test.step('load the 2D CT pair: the fixed image beside the moving image in both comparisons', async () => {
+  await test.step('load the 2D tailbud pair: the fixed image beside the moving image in both comparisons', async () => {
     await page.goto('./')
-    await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+    await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
     expect(await positions()).toEqual([50, 50])
     for (const comparison of COMPARISON_ROLES) {
-      expect(await volumeName(page, `${comparison}-fixed`)).toContain('CT_2D_head_fixed')
-      expect(await volumeName(page, `${comparison}-moving`)).toContain('CT_2D_head_moving')
+      expect(await volumeName(page, `${comparison}-fixed`)).toContain(TAILBUD_2D_FIXED)
+      expect(await volumeName(page, `${comparison}-moving`)).toContain(TAILBUD_2D_MOVING)
       expect(await caption(page, `${comparison}-fixed`)).toEqual({
-        text: 'Fixed · CT_2D_head_fixed.mha',
+        text: `Fixed · ${TAILBUD_2D_FIXED}`,
         variant: 'neutral',
       })
       expect(await caption(page, `${comparison}-moving`)).toEqual({
-        text: 'Moving · CT_2D_head_moving.mha',
+        text: `Moving · ${TAILBUD_2D_MOVING}`,
         variant: 'brand',
       })
       // A click left of the divider reaches the fixed panel, right of it the moving panel.
@@ -332,8 +336,9 @@ test('each comparison puts the fixed image left of a divider that reveals the mo
     }
     for (const role of PANEL_ROLES) {
       expect(await volumeCount(page, role), role).toBe(1)
-      // The crosshair would only cover a 2D picture.
+      // The crosshair would only cover a 2D picture, which is never ray-marched either.
       expect(await crosshairWidth(page, role), role).toBe(0)
+      expect(await gradientOpacity(page, role), role).toBe(0)
     }
   })
 
@@ -376,9 +381,9 @@ test('each comparison puts the fixed image left of a divider that reveals the mo
     expect(await panelAt('result', 0.25)).toBe('result-fixed')
     expect(await panelAt('result', 0.75)).toBe('result-moving')
     // The inputs comparison still compares the inputs.
-    expect(await volumeName(page, 'inputs-moving')).toContain('CT_2D_head_moving')
-    expect(await caption(page, 'inputs-moving')).toEqual({ text: 'Moving · CT_2D_head_moving.mha', variant: 'brand' })
-    expect(await volumeName(page, 'result-fixed')).toContain('CT_2D_head_fixed')
+    expect(await volumeName(page, 'inputs-moving')).toContain(TAILBUD_2D_MOVING)
+    expect(await caption(page, 'inputs-moving')).toEqual({ text: `Moving · ${TAILBUD_2D_MOVING}`, variant: 'brand' })
+    expect(await volumeName(page, 'result-fixed')).toContain(TAILBUD_2D_FIXED)
     for (const role of PANEL_ROLES) {
       expect(await volumeCount(page, role), role).toBe(1)
       expect(await crosshairWidth(page, role), role).toBe(0)
@@ -387,8 +392,8 @@ test('each comparison puts the fixed image left of a divider that reveals the mo
 
   await test.step('the result switch brings the moving image back on the right', async () => {
     await page.locator('#show-result').click()
-    await expect.poll(() => volumeName(page, 'result-moving')).toContain('CT_2D_head_moving')
-    expect(await caption(page, 'result-moving')).toEqual({ text: 'Moving · CT_2D_head_moving.mha', variant: 'brand' })
+    await expect.poll(() => volumeName(page, 'result-moving')).toContain(TAILBUD_2D_MOVING)
+    expect(await caption(page, 'result-moving')).toEqual({ text: `Moving · ${TAILBUD_2D_MOVING}`, variant: 'brand' })
   })
 
   expect(pageErrors).toEqual([])

@@ -11,7 +11,7 @@ import type WaSplitPanel from '@awesome.me/webawesome/dist/components/split-pane
 import { NARROW_LAYOUT_MAX_WIDTH_PX } from '../src/ui/layout-options'
 import { DARK_THEME_CLASS, THEME_STORAGE_KEY } from '../src/ui/theme-options'
 import { PANEL_ROLES, type ComparisonRole, type DemoPanelRole } from '../src/viewer/comparison-options'
-import { CT_SAMPLE_BUTTON, LOAD_TIMEOUT, collectPageErrors, loadSample } from './helpers'
+import { LOAD_TIMEOUT, TAILBUD_2D_SAMPLE_BUTTON, collectPageErrors, loadSample } from './helpers'
 
 const WIDE = { width: 1280, height: 720 }
 const NARROW = { width: NARROW_LAYOUT_MAX_WIDTH_PX - 100, height: 900 }
@@ -75,7 +75,7 @@ test('stacks the comparisons below 800 px and keeps the canvases drawn at the si
 
   await page.setViewportSize(WIDE)
   await page.goto('./')
-  await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+  await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
   expect(await orientation(page)).toBe('horizontal')
   await expectCanvasesToFit(page)
 
@@ -117,7 +117,7 @@ test.describe('with a dark operating system', () => {
     expect(await storedTheme(page)).toBeNull()
     expect(await metaColorScheme(page)).toBe('light dark')
     // The splash dialog is modal; the header is reachable once a pair is loaded.
-    await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+    await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
     await expect(label).toHaveText('Switch to the light theme')
 
     await test.step('pin the light theme', async () => {
@@ -134,7 +134,7 @@ test.describe('with a dark operating system', () => {
       await page.emulateMedia({ colorScheme: 'light' })
       await page.emulateMedia({ colorScheme: 'dark' })
       expect(await isDark(page)).toBe(false)
-      await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+      await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
     })
 
     await test.step('choosing the system scheme unpins it', async () => {

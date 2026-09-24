@@ -24,20 +24,25 @@ import { PANEL_ROLES, type ComparisonRole, type DemoPanelRole } from '../src/vie
 
 /** The bundled sample images, downloaded by scripts/fetch-samples.mjs before the dev server starts. */
 export const SAMPLES_DIR = fileURLToPath(new URL('../public/samples/', import.meta.url))
-export const CT_FIXED = 'CT_2D_head_fixed.mha'
-export const CT_MOVING = 'CT_2D_head_moving.mha'
+/** One 333 × 333 uint16 plane of the zebrafish tailbud time-lapse, at two time points (OME-Zarr 0.5 stores). */
+export const TAILBUD_2D_FIXED = 'zebrafish-tailbud-z100_t00.ome.zarr'
+export const TAILBUD_2D_MOVING = 'zebrafish-tailbud-z100_t20.ome.zarr'
+/** The same time points as 333 × 333 × 201 uint16 z-stacks. */
+export const TAILBUD_3D_FIXED = 'zebrafish-tailbud_t00.ome.zarr'
+export const TAILBUD_3D_MOVING = 'zebrafish-tailbud_t20.ome.zarr'
 export const MNI_FIXED = 'tpl-MNI152NLin2009aSym_res-1_T2w.nii.gz'
 export const MNI_MOVING = 'tpl-MNI305_T1w.nii.gz'
 
 /** Ids of the splash buttons that load the bundled pairs (see src/samples.ts). */
-export const CT_SAMPLE_BUTTON = 'sample-ct-2d-head'
+export const TAILBUD_2D_SAMPLE_BUTTON = 'sample-zebrafish-tailbud-2d'
 export const MNI_SAMPLE_BUTTON = 'sample-mni-3d'
+export const TAILBUD_3D_SAMPLE_BUTTON = 'sample-zebrafish-tailbud-3d'
 
-/** The 2D CT slices load in well under a second; the ingest wasm compiles on first use. */
+/** The 2D tailbud planes load in well under a second; the ingest wasm compiles on first use. */
 export const LOAD_TIMEOUT = 60_000
-/** The 3D pair is 16 MB of NIfTI to decompress, pyramid, and display. */
+/** A 3D pair is 16 MB of NIfTI or 34 MB of OME-Zarr chunks to decode, pyramid, and display. */
 export const LOAD_TIMEOUT_3D = 120_000
-/** Registering the 2D CT pair takes about a second locally; CI can be far slower. */
+/** Registering the 2D tailbud planes takes about a second locally; CI can be far slower. */
 export const REGISTRATION_TIMEOUT = 150_000
 /**
  * Registering the 3D MNI pair at full resolution takes under ten seconds
@@ -62,6 +67,36 @@ export function collectPageErrors(page: Page, errors: string[]): void {
   })
 }
 
+/** A file for a `setInputFiles` call: its name, type, and bytes. */
+export interface FilePayload {
+  name: string
+  mimeType: string
+  buffer: Buffer
+}
+
+/**
+ * A `width` × `height` uint8 MetaImage (`.mha`) with a bright disk of
+ * radius `radius` centred at (`cx`, `cy`) pixels on a dark ramp, for the
+ * file-picker specs: the bundled 2D samples are OME-Zarr directory stores,
+ * which a file input cannot take.
+ */
+export function syntheticMetaImage(
+  name: string,
+  { width = 96, height = 80, cx = 48, cy = 40, radius = 18 } = {},
+): FilePayload {
+  const header =
+    'ObjectType = Image\nNDims = 2\nBinaryData = True\nBinaryDataByteOrderMSB = False\n' +
+    `DimSize = ${width} ${height}\nElementSpacing = 1 1\nOffset = 0 0\nElementType = MET_UCHAR\nElementDataFile = LOCAL\n`
+  const pixels = Buffer.alloc(width * height)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const inside = (x - cx) ** 2 + (y - cy) ** 2 <= radius ** 2
+      pixels[y * width + x] = inside ? 220 : Math.round((20 * x) / width)
+    }
+  }
+  return { name, mimeType: 'application/octet-stream', buffer: Buffer.concat([Buffer.from(header, 'latin1'), pixels]) }
+}
+
 /** Number of volumes the niivue instance of the `role` panel shows. */
 export function volumeCount(page: Page, role: DemoPanelRole): Promise<number | undefined> {
   return page.evaluate((role) => window.__demo?.panels?.[role]?.volumes.length, role)
@@ -80,6 +115,11 @@ export function volumeColormap(page: Page, role: DemoPanelRole): Promise<string 
 /** Thickness of the crosshair the `role` panel draws, in canvas pixels; 0 when hidden. */
 export function crosshairWidth(page: Page, role: DemoPanelRole): Promise<number | undefined> {
   return page.evaluate((role) => window.__demo?.panels?.[role]?.crosshairWidth, role)
+}
+
+/** The gradient opacity the `role` panel renders its volume with in 3D; 0 when off. */
+export function gradientOpacity(page: Page, role: DemoPanelRole): Promise<number | undefined> {
+  return page.evaluate((role) => window.__demo?.panels?.[role]?.volumeGradientOpacity, role)
 }
 
 /** The text and variant of the caption badge over the `role` panel. */

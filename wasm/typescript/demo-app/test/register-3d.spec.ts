@@ -20,6 +20,7 @@ import {
   REGISTRATION_TIMEOUT_3D,
   collectPageErrors,
   downloadOutput,
+  gradientOpacity,
   imageFacts,
   isRegistering,
   loadSample,
@@ -30,6 +31,7 @@ import {
   volumeName,
 } from './helpers'
 import { expectAffineMatrix, parseOzx } from './ome-zarr'
+import { VOLUME_GRADIENT_OPACITY } from '../src/ui/view-options'
 import { PANEL_ROLES } from '../src/viewer/comparison-options'
 
 /**
@@ -102,6 +104,8 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
     expect(await volumeName(page, 'result-fixed')).toContain('MNI152')
     for (const role of PANEL_ROLES) {
       expect(await volumeCount(page, role)).toBe(1)
+      // The registered volume renders with gradient opacity like the inputs.
+      expect(await gradientOpacity(page, role), role).toBe(VOLUME_GRADIENT_OPACITY)
     }
   })
 

@@ -12,8 +12,10 @@ import {
   DEFAULT_SLICE_TYPE,
   DEFAULT_SLICE_TYPE_ID,
   SLICE_TYPE_OPTIONS,
+  VOLUME_GRADIENT_OPACITY,
   colormapOptions,
   crosshairWidthForDimension,
+  gradientOpacityForDimension,
   isSliceTypeId,
   showsSliceTypePicker,
   sliceTypeForDimension,
@@ -80,6 +82,13 @@ test('a 2D image is drawn without a crosshair, a 3D image with one', () => {
   assert.equal(crosshairWidthForDimension(2), 0)
   assert.equal(crosshairWidthForDimension(3), CROSSHAIR_WIDTH)
   assert.ok(CROSSHAIR_WIDTH > 0)
+})
+
+test('a 3D image is rendered with gradient opacity, a 2D image without', () => {
+  assert.equal(gradientOpacityForDimension(2), 0)
+  assert.equal(gradientOpacityForDimension(3), VOLUME_GRADIENT_OPACITY)
+  // niivue clamps the setting to [0, 1]; 0 would switch it off.
+  assert.ok(VOLUME_GRADIENT_OPACITY > 0 && VOLUME_GRADIENT_OPACITY <= 1)
 })
 
 test('the layout picker shows for a 3D pair only', () => {

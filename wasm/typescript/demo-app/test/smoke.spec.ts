@@ -8,9 +8,11 @@
 import { expect, test } from '@playwright/test'
 
 import {
-  CT_SAMPLE_BUTTON,
   LOAD_TIMEOUT,
   REGISTRATION_TIMEOUT,
+  TAILBUD_2D_FIXED,
+  TAILBUD_2D_MOVING,
+  TAILBUD_2D_SAMPLE_BUTTON,
   clickForDownload,
   collectPageErrors,
   holdRegistration,
@@ -22,7 +24,7 @@ import {
   volumeName,
 } from './helpers'
 
-test('loads the 2D CT head pair, registers it on its own, and downloads the result and transform', async ({ page }) => {
+test('loads the 2D zebrafish tailbud pair, registers it on its own, and downloads the result and transform', async ({ page }) => {
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
 
@@ -33,7 +35,7 @@ test('loads the 2D CT head pair, registers it on its own, and downloads the resu
 
   await test.step('load the sample pair from the splash dialog: the registration starts right away', async () => {
     await page.goto('./')
-    await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
+    await loadSample(page, TAILBUD_2D_SAMPLE_BUTTON, LOAD_TIMEOUT)
     expect(await isRegistering(page)).toBe(true)
     expect(await isDisabled(page.locator('#register'))).toBe(true)
     expect(await isDisabled(page.locator('#cancel-registration'))).toBe(false)
@@ -41,8 +43,8 @@ test('loads the 2D CT head pair, registers it on its own, and downloads the resu
 
     fixedName = await volumeName(page, 'inputs-fixed')
     movingName = await volumeName(page, 'inputs-moving')
-    expect(fixedName).toContain('CT_2D_head_fixed')
-    expect(movingName).toContain('CT_2D_head_moving')
+    expect(fixedName).toContain(TAILBUD_2D_FIXED)
+    expect(movingName).toContain(TAILBUD_2D_MOVING)
     // Until the run finishes, the result comparison repeats the inputs.
     expect(await volumeName(page, 'result-fixed')).toBe(fixedName)
     expect(await volumeName(page, 'result-moving')).toBe(movingName)
