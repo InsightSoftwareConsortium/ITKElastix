@@ -20,7 +20,8 @@ It does four things, each in its own set of modules, and this document walks
 through them in the order a session meets them: **ingest** turns any input
 into a scalar 2D or 3D ITK-Wasm image under a pixel budget, **registration**
 runs elastix on the pair in a web worker, **rendering** shows the images in
-two linked [niivue](https://github.com/niivue/niivue) panels, and **export**
+two before/after comparisons drawn by four linked
+[niivue](https://github.com/niivue/niivue) panels, and **export**
 writes the registered image and the fixed-to-moving transform in the format
 the user picks. The OME-Zarr transform conventions that the export section
 depends on have their own note, [[ome-zarr-transform-output]].
@@ -50,7 +51,7 @@ flowchart LR
 | State         | `src/state.ts`                                                                                                                                  |
 | Ingest        | `src/io/load-image.ts`, `source-kind.ts`, `scale-select.ts`, `normalize.ts`, `ozx-store.ts`, `tiff-store.ts`                                    |
 | Registration  | `src/registration/register.ts`, `types.ts`, `abortable.ts`; `src/ui/register-flow.ts`, `reload-flow.ts`, `registration-panel.ts`               |
-| Rendering     | `src/viewer/panel.ts`, `overlay.ts`, `promote-to-3d.ts`, `webgl.ts`; `src/ui/view-controls.ts`, `image-info.ts`; `src/io/iwi-cbor.ts`          |
+| Rendering     | `src/viewer/panel.ts`, `comparison-options.ts`, `promote-to-3d.ts`, `webgl.ts`; `src/ui/view-controls.ts`, `image-info.ts`; `src/io/iwi-cbor.ts` |
 | Export        | `src/io/formats.ts`, `export-plan.ts`, `export-image.ts`, `export-transform.ts`, `export.ts`, `rfc5-transform.ts`, `transform-list.ts`, `download.ts`; `src/ui/download-flow.ts` |
 | Shell and UX  | `src/ui/shell.ts`, `splash.ts`, `notify.ts`, `theme.ts`, `layout.ts`, and the `*-options.ts` module beside each                                 |
 
@@ -70,10 +71,10 @@ Two conventions run through the whole tree:
   the result, the options, the busy flags, the display toggles, and the
   chosen formats, and exposes named patches (`inputsLoaded`, `resultReady`,
   `formatChosen`, …) and selectors (`canRegister`, `movingPanelContent`,
-  `overlayContent`, …). The shell, the panels, the controls, and the details
-  subscribe and re-render on every update, so swapping the moving panel to
-  the result or disabling a button during a run is a state change, not a
-  call into a component. A listener that throws is reported through the
+  `resultPanelContent`, …). The shell, the panels, the controls, and the
+  details subscribe and re-render on every update, so swapping the result
+  comparison to the result or disabling a button during a run is a state
+  change, not a call into a component. A listener that throws is reported through the
   notifier and the others still run.
 
 ## Ingest pipeline
@@ -130,6 +131,8 @@ summary of what each slot holds, and runs `assertCompatiblePair` before
 "Start" is enabled: both scalar, both the same dimension. The budget picker
 in the registration panel goes through `reload-flow.ts`, which loads both
 sources again at the new budget and commits the pair and the budget together.
+Either way `src/main.ts` starts a registration once the new pair is on
+screen; the splash closes without waiting for it.
 `?budget=<MiB>` on the page URL sets the initial budget for tests.
 
 ## Registration flow
@@ -157,10 +160,10 @@ whole of the elastix integration:
    interrupted any other way. A bare number rejected by the wasm module (an
    uncaught C++ exception) is turned into a readable `Error`.
 
-`src/ui/register-flow.ts` wraps that for the Register and Cancel buttons:
-it marks the store as registering, ticks the status row every 100 ms with
+`src/ui/register-flow.ts` wraps that for a newly loaded pair, the Register
+button, and the Cancel button: it marks the store as registering, ticks the status row every 100 ms with
 the stage label and the elapsed time, and on success commits `resultReady`,
-which stores the result and switches the moving panel to it. A result that
+which stores the result and switches the result comparison to it. A result that
 arrives after the inputs changed, or after a cancel, is discarded. The
 registration panel (`registration-panel.ts`, decisions in
 `registration-options.ts` and `registration-summary.ts`) renders the options
@@ -187,24 +190,32 @@ details of that path:
   inverse squeeze in `normalize.ts` handles the opposite direction on
   ingest.
 
-A `ViewerPanel` owns one canvas and one `NiiVue` instance, keeps the view
-choices made for it (the slice layout for 3D content, the colormap) and
-re-applies them whenever its volume is replaced, and runs every volume change
-on its own queue so the shell, the overlay, and the controls need not order
-their calls. The two panels are linked with niivue's broadcast API: on every
-redraw the source copies its crosshair (through world millimetres, so
-different grids agree), 2D pan and zoom, 3D camera, and clip planes onto its
-peer. What each panel shows is a selector over the state: the fixed panel
-always the fixed input; the moving panel the registered result while the
-result switch is on, otherwise the moving input. Overlay mode
-(`src/viewer/overlay.ts`) adds the moving panel's content as a second
-volume on the fixed panel, in red at the slider's opacity, resliced by niivue
-onto the fixed grid through world coordinates. The view controls
-(`src/ui/view-controls.ts`) offer the slice layouts for a 3D pair, a reset,
-and a colormap per panel; each panel watches its container and resizes its
-drawing buffer when the split panel flips or is dragged. `webgl.ts` probes for
-a WebGL2 context at start-up and the app stops with a persistent message
-when there is none.
+The viewers are two WebAwesome `wa-comparison`s side by side, each a
+draggable divider between two images that share one frame (the shell keeps
+the two dividers at the same position): the inputs comparison on the left
+holds the fixed image against the moving image, the result comparison on
+the right the fixed image against the registered result once a run has
+finished and the result switch is on, the moving image otherwise. Each side of each comparison is a `ViewerPanel`
+(`src/viewer/panel.ts`), so there are four, named `<comparison>-<side>` in
+`src/viewer/comparison-options.ts`, which also decides what each shows
+(`panelContent`, a selector over the state), its caption, and which
+`wa-comparison` slot a side takes: the component draws its `after` slot on
+the left of the divider, so the fixed side takes that slot. A panel owns one
+canvas and one `NiiVue` instance, keeps the view choices made for it (the
+slice layout for 3D content, the colormap) and re-applies them whenever its
+volume is replaced, and runs every volume change on its own queue so the
+shell and the controls need not order their calls. All four are linked with
+niivue's broadcast API: on every redraw the source copies its crosshair
+(through world millimetres, so different grids agree), 2D pan and zoom, 3D
+camera, and clip planes onto the others, which redraw without broadcasting
+back. A panel draws no crosshair over a 2D image
+(`crosshairWidthForDimension` in `src/ui/view-options.ts`), where the lines
+would only cover the picture. The view controls (`src/ui/view-controls.ts`) offer the slice layouts
+for a 3D pair, a reset that also centres both dividers, and a colormap per
+side (applied to that side of both comparisons); each panel watches its
+container and resizes its drawing buffer when the split panel flips or is
+dragged. `webgl.ts` probes for a WebGL2 context at start-up and the app
+stops with a persistent message when there is none.
 
 ## Export paths
 
@@ -288,5 +299,7 @@ direction of the transform, the choice of `affine` over simpler forms, the
 - **Tests.** The DOM-free modules are covered by `node:test`; the app as a
   whole by Playwright specs that read the store, the niivue instances, the
   splash, and the notifier from `window.__demo` and find controls by their
-  stable ids. The README describes how to run both and how the GitHub
+  stable ids. Since a loaded pair registers on its own, a spec that looks at
+  the app before the result holds the run by routing its pipeline fetch
+  (`holdRegistration` in `test/helpers.ts`). The README describes how to run both and how the GitHub
   Actions workflows build, test, and deploy the app.

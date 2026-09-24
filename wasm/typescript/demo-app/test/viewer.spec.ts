@@ -1,39 +1,44 @@
-// Viewer behaviour: the two panels navigate together in both directions
-// (the crosshair through world millimetres, the 2D pan and zoom, the 3D
-// camera), the link survives the result toggle swapping the moving panel's
-// volume, "Reset view" restores the defaults on both, the slice layout
-// picker is hidden for a 2D pair and drives both panels for a 3D pair,
-// each panel's colormap picker applies to that panel only and outlives a
-// swap, and overlay mode blends the moving image (or the result) over the
-// fixed image at the slider's opacity. The responsive split (a 700 px
-// viewport stacks the panels) and the theme toggle persisting across a
-// reload are in test/layout.spec.ts, and the 3D run from sample to
-// downloads is in test/register-3d.spec.ts. Elements are found by their
-// stable ids; niivue state is read through `window.__demo` with the
-// helpers in test/helpers.ts.
+// Viewer behaviour: the four panels (two per comparison) navigate together
+// in every direction (the crosshair through world millimetres, the 2D pan
+// and zoom, the 3D camera), the link survives the result switch swapping
+// the result comparison's moving side, "Reset view" restores the defaults
+// on all of them and centres the comparison dividers, the slice layout
+// picker is hidden for a 2D pair and drives every panel for a 3D pair,
+// each colormap picker applies to its side of both comparisons and
+// outlives a swap, and each comparison puts the fixed image on the left of
+// a divider that reveals the moving image, or the registered result, on
+// the right, the two dividers moving together and a 2D pair drawn without
+// a crosshair. The responsive split (a 700 px viewport stacks the
+// comparisons) and the theme toggle persisting across a reload are in
+// test/layout.spec.ts, and the 3D run from sample to downloads is in
+// test/register-3d.spec.ts. Elements are found by their stable ids; niivue
+// state is read through `window.__demo` with the helpers in
+// test/helpers.ts.
 import { expect, test, type Page } from '@playwright/test'
 import { SLICE_TYPE } from '@niivue/niivue'
 
+import { CROSSHAIR_WIDTH } from '../src/ui/view-options'
+import { COMPARISON_ROLES, PANEL_ROLES, type ComparisonRole } from '../src/viewer/comparison-options'
 import {
   CT_SAMPLE_BUTTON,
   LOAD_TIMEOUT,
   LOAD_TIMEOUT_3D,
   MNI_SAMPLE_BUTTON,
-  REGISTRATION_TIMEOUT,
+  caption,
   collectPageErrors,
-  focusSlider,
-  isDisabled,
+  comparisonPosition,
+  crosshairWidth,
+  holdRegistration,
   loadSample,
   navigate,
+  panelAtPoint,
   selectValue,
   sliceType,
-  sliderValue,
-  switchState,
   viewFacts,
   volumeColormap,
   volumeCount,
-  volumeFacts,
   volumeName,
+  waitForResult,
 } from './helpers'
 
 /** niivue's scene defaults, which "Reset view" restores (see src/viewer/panel.ts). */
@@ -46,27 +51,33 @@ const DEFAULT_ELEVATION = 10
 const TOLERANCE = 1e-3
 
 /**
- * Largest difference between the two panels' crosshair (in mm), pan, zoom,
- * and camera; infinite while either panel is empty. Polled until the
- * broadcast has landed, which happens on the source panel's next frame.
+ * Largest difference between any panel and the first one's crosshair (in
+ * mm), pan, zoom, and camera; infinite while any panel is empty. Polled
+ * until the broadcast has landed, which happens on the source panel's next
+ * frame.
  */
 async function viewMismatch(page: Page): Promise<number> {
-  const [fixed, moving] = await Promise.all([viewFacts(page, 'fixed'), viewFacts(page, 'moving')])
-  if (!fixed || !moving) {
+  const facts = await Promise.all(PANEL_ROLES.map((role) => viewFacts(page, role)))
+  const [leader, ...others] = facts
+  if (facts.some((fact) => fact === undefined)) {
     return Number.POSITIVE_INFINITY
   }
-  const pairs: [number, number][] = [
-    ...fixed.crosshairMm.map((value, i): [number, number] => [value, moving.crosshairMm[i]!]),
-    ...fixed.pan.map((value, i): [number, number] => [value, moving.pan[i]!]),
-    [fixed.zoom, moving.zoom],
-    [fixed.azimuth, moving.azimuth],
-    [fixed.elevation, moving.elevation],
-  ]
-  return Math.max(...pairs.map(([a, b]) => Math.abs(a - b)))
+  let worst = 0
+  for (const other of others) {
+    const pairs: [number, number][] = [
+      ...leader!.crosshairMm.map((value, i): [number, number] => [value, other!.crosshairMm[i]!]),
+      ...leader!.pan.map((value, i): [number, number] => [value, other!.pan[i]!]),
+      [leader!.zoom, other!.zoom],
+      [leader!.azimuth, other!.azimuth],
+      [leader!.elevation, other!.elevation],
+    ]
+    worst = Math.max(worst, ...pairs.map(([a, b]) => Math.abs(a - b)))
+  }
+  return worst
 }
 
 async function expectPanelsToAgree(page: Page): Promise<void> {
-  await expect.poll(() => viewMismatch(page), { message: 'the two panels should show the same view' }).toBeLessThan(TOLERANCE)
+  await expect.poll(() => viewMismatch(page), { message: 'every panel should show the same view' }).toBeLessThan(TOLERANCE)
 }
 
 function closeTo(actual: readonly number[], expected: readonly number[]): boolean {
@@ -80,123 +91,137 @@ async function pick(page: Page, id: string, value: string): Promise<void> {
   await expect.poll(() => selectValue(page.locator(`#${id}`))).toBe(value)
 }
 
-test('links navigation both ways, across the result toggle, and resets it for a 2D pair', async ({ page }) => {
+/** Let the run the load started, parked by `release`'s hold, finish with its result. */
+async function finishRegistration(page: Page, release: () => Promise<void>): Promise<void> {
+  await release()
+  await waitForResult(page)
+}
+
+test('links navigation across the four panels, across the result switch, and resets it for a 2D pair', async ({
+  page,
+}) => {
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
+  const releaseRegistration = await holdRegistration(page)
 
-  await test.step('load the 2D CT pair: no layout picker, both panels axial and in agreement', async () => {
+  await test.step('load the 2D CT pair: no layout picker, every panel axial and in agreement', async () => {
     await page.goto('./')
     await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
     await expect(page.locator('#slice-type')).toBeHidden()
-    expect(await sliceType(page, 'fixed')).toBe(SLICE_TYPE.AXIAL)
-    expect(await sliceType(page, 'moving')).toBe(SLICE_TYPE.AXIAL)
+    for (const role of PANEL_ROLES) {
+      expect(await sliceType(page, role), role).toBe(SLICE_TYPE.AXIAL)
+    }
     await expectPanelsToAgree(page)
   })
 
-  await test.step('moving the fixed panel moves the moving panel', async () => {
-    await navigate(page, 'fixed', { crosshair: [0.4, 0.6, 0.5], pan: [12, -8, 0, 2] })
+  await test.step('moving a fixed panel moves the others', async () => {
+    await navigate(page, 'inputs-fixed', { crosshair: [0.4, 0.6, 0.5], pan: [12, -8, 0, 2] })
     await expectPanelsToAgree(page)
-    const moving = (await viewFacts(page, 'moving'))!
-    expect(closeTo(moving.pan, [12, -8, 0, 2])).toBe(true)
+    const other = (await viewFacts(page, 'result-moving'))!
+    expect(closeTo(other.pan, [12, -8, 0, 2])).toBe(true)
   })
 
-  await test.step('moving the moving panel moves the fixed panel', async () => {
-    await navigate(page, 'moving', { crosshair: [0.55, 0.45, 0.5], pan: [-3, 5, 0, 1.5] })
+  await test.step('moving a moving panel moves the others', async () => {
+    await navigate(page, 'result-moving', { crosshair: [0.55, 0.45, 0.5], pan: [-3, 5, 0, 1.5] })
     await expectPanelsToAgree(page)
-    const fixed = (await viewFacts(page, 'fixed'))!
+    const fixed = (await viewFacts(page, 'inputs-fixed'))!
     expect(closeTo(fixed.pan, [-3, 5, 0, 1.5])).toBe(true)
   })
 
   await test.step('the registered result adopts the view and stays linked', async () => {
-    const before = (await viewFacts(page, 'fixed'))!
-    await page.locator('#register').click()
+    const before = (await viewFacts(page, 'inputs-fixed'))!
+    await finishRegistration(page, releaseRegistration)
     const showResult = page.locator('#show-result')
-    await expect
-      .poll(async () => (await switchState(showResult)).disabled, { timeout: REGISTRATION_TIMEOUT })
-      .toBe(false)
-    await expect.poll(() => volumeName(page, 'moving')).toContain('registered')
+    await expect.poll(() => volumeName(page, 'result-moving')).toContain('registered')
 
     // The swap keeps the view: the result lands where the moving image was.
     await expectPanelsToAgree(page)
-    const fixed = (await viewFacts(page, 'fixed'))!
+    const fixed = (await viewFacts(page, 'inputs-fixed'))!
     expect(closeTo(fixed.pan, before.pan)).toBe(true)
     expect(closeTo(fixed.crosshairMm, before.crosshairMm)).toBe(true)
 
-    await navigate(page, 'fixed', { crosshair: [0.45, 0.5, 0.5], pan: [6, 4, 0, 1.25] })
+    await navigate(page, 'inputs-fixed', { crosshair: [0.45, 0.5, 0.5], pan: [6, 4, 0, 1.25] })
     await expectPanelsToAgree(page)
-    expect(closeTo((await viewFacts(page, 'moving'))!.pan, [6, 4, 0, 1.25])).toBe(true)
+    expect(closeTo((await viewFacts(page, 'result-moving'))!.pan, [6, 4, 0, 1.25])).toBe(true)
 
-    // Back to the moving image, and the link still runs the other way too.
+    // Back to the moving image, and the link still runs from that panel too.
     await showResult.click()
-    await expect.poll(() => volumeName(page, 'moving')).not.toContain('registered')
+    await expect.poll(() => volumeName(page, 'result-moving')).not.toContain('registered')
     await expectPanelsToAgree(page)
-    await navigate(page, 'moving', { crosshair: [0.5, 0.55, 0.5], pan: [-2, -2, 0, 1.75] })
+    await navigate(page, 'result-moving', { crosshair: [0.5, 0.55, 0.5], pan: [-2, -2, 0, 1.75] })
     await expectPanelsToAgree(page)
-    expect(closeTo((await viewFacts(page, 'fixed'))!.pan, [-2, -2, 0, 1.75])).toBe(true)
+    expect(closeTo((await viewFacts(page, 'inputs-moving'))!.pan, [-2, -2, 0, 1.75])).toBe(true)
   })
 
-  await test.step('"Reset view" returns both panels to the defaults, centred on the fixed image', async () => {
+  await test.step('"Reset view" returns every panel to the defaults, centred on the fixed image', async () => {
     await page.locator('#reset-view').click()
-    // The fixed panel's crosshair returns to its own centre; the moving
-    // panel's follows it in mm, which is its centre only if the grids match.
-    await expect
-      .poll(async () => {
-        const facts = (await viewFacts(page, 'fixed'))!
-        return closeTo(facts.pan, DEFAULT_PAN) && closeTo(facts.crosshair, DEFAULT_CROSSHAIR) && facts.zoom === 1
-      })
-      .toBe(true)
-    await expect
-      .poll(async () => {
-        const facts = (await viewFacts(page, 'moving'))!
-        return closeTo(facts.pan, DEFAULT_PAN) && facts.zoom === 1
-      })
-      .toBe(true)
+    // The fixed panels' crosshair returns to their own centre; the moving
+    // ones' follows it in mm, which is their centre only if the grids match.
+    for (const role of ['inputs-fixed', 'result-fixed'] as const) {
+      await expect
+        .poll(async () => {
+          const facts = (await viewFacts(page, role))!
+          return closeTo(facts.pan, DEFAULT_PAN) && closeTo(facts.crosshair, DEFAULT_CROSSHAIR) && facts.zoom === 1
+        })
+        .toBe(true)
+    }
+    for (const role of ['inputs-moving', 'result-moving'] as const) {
+      await expect
+        .poll(async () => {
+          const facts = (await viewFacts(page, role))!
+          return closeTo(facts.pan, DEFAULT_PAN) && facts.zoom === 1
+        })
+        .toBe(true)
+    }
     await expectPanelsToAgree(page)
   })
 
   expect(pageErrors).toEqual([])
 })
 
-test('the colormap pickers apply per panel and survive the result toggle', async ({ page }) => {
+test('the colormap pickers apply to their side of both comparisons and survive the result switch', async ({ page }) => {
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
+  const releaseRegistration = await holdRegistration(page)
 
   await page.goto('./')
   await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
 
-  await test.step('both panels start on Gray and the pickers say so', async () => {
+  await test.step('every panel starts on Gray and the pickers say so', async () => {
     expect(await selectValue(page.locator('#fixed-colormap'))).toBe('Gray')
     expect(await selectValue(page.locator('#moving-colormap'))).toBe('Gray')
-    expect(await volumeColormap(page, 'fixed')).toBe('Gray')
-    expect(await volumeColormap(page, 'moving')).toBe('Gray')
+    for (const role of PANEL_ROLES) {
+      expect(await volumeColormap(page, role), role).toBe('Gray')
+    }
     // The pickers list niivue's built-in names.
     const options = await page.locator('#moving-colormap wa-option').evaluateAll((nodes) => nodes.length)
     expect(options).toBeGreaterThan(20)
   })
 
-  await test.step('a picker changes its own panel only', async () => {
+  await test.step('a picker changes its side of both comparisons only', async () => {
     await pick(page, 'moving-colormap', 'Hot')
-    await expect.poll(() => volumeColormap(page, 'moving')).toBe('Hot')
-    expect(await volumeColormap(page, 'fixed')).toBe('Gray')
+    await expect.poll(() => volumeColormap(page, 'inputs-moving')).toBe('Hot')
+    await expect.poll(() => volumeColormap(page, 'result-moving')).toBe('Hot')
+    expect(await volumeColormap(page, 'inputs-fixed')).toBe('Gray')
+    expect(await volumeColormap(page, 'result-fixed')).toBe('Gray')
 
     await pick(page, 'fixed-colormap', 'Cividis')
-    await expect.poll(() => volumeColormap(page, 'fixed')).toBe('Cividis')
-    expect(await volumeColormap(page, 'moving')).toBe('Hot')
+    await expect.poll(() => volumeColormap(page, 'inputs-fixed')).toBe('Cividis')
+    await expect.poll(() => volumeColormap(page, 'result-fixed')).toBe('Cividis')
+    expect(await volumeColormap(page, 'inputs-moving')).toBe('Hot')
+    expect(await volumeColormap(page, 'result-moving')).toBe('Hot')
   })
 
-  await test.step('the registered result and the moving image both keep the panel colormap', async () => {
-    await page.locator('#register').click()
+  await test.step('the registered result and the moving image both keep the side colormap', async () => {
+    await finishRegistration(page, releaseRegistration)
     const showResult = page.locator('#show-result')
-    await expect
-      .poll(async () => (await switchState(showResult)).disabled, { timeout: REGISTRATION_TIMEOUT })
-      .toBe(false)
-    await expect.poll(() => volumeName(page, 'moving')).toContain('registered')
-    await expect.poll(() => volumeColormap(page, 'moving')).toBe('Hot')
+    await expect.poll(() => volumeName(page, 'result-moving')).toContain('registered')
+    await expect.poll(() => volumeColormap(page, 'result-moving')).toBe('Hot')
 
     await showResult.click()
-    await expect.poll(() => volumeName(page, 'moving')).not.toContain('registered')
-    await expect.poll(() => volumeColormap(page, 'moving')).toBe('Hot')
-    expect(await volumeColormap(page, 'fixed')).toBe('Cividis')
+    await expect.poll(() => volumeName(page, 'result-moving')).not.toContain('registered')
+    await expect.poll(() => volumeColormap(page, 'result-moving')).toBe('Hot')
+    expect(await volumeColormap(page, 'result-fixed')).toBe('Cividis')
     expect(await selectValue(page.locator('#moving-colormap'))).toBe('Hot')
     expect(await selectValue(page.locator('#fixed-colormap'))).toBe('Cividis')
   })
@@ -204,22 +229,26 @@ test('the colormap pickers apply per panel and survive the result toggle', async
   expect(pageErrors).toEqual([])
 })
 
-test('the slice layout picker drives both panels and the 3D camera is linked for a 3D pair', async ({ page }) => {
+test('the slice layout picker drives every panel and the 3D camera is linked for a 3D pair', async ({ page }) => {
   test.slow()
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
+  // Parked for good: the 3D run the load starts would only compete with the panels for the CPU.
+  await holdRegistration(page)
 
-  await test.step('load the 3D MNI pair: the picker shows, both panels multiplanar', async () => {
+  await test.step('load the 3D MNI pair: the picker shows, every panel multiplanar with a crosshair', async () => {
     await page.goto('./')
     await loadSample(page, MNI_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
     await expect(page.locator('#slice-type')).toBeVisible()
     expect(await selectValue(page.locator('#slice-type'))).toBe('multiplanar')
-    expect(await sliceType(page, 'fixed')).toBe(SLICE_TYPE.MULTIPLANAR)
-    expect(await sliceType(page, 'moving')).toBe(SLICE_TYPE.MULTIPLANAR)
+    for (const role of PANEL_ROLES) {
+      expect(await sliceType(page, role), role).toBe(SLICE_TYPE.MULTIPLANAR)
+      expect(await crosshairWidth(page, role), role).toBe(CROSSHAIR_WIDTH)
+    }
     await expectPanelsToAgree(page)
   })
 
-  await test.step('each layout applies to both panels', async () => {
+  await test.step('each layout applies to every panel', async () => {
     for (const [id, expected] of [
       ['sagittal', SLICE_TYPE.SAGITTAL],
       ['coronal', SLICE_TYPE.CORONAL],
@@ -227,24 +256,25 @@ test('the slice layout picker drives both panels and the 3D camera is linked for
       ['render', SLICE_TYPE.RENDER],
     ] as const) {
       await pick(page, 'slice-type', id)
-      await expect.poll(() => sliceType(page, 'fixed')).toBe(expected)
-      await expect.poll(() => sliceType(page, 'moving')).toBe(expected)
+      for (const role of PANEL_ROLES) {
+        await expect.poll(() => sliceType(page, role), `${role} should be ${id}`).toBe(expected)
+      }
     }
   })
 
   await test.step('the 3D camera is linked both ways and reset restores it', async () => {
-    await navigate(page, 'fixed', { azimuth: 45, elevation: -20, zoom: 1.5 })
+    await navigate(page, 'inputs-fixed', { azimuth: 45, elevation: -20, zoom: 1.5 })
     await expectPanelsToAgree(page)
-    const moving = (await viewFacts(page, 'moving'))!
+    const moving = (await viewFacts(page, 'result-moving'))!
     expect([moving.azimuth, moving.elevation, moving.zoom]).toEqual([45, -20, 1.5])
 
-    await navigate(page, 'moving', { azimuth: 200, elevation: 30 })
+    await navigate(page, 'inputs-moving', { azimuth: 200, elevation: 30 })
     await expectPanelsToAgree(page)
-    const fixed = (await viewFacts(page, 'fixed'))!
+    const fixed = (await viewFacts(page, 'result-fixed'))!
     expect([fixed.azimuth, fixed.elevation]).toEqual([200, 30])
 
     await page.locator('#reset-view').click()
-    for (const role of ['fixed', 'moving'] as const) {
+    for (const role of PANEL_ROLES) {
       await expect
         .poll(async () => {
           const facts = (await viewFacts(page, role))!
@@ -254,101 +284,111 @@ test('the slice layout picker drives both panels and the 3D camera is linked for
     }
   })
 
-  await test.step('back to multiplanar on both panels', async () => {
+  await test.step('back to multiplanar on every panel', async () => {
     await pick(page, 'slice-type', 'multiplanar')
-    await expect.poll(() => sliceType(page, 'fixed')).toBe(SLICE_TYPE.MULTIPLANAR)
-    await expect.poll(() => sliceType(page, 'moving')).toBe(SLICE_TYPE.MULTIPLANAR)
+    for (const role of PANEL_ROLES) {
+      await expect.poll(() => sliceType(page, role)).toBe(SLICE_TYPE.MULTIPLANAR)
+    }
   })
 
   expect(pageErrors).toEqual([])
 })
 
-test('overlay mode blends the moving image, then the registered result, over the fixed image', async ({ page }) => {
+test('each comparison puts the fixed image left of a divider that reveals the moving image, then the result', async ({
+  page,
+}) => {
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
-  const toggle = page.locator('#overlay-toggle')
-  const slider = page.locator('#overlay-opacity')
-  const showResult = page.locator('#show-result')
+  const releaseRegistration = await holdRegistration(page)
 
-  /** The overlay volume of the fixed panel, or undefined while there is none. */
-  async function overlayFacts() {
-    return (await volumeFacts(page, 'fixed'))?.[1]
+  /** Both dividers, in comparison order. */
+  async function positions(): Promise<number[]> {
+    return Promise.all(COMPARISON_ROLES.map((comparison) => comparisonPosition(page, comparison)))
   }
 
-  await test.step('the switch waits for a pair; the slider waits for the switch', async () => {
+  /** The panel under the vertical middle of `comparison`, at `x` of its width. */
+  function panelAt(comparison: ComparisonRole, x: number): Promise<string | undefined> {
+    return panelAtPoint(page, comparison, x, 0.5)
+  }
+
+  await test.step('load the 2D CT pair: the fixed image beside the moving image in both comparisons', async () => {
     await page.goto('./')
-    expect(await switchState(toggle)).toEqual({ disabled: true, checked: false })
     await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
-    await expect.poll(() => switchState(toggle)).toEqual({ disabled: false, checked: false })
-    expect(await isDisabled(slider)).toBe(true)
-    expect(await sliderValue(slider)).toBe(0.5)
-    expect(await volumeCount(page, 'fixed')).toBe(1)
+    expect(await positions()).toEqual([50, 50])
+    for (const comparison of COMPARISON_ROLES) {
+      expect(await volumeName(page, `${comparison}-fixed`)).toContain('CT_2D_head_fixed')
+      expect(await volumeName(page, `${comparison}-moving`)).toContain('CT_2D_head_moving')
+      expect(await caption(page, `${comparison}-fixed`)).toEqual({
+        text: 'Fixed · CT_2D_head_fixed.mha',
+        variant: 'neutral',
+      })
+      expect(await caption(page, `${comparison}-moving`)).toEqual({
+        text: 'Moving · CT_2D_head_moving.mha',
+        variant: 'brand',
+      })
+      // A click left of the divider reaches the fixed panel, right of it the moving panel.
+      expect(await panelAt(comparison, 0.25)).toBe(`${comparison}-fixed`)
+      expect(await panelAt(comparison, 0.75)).toBe(`${comparison}-moving`)
+    }
+    for (const role of PANEL_ROLES) {
+      expect(await volumeCount(page, role), role).toBe(1)
+      // The crosshair would only cover a 2D picture.
+      expect(await crosshairWidth(page, role), role).toBe(0)
+    }
   })
 
-  await test.step('switching it on adds the moving image to the fixed panel in red, half transparent', async () => {
-    const before = (await viewFacts(page, 'fixed'))!
-    await toggle.click()
-    await expect.poll(() => volumeCount(page, 'fixed')).toBe(2)
-    const [base, overlay] = (await volumeFacts(page, 'fixed'))!
-    expect(base!.name).toContain('CT_2D_head_fixed')
-    expect(base!.colormap).toBe('Gray')
-    expect(overlay!.name).toContain('CT_2D_head_moving')
-    expect(overlay!.colormap).toBe('Red')
-    expect(overlay!.opacity).toBeCloseTo(0.5)
-    // The moving panel is untouched, the link holds, and the crosshair
-    // stays put in world mm although the scene now spans both grids.
-    expect(await volumeCount(page, 'moving')).toBe(1)
-    await expectPanelsToAgree(page)
-    expect(closeTo((await viewFacts(page, 'fixed'))!.crosshairMm, before.crosshairMm)).toBe(true)
-    await expect.poll(() => isDisabled(slider)).toBe(false)
+  await test.step('the arrow keys on one handle move both dividers', async () => {
+    const handle = page.locator('#inputs-comparison [part~="handle"]')
+    await handle.focus()
+    await page.keyboard.press('Shift+ArrowRight')
+    await expect.poll(positions).toEqual([60, 60])
+    // The fixed image now reaches past the middle of both comparisons.
+    for (const comparison of COMPARISON_ROLES) {
+      expect(await panelAt(comparison, 0.55)).toBe(`${comparison}-fixed`)
+    }
   })
 
-  await test.step('the opacity slider drives the overlay volume', async () => {
-    // Two steps down from the default (see OVERLAY_OPACITY_STEP).
-    await focusSlider(slider)
-    await page.keyboard.press('ArrowLeft')
-    await page.keyboard.press('ArrowLeft')
-    await expect.poll(() => sliderValue(slider)).toBeCloseTo(0.4)
-    await expect.poll(async () => (await overlayFacts())?.opacity).toBeCloseTo(0.4)
-    expect((await volumeFacts(page, 'fixed'))![0]!.opacity).toBe(1)
+  await test.step('dragging one divider moves both', async () => {
+    const divider = page.locator('#result-comparison [part~="divider"]')
+    const dividerBox = (await divider.boundingBox())!
+    const box = (await page.locator('[data-comparison="result"]').boundingBox())!
+    await page.mouse.move(dividerBox.x + dividerBox.width / 2, dividerBox.y + dividerBox.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height / 2, { steps: 5 })
+    await page.mouse.up()
+    await expect.poll(() => comparisonPosition(page, 'result')).toBeCloseTo(30, 0)
+    const dragged = await comparisonPosition(page, 'result')
+    await expect.poll(positions).toEqual([dragged, dragged])
+    for (const comparison of COMPARISON_ROLES) {
+      expect(await panelAt(comparison, 0.45)).toBe(`${comparison}-moving`)
+    }
   })
 
-  await test.step('the result toggle swaps the overlay for the registered result, and back', async () => {
-    await page.locator('#register').click()
-    await expect
-      .poll(async () => (await switchState(showResult)).disabled, { timeout: REGISTRATION_TIMEOUT })
-      .toBe(false)
-    await expect.poll(() => volumeName(page, 'moving')).toContain('registered')
-    await expect.poll(async () => (await overlayFacts())?.name).toContain('registered')
-    const overlay = (await overlayFacts())!
-    expect(overlay.colormap).toBe('Red')
-    expect(overlay.opacity).toBeCloseTo(0.4)
-    expect(await volumeCount(page, 'fixed')).toBe(2)
-    await expectPanelsToAgree(page)
-
-    await showResult.click()
-    await expect.poll(() => volumeName(page, 'moving')).not.toContain('registered')
-    await expect.poll(async () => (await overlayFacts())?.name).toContain('CT_2D_head_moving')
-    expect(await volumeCount(page, 'fixed')).toBe(2)
+  await test.step('"Reset view" centres both dividers', async () => {
+    await page.locator('#reset-view').click()
+    await expect.poll(positions).toEqual([50, 50])
   })
 
-  await test.step('switching it off removes the overlay and disables the slider', async () => {
-    await toggle.click()
-    await expect.poll(() => volumeCount(page, 'fixed')).toBe(1)
-    expect(await volumeColormap(page, 'fixed')).toBe('Gray')
-    await expect.poll(() => isDisabled(slider)).toBe(true)
-    await expectPanelsToAgree(page)
+  await test.step('a finished registration puts the result on the right of the result comparison only', async () => {
+    await finishRegistration(page, releaseRegistration)
+    await expect.poll(() => volumeName(page, 'result-moving')).toContain('registered')
+    expect(await caption(page, 'result-moving')).toEqual({ text: 'Registered · on the fixed grid', variant: 'success' })
+    expect(await panelAt('result', 0.25)).toBe('result-fixed')
+    expect(await panelAt('result', 0.75)).toBe('result-moving')
+    // The inputs comparison still compares the inputs.
+    expect(await volumeName(page, 'inputs-moving')).toContain('CT_2D_head_moving')
+    expect(await caption(page, 'inputs-moving')).toEqual({ text: 'Moving · CT_2D_head_moving.mha', variant: 'brand' })
+    expect(await volumeName(page, 'result-fixed')).toContain('CT_2D_head_fixed')
+    for (const role of PANEL_ROLES) {
+      expect(await volumeCount(page, role), role).toBe(1)
+      expect(await crosshairWidth(page, role), role).toBe(0)
+    }
   })
 
-  await test.step('a new pair resets the switch but keeps the opacity', async () => {
-    await toggle.click()
-    await expect.poll(() => volumeCount(page, 'fixed')).toBe(2)
-    await page.locator('#load-images').click()
-    await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
-    await expect.poll(() => switchState(toggle)).toEqual({ disabled: false, checked: false })
-    expect(await volumeCount(page, 'fixed')).toBe(1)
-    expect(await isDisabled(slider)).toBe(true)
-    expect(await sliderValue(slider)).toBeCloseTo(0.4)
+  await test.step('the result switch brings the moving image back on the right', async () => {
+    await page.locator('#show-result').click()
+    await expect.poll(() => volumeName(page, 'result-moving')).toContain('CT_2D_head_moving')
+    expect(await caption(page, 'result-moving')).toEqual({ text: 'Moving · CT_2D_head_moving.mha', variant: 'brand' })
   })
 
   expect(pageErrors).toEqual([])

@@ -79,7 +79,7 @@ test('reloads the fixed then the moving image at the new budget and commits both
     },
   })
 
-  await reload(10 * MIB)
+  assert.equal(await reload(10 * MIB), true)
 
   assert.deepEqual(
     calls.map((call) => [(call.source as { name: string }).name, call.budgetBytes, call.reloading]),
@@ -102,7 +102,7 @@ test('reloads the fixed then the moving image at the new budget and commits both
   assert.ok(busy.includes('Moving: Decoding moving.mha…'))
   assert.ok(busy.includes('Displaying fixed.mha and moving.mha…'))
   const last = shell.statuses.at(-1)!
-  assert.equal(last.message, 'Reloaded fixed.mha (fixed) and moving.mha (moving) at a 10.0 MB budget. Ready to register.')
+  assert.equal(last.message, 'Reloaded fixed.mha (fixed) and moving.mha (moving) at a 10.0 MB budget.')
   assert.equal(last.variant, undefined)
   assert.equal(last.busy, undefined)
 })
@@ -116,19 +116,19 @@ test('does nothing for the budget already in effect, during a run, or without so
   }
 
   const same = loadedStore()
-  await createReloadFlow(same, shell, { loadImage }).reload(same.state.budgetBytes)
+  assert.equal(await createReloadFlow(same, shell, { loadImage }).reload(same.state.budgetBytes), false)
   assert.equal(calls, 0)
 
   const running = loadedStore()
   running.update(registrationStarted())
-  await createReloadFlow(running, shell, { loadImage }).reload(10 * MIB)
+  assert.equal(await createReloadFlow(running, shell, { loadImage }).reload(10 * MIB), false)
   assert.equal(calls, 0)
 
   const fromMemory = createStore({
     fixed: { ...fakeImage('fixed.mha'), source: undefined } as LoadedImage,
     moving: fakeImage('moving.mha'),
   })
-  await createReloadFlow(fromMemory, shell, { loadImage }).reload(10 * MIB)
+  assert.equal(await createReloadFlow(fromMemory, shell, { loadImage }).reload(10 * MIB), false)
   assert.equal(calls, 0)
   assert.deepEqual(shell.statuses, [])
 })
@@ -147,7 +147,7 @@ test('keeps the loaded pair and the budget in effect when a load fails, and repo
     },
   })
 
-  await reload(25 * MIB)
+  assert.equal(await reload(25 * MIB), false)
 
   assert.equal(store.state.reloading, false)
   assert.equal(store.state.fixed, fixed)
@@ -174,13 +174,40 @@ test('refuses a reloaded pair that no longer matches, keeping the old one', asyn
     },
   })
 
-  await reload(10 * MIB)
+  assert.equal(await reload(10 * MIB), false)
 
   assert.equal(store.state.reloading, false)
   assert.equal(store.state.budgetBytes, 50 * MIB)
   assert.equal(store.state.fixed!.budgetBytes, 50 * MIB)
   assert.equal(shell.statuses.at(-1)!.variant, 'danger')
   assert.match(shell.statuses.at(-1)!.message, /dimension/)
+})
+
+test('discards a reload whose pair was replaced meanwhile, and reports that nothing was reloaded', async () => {
+  const store = loadedStore()
+  const shell = recordingShell()
+  const replacement = { fixed: fakeImage('other-fixed.mha'), moving: fakeImage('other-moving.mha') }
+  const { reload } = createReloadFlow(store, shell, {
+    async loadImage(source, options) {
+      const name = (source as { name: string }).name
+      if (name === 'moving.mha') {
+        // A programmatic load lands while the reload is still reading.
+        store.update(replacement)
+      }
+      return fakeImage(name, options?.budgetBytes)
+    },
+  })
+
+  assert.equal(await reload(10 * MIB), false)
+
+  assert.equal(store.state.reloading, false)
+  assert.equal(store.state.fixed, replacement.fixed)
+  assert.equal(store.state.moving, replacement.moving)
+  assert.equal(store.state.budgetBytes, 50 * MIB)
+  const last = shell.statuses.at(-1)!
+  assert.equal(last.variant, 'warning')
+  assert.equal(last.message, 'The images changed while reloading, so that reload was discarded.')
+  assert.equal(shell.settledCalls, 0)
 })
 
 test('ignores a second reload while one is active', async () => {
@@ -196,8 +223,8 @@ test('ignores a second reload while one is active', async () => {
   })
 
   const first = reload(10 * MIB)
-  await reload(25 * MIB)
-  await first
+  assert.equal(await reload(25 * MIB), false)
+  assert.equal(await first, true)
   assert.equal(calls, 2)
   assert.equal(store.state.budgetBytes, 10 * MIB)
 })

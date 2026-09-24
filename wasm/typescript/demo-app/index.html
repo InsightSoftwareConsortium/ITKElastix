@@ -35,10 +35,17 @@
         <div class="app-toolbar">
           <wa-button id="load-images" appearance="outlined">Load images</wa-button>
           <wa-button id="register" variant="brand" disabled>Register</wa-button>
-          <wa-tooltip for="register">Run translation → rigid → affine registration in a web worker</wa-tooltip>
+          <wa-tooltip for="register">
+            Run the translation → rigid → affine registration again in a web worker, for example after changing the
+            options; a newly loaded pair registers on its own
+          </wa-tooltip>
           <wa-button id="cancel-registration" variant="danger" appearance="outlined" disabled>Cancel</wa-button>
           <wa-tooltip for="cancel-registration">Stop the running registration; the elastix worker is terminated</wa-tooltip>
           <wa-switch id="show-result" disabled>Show registered result</wa-switch>
+          <wa-tooltip for="show-result">
+            Compare the fixed image with the registered result in the right-hand comparison; off, it shows the moving
+            image again, like the left-hand one
+          </wa-tooltip>
         </div>
         <!-- The theme toggle (src/ui/theme.ts): an icon-only button showing
              the scheme it switches to. The icon is chosen from the root
@@ -137,31 +144,16 @@
       </div>
 
       <!-- The view controls: the slice layout picker (shown for a 3D pair only),
-           "Reset view", the overlay switch with its opacity slider, and a colormap
-           picker per panel. src/ui/view-controls.ts fills the pickers and forwards
-           the choices to the two panels, which always navigate together;
-           src/viewer/overlay.ts drives the overlay on the fixed panel. -->
+           "Reset view", and a colormap picker per comparison side.
+           src/ui/view-controls.ts fills the pickers and forwards the choices
+           to the four panels, which always navigate together. -->
       <div id="view-controls" class="view-controls">
         <div class="view-controls-group">
           <wa-select id="slice-type" class="view-picker" size="s" label="View" placement="bottom" hidden></wa-select>
           <wa-button id="reset-view" size="s" appearance="outlined">Reset view</wa-button>
-          <wa-tooltip for="reset-view">Recenter both panels and return the zoom and 3D camera to their defaults</wa-tooltip>
-          <wa-switch id="overlay-toggle" class="overlay-toggle" size="s" disabled>Overlay on fixed</wa-switch>
-          <wa-tooltip for="overlay-toggle">
-            Blend the moving image, or the registered result while it is shown, over the fixed image in red
+          <wa-tooltip for="reset-view">
+            Recenter every panel, return the zoom and 3D camera to their defaults, and centre both comparison dividers
           </wa-tooltip>
-          <wa-slider
-            id="overlay-opacity"
-            class="overlay-opacity"
-            size="s"
-            label="Overlay opacity"
-            min="0"
-            max="1"
-            step="0.05"
-            value="0.5"
-            with-tooltip
-            disabled
-          ></wa-slider>
         </div>
         <div class="view-controls-group">
           <wa-select id="fixed-colormap" class="view-picker" size="s" label="Fixed colormap" placement="bottom"></wa-select>
@@ -169,29 +161,73 @@
         </div>
       </div>
 
+      <!-- The two comparisons (src/ui/shell.ts), one in each half of the split
+           panel: the inputs on the left, the fixed image against the moving
+           image; the result on the right, the fixed image against the
+           registered result once a run has finished and the result switch is
+           on, the moving image otherwise. Each is a wa-comparison whose
+           divider is dragged (or moved with the arrow keys on its handle) to
+           reveal more of either image, and the other comparison's divider
+           follows; each side holds a niivue canvas under a
+           caption badge. wa-comparison draws its `after` slot on the left of
+           the divider (its clip is inset from the right), so the fixed side
+           takes that slot to sit on the left; see SIDE_SLOTS in
+           src/viewer/comparison-options.ts. -->
       <wa-split-panel id="viewers" class="viewers">
         <div slot="start" class="viewer-column">
-          <section class="viewer-panel" data-panel="fixed">
-            <wa-badge id="fixed-caption" class="viewer-caption" variant="neutral">Fixed</wa-badge>
+          <section class="viewer-panel" data-comparison="inputs">
+            <wa-comparison id="inputs-comparison" class="viewer-comparison" position="50">
+              <div slot="after" class="viewer-side" data-panel="inputs-fixed" data-side="fixed">
+                <wa-badge id="inputs-fixed-caption" class="viewer-caption" variant="neutral">Fixed</wa-badge>
+              </div>
+              <div slot="before" class="viewer-side" data-panel="inputs-moving" data-side="moving">
+                <wa-badge id="inputs-moving-caption" class="viewer-caption" variant="brand">Moving</wa-badge>
+              </div>
+            </wa-comparison>
           </section>
-          <wa-details id="fixed-details" class="viewer-details" hidden>
+          <wa-details id="inputs-details" class="viewer-details" hidden>
             <span slot="summary" class="viewer-details-summary">
               <span class="viewer-details-title">Image details</span>
-              <span id="fixed-details-brief" class="viewer-details-brief"></span>
+              <span id="inputs-details-brief" class="viewer-details-brief"></span>
             </span>
-            <dl id="fixed-details-list" class="summary-list"></dl>
+            <div class="viewer-details-sides">
+              <section id="inputs-fixed-details" class="viewer-details-side">
+                <h4 id="inputs-fixed-details-title" class="viewer-details-side-title">Fixed</h4>
+                <dl id="inputs-fixed-details-list" class="summary-list"></dl>
+              </section>
+              <section id="inputs-moving-details" class="viewer-details-side">
+                <h4 id="inputs-moving-details-title" class="viewer-details-side-title">Moving</h4>
+                <dl id="inputs-moving-details-list" class="summary-list"></dl>
+              </section>
+            </div>
           </wa-details>
         </div>
         <div slot="end" class="viewer-column">
-          <section class="viewer-panel" data-panel="moving">
-            <wa-badge id="moving-caption" class="viewer-caption" variant="brand">Moving</wa-badge>
+          <section class="viewer-panel" data-comparison="result">
+            <wa-comparison id="result-comparison" class="viewer-comparison" position="50">
+              <div slot="after" class="viewer-side" data-panel="result-fixed" data-side="fixed">
+                <wa-badge id="result-fixed-caption" class="viewer-caption" variant="neutral">Fixed</wa-badge>
+              </div>
+              <div slot="before" class="viewer-side" data-panel="result-moving" data-side="moving">
+                <wa-badge id="result-moving-caption" class="viewer-caption" variant="brand">Moving</wa-badge>
+              </div>
+            </wa-comparison>
           </section>
-          <wa-details id="moving-details" class="viewer-details" hidden>
+          <wa-details id="result-details" class="viewer-details" hidden>
             <span slot="summary" class="viewer-details-summary">
               <span class="viewer-details-title">Image details</span>
-              <span id="moving-details-brief" class="viewer-details-brief"></span>
+              <span id="result-details-brief" class="viewer-details-brief"></span>
             </span>
-            <dl id="moving-details-list" class="summary-list"></dl>
+            <div class="viewer-details-sides">
+              <section id="result-fixed-details" class="viewer-details-side">
+                <h4 id="result-fixed-details-title" class="viewer-details-side-title">Fixed</h4>
+                <dl id="result-fixed-details-list" class="summary-list"></dl>
+              </section>
+              <section id="result-moving-details" class="viewer-details-side">
+                <h4 id="result-moving-details-title" class="viewer-details-side-title">Moving</h4>
+                <dl id="result-moving-details-list" class="summary-list"></dl>
+              </section>
+            </div>
           </wa-details>
         </div>
       </wa-split-panel>

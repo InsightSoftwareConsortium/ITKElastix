@@ -2,7 +2,8 @@
 // URL each remembers, under the newly chosen pixel budget, through the
 // same ingest pipeline the splash uses; then commit the pair and the
 // budget to the store together (which drops the old result, as any new
-// pair does) and report the outcome in the status row. While the reload
+// pair does), report the outcome in the status row, and tell the caller
+// whether a reloaded pair is now on screen. While the reload
 // runs the store's `reloading` flag disables Register, Load images, and
 // the picker itself; a failure leaves the loaded pair and the budget in
 // effect untouched, so the picker falls back to them when the shell
@@ -33,17 +34,18 @@ export interface ReloadFlow {
    * The action behind the budget picker: load both inputs again under
    * `budgetBytes`. Does nothing while a run or another reload is active,
    * while an input has no source to reload from, or for the budget already
-   * in effect.
+   * in effect. Resolves true once the reloaded pair is in the store and on
+   * screen, false when nothing was reloaded or the reload failed.
    */
-  reload(budgetBytes: number): Promise<void>
+  reload(budgetBytes: number): Promise<boolean>
 }
 
 /** Returns the action behind the budget picker. */
 export function createReloadFlow(store: AppStore, shell: ReloadFlowShell, { loadImage }: ReloadFlowOptions): ReloadFlow {
-  async function reload(budgetBytes: number): Promise<void> {
+  async function reload(budgetBytes: number): Promise<boolean> {
     const { state } = store
     if (!canReloadInputs(state) || budgetBytes === state.budgetBytes) {
-      return
+      return false
     }
     const previous = { fixed: state.fixed!, moving: state.moving! }
     const budget = formatBytes(budgetBytes)
@@ -77,7 +79,7 @@ export function createReloadFlow(store: AppStore, shell: ReloadFlowShell, { load
           message: 'The images changed while reloading, so that reload was discarded.',
           variant: 'warning',
         })
-        return
+        return false
       }
 
       store.update(budgetApplied(fixed, moving, budgetBytes))
@@ -87,14 +89,15 @@ export function createReloadFlow(store: AppStore, shell: ReloadFlowShell, { load
         message: `Could not reload the images at ${budget}: ${errorMessage(error)}. The pair loaded at ${formatBytes(previous.fixed.budgetBytes)} is kept.`,
         variant: 'danger',
       })
-      return
+      return false
     }
 
     shell.setStatus({ message: `Displaying ${loaded.fixed!.name} and ${loaded.moving!.name}…`, busy: true })
     await shell.settled()
     shell.setStatus({
-      message: `Reloaded ${loaded.fixed!.name} (fixed) and ${loaded.moving!.name} (moving) at a ${budget} budget. Ready to register.`,
+      message: `Reloaded ${loaded.fixed!.name} (fixed) and ${loaded.moving!.name} (moving) at a ${budget} budget.`,
     })
+    return true
   }
 
   return { reload }

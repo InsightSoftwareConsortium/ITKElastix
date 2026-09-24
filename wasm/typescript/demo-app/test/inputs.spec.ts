@@ -142,8 +142,8 @@ test('loads the CT pair from the URL fields, by the Load button and by Enter', a
   expect(fixed).toMatchObject({ name: CT_FIXED, kind: 'itk', format: 'ITK', dimension: 2, scaleIndex: 0 })
   expect(moving).toMatchObject({ name: CT_MOVING, kind: 'itk', format: 'ITK', dimension: 2, scaleIndex: 0 })
   expect(fixed?.size).toEqual(moving?.size)
-  await expect.poll(() => volumeCount(page, 'fixed')).toBe(1)
-  await expect.poll(() => volumeCount(page, 'moving')).toBe(1)
+  await expect.poll(() => volumeCount(page, 'inputs-fixed')).toBe(1)
+  await expect.poll(() => volumeCount(page, 'inputs-moving')).toBe(1)
 })
 
 test('loads the CT pair from the file pickers', async ({ page }) => {
@@ -165,8 +165,8 @@ test('loads the CT pair from the file pickers', async ({ page }) => {
   expect(fixed).toMatchObject({ name: CT_FIXED, kind: 'itk', format: 'ITK', dimension: 2, scaleIndex: 0 })
   expect(moving).toMatchObject({ name: CT_MOVING, kind: 'itk', format: 'ITK', dimension: 2, scaleIndex: 0 })
   expect(fixed?.budgetBytes).toBe(PIXEL_BUDGET_BYTES)
-  await expect.poll(() => volumeCount(page, 'fixed')).toBe(1)
-  await expect.poll(() => volumeCount(page, 'moving')).toBe(1)
+  await expect.poll(() => volumeCount(page, 'inputs-fixed')).toBe(1)
+  await expect.poll(() => volumeCount(page, 'inputs-moving')).toBe(1)
 })
 
 test('rejects a 2D fixed with a 3D moving image, keeps the dialog open, and swaps the slots', async ({ page }) => {

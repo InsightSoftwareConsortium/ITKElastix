@@ -1,6 +1,6 @@
 // Responsive layout and theming: below 800 px the split panel stacks the
-// two viewers and each canvas's drawing buffer keeps matching its CSS box
-// (no stretched pixels), the theme toggle defaults to the OS scheme, pins
+// two comparisons and each canvas's drawing buffer keeps matching its CSS
+// box (no stretched pixels), the theme toggle defaults to the OS scheme, pins
 // the other one across a reload, follows the OS again once unpinned, and
 // the footer links the projects the demo is built on. Elements are found
 // by their stable ids; the scheme is read from the root element's class
@@ -8,9 +8,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import type WaSplitPanel from '@awesome.me/webawesome/dist/components/split-panel/split-panel.js'
 
-import type { SlotRole } from '../src/ui/splash-slots'
 import { NARROW_LAYOUT_MAX_WIDTH_PX } from '../src/ui/layout-options'
 import { DARK_THEME_CLASS, THEME_STORAGE_KEY } from '../src/ui/theme-options'
+import { PANEL_ROLES, type ComparisonRole, type DemoPanelRole } from '../src/viewer/comparison-options'
 import { CT_SAMPLE_BUTTON, LOAD_TIMEOUT, collectPageErrors, loadSample } from './helpers'
 
 const WIDE = { width: 1280, height: 720 }
@@ -21,7 +21,7 @@ function orientation(page: Page): Promise<string> {
 }
 
 /** The drawing buffer of the `role` canvas beside the buffer its CSS box calls for. */
-function canvasFit(page: Page, role: SlotRole): Promise<{ buffer: number[]; expected: number[] }> {
+function canvasFit(page: Page, role: DemoPanelRole): Promise<{ buffer: number[]; expected: number[] }> {
   return page.evaluate((role) => {
     const canvas = document.querySelector<HTMLCanvasElement>(`canvas[data-role="${role}"]`)!
     const rect = canvas.getBoundingClientRect()
@@ -34,7 +34,7 @@ function canvasFit(page: Page, role: SlotRole): Promise<{ buffer: number[]; expe
 }
 
 async function expectCanvasesToFit(page: Page): Promise<void> {
-  for (const role of ['fixed', 'moving'] as const) {
+  for (const role of PANEL_ROLES) {
     await expect
       .poll(async () => {
         const { buffer, expected } = await canvasFit(page, role)
@@ -44,14 +44,16 @@ async function expectCanvasesToFit(page: Page): Promise<void> {
   }
 }
 
-/** Bounding boxes of the two viewer panels, to tell side by side from stacked. */
-function panelBoxes(page: Page): Promise<Record<SlotRole, { left: number; top: number; right: number; bottom: number }>> {
+/** Bounding boxes of the two comparisons, to tell side by side from stacked. */
+function panelBoxes(page: Page): Promise<Record<ComparisonRole, { left: number; top: number; right: number; bottom: number }>> {
   return page.evaluate(() => {
-    const box = (role: string) => {
-      const { left, top, right, bottom } = document.querySelector(`[data-panel="${role}"]`)!.getBoundingClientRect()
+    const box = (comparison: string) => {
+      const { left, top, right, bottom } = document
+        .querySelector(`[data-comparison="${comparison}"]`)!
+        .getBoundingClientRect()
       return { left, top, right, bottom }
     }
-    return { fixed: box('fixed'), moving: box('moving') }
+    return { inputs: box('inputs'), result: box('result') }
   })
 }
 
@@ -67,7 +69,7 @@ function metaColorScheme(page: Page): Promise<string | undefined> {
   return page.evaluate(() => document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]')?.content)
 }
 
-test('stacks the viewers below 800 px and keeps the canvases drawn at the size of their boxes', async ({ page }) => {
+test('stacks the comparisons below 800 px and keeps the canvases drawn at the size of their boxes', async ({ page }) => {
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
 
@@ -81,9 +83,9 @@ test('stacks the viewers below 800 px and keeps the canvases drawn at the size o
     await page.setViewportSize(NARROW)
     await expect.poll(() => orientation(page)).toBe('vertical')
     await expect.poll(async () => {
-      const { fixed, moving } = await panelBoxes(page)
-      return fixed.bottom <= moving.top && fixed.right > 0 && moving.right > 0
-    }, { message: 'the fixed panel should sit above the moving panel' }).toBe(true)
+      const { inputs, result } = await panelBoxes(page)
+      return inputs.bottom <= result.top && inputs.right > 0 && result.right > 0
+    }, { message: 'the inputs comparison should sit above the result comparison' }).toBe(true)
     await expectCanvasesToFit(page)
   })
 
@@ -91,9 +93,9 @@ test('stacks the viewers below 800 px and keeps the canvases drawn at the size o
     await page.setViewportSize(WIDE)
     await expect.poll(() => orientation(page)).toBe('horizontal')
     await expect.poll(async () => {
-      const { fixed, moving } = await panelBoxes(page)
-      return fixed.right <= moving.left
-    }, { message: 'the fixed panel should sit beside the moving panel' }).toBe(true)
+      const { inputs, result } = await panelBoxes(page)
+      return inputs.right <= result.left
+    }, { message: 'the inputs comparison should sit beside the result comparison' }).toBe(true)
     await expectCanvasesToFit(page)
   })
 

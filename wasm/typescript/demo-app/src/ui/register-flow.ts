@@ -1,4 +1,5 @@
-// The Register button's behaviour: run elastix on the loaded pair with the
+// A registration run, started for every pair once it is on screen and
+// again by the Register button: run elastix on the loaded pair with the
 // number of resolutions the store holds while the status row shows an
 // indeterminate progress bar, the stage label, and a running elapsed
 // timer; then store the result (which the shell displays) and report
@@ -26,7 +27,7 @@ export type RegisterFlowShell = Pick<Shell, 'setStatus' | 'settled'>
 
 export interface RegisterFlow {
   /**
-   * The action behind the Register button. Calling it while a run is
+   * Register the loaded pair. Calling it while a run or a reload is
    * active, or without both inputs, does nothing.
    */
   run(): Promise<void>
@@ -37,7 +38,7 @@ export interface RegisterFlow {
   cancel(): void
 }
 
-/** Returns the actions behind the Register and Cancel buttons. */
+/** Returns the actions that start and cancel a run. */
 export function createRegisterFlow(
   store: AppStore,
   shell: RegisterFlowShell,
@@ -115,7 +116,7 @@ export function createRegisterFlow(
     shell.setStatus({ message: 'Displaying the registered result…', busy: true })
     await shell.settled()
     shell.setStatus({
-      message: `Registered in ${formatElapsed(result.elapsedMs)} (${AFFINE_STAGES_LABEL}). The moving panel shows the result on the fixed grid; use the switch to compare.`,
+      message: `Registered in ${formatElapsed(result.elapsedMs)} (${AFFINE_STAGES_LABEL}). The right-hand comparison shows the result on the fixed grid beside the fixed image; the switch swaps it for the moving image.`,
       variant: 'success',
     })
   }

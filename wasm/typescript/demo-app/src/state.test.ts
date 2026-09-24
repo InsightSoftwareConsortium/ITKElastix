@@ -13,7 +13,6 @@ import {
   canCancelRegistration,
   canDownload,
   canLoadInputs,
-  canOverlay,
   canRegister,
   canReloadInputs,
   createStore,
@@ -25,20 +24,17 @@ import {
   isShowingResult,
   isWriting,
   movingPanelContent,
-  overlayContent,
-  overlayOpacityChanged,
-  overlayToggled,
   registrationFailed,
   registrationStarted,
   reloadFailed,
   reloadStarted,
   resolutionsChosen,
+  resultPanelContent,
   resultReady,
   selectedFormatId,
   writingFinished,
   writingStarted,
 } from './state.ts'
-import { DEFAULT_OVERLAY_OPACITY } from './viewer/overlay-options.ts'
 
 // The selectors only touch `name`, `itkImage`, and `image`, so stand-ins
 // with those fields are enough; the casts keep the tests free of itk-wasm.
@@ -50,7 +46,7 @@ function fakeResult(): RegistrationResult {
   return { image: { name: 'result' }, elapsedMs: 1 } as unknown as RegistrationResult
 }
 
-test('starts empty with the result hidden, the overlay off, the OME-Zarr formats chosen, and nothing being written', () => {
+test('starts empty with the result hidden, the OME-Zarr formats chosen, and nothing being written', () => {
   const store = createStore()
   assert.deepEqual(store.state, {
     showResult: false,
@@ -58,8 +54,6 @@ test('starts empty with the result hidden, the overlay off, the OME-Zarr formats
     reloading: false,
     numberOfResolutions: DEFAULT_NUMBER_OF_RESOLUTIONS,
     budgetBytes: PIXEL_BUDGET_BYTES,
-    overlay: false,
-    overlayOpacity: DEFAULT_OVERLAY_OPACITY,
     imageFormat: 'ozx',
     transformFormat: 'ozx-transform',
     writing: { image: false, transform: false },
@@ -69,8 +63,6 @@ test('starts empty with the result hidden, the overlay off, the OME-Zarr formats
   assert.equal(canRegister(store.state), false)
   assert.equal(canCancelRegistration(store.state), false)
   assert.equal(canReloadInputs(store.state), false)
-  assert.equal(canOverlay(store.state), false)
-  assert.equal(overlayContent(store.state), undefined)
   for (const kind of OUTPUT_KINDS) {
     assert.equal(canDownload(store.state, kind), false, kind)
     assert.equal(isWriting(store.state, kind), false, kind)
@@ -121,7 +113,6 @@ test('budgetApplied commits the reloaded pair and the budget together, dropping 
     moving: fakeImage('b'),
     result: fakeResult(),
     showResult: true,
-    overlay: true,
     reloading: true,
   })
   const fixed = fakeImage('a-again')
@@ -133,7 +124,6 @@ test('budgetApplied commits the reloaded pair and the budget together, dropping 
   assert.equal(store.state.reloading, false)
   assert.equal(store.state.result, undefined)
   assert.equal(store.state.showResult, false)
-  assert.equal(store.state.overlay, false)
 })
 
 test('accepts initial values', () => {
@@ -205,24 +195,27 @@ test('isShowingResult is false without a result even when the toggle is on', () 
   assert.equal(isShowingResult(store.state), false)
 })
 
-test('panel content follows the inputs and the display toggle', () => {
+test('panel content follows the inputs; only the result side follows the result switch', () => {
   const fixed = fakeImage('fixed.mha')
   const moving = fakeImage('moving.mha')
   const store = createStore()
   assert.equal(fixedPanelContent(store.state), undefined)
   assert.equal(movingPanelContent(store.state), undefined)
+  assert.equal(resultPanelContent(store.state), undefined)
 
   store.update(inputsLoaded(fixed, moving))
   assert.deepEqual(fixedPanelContent(store.state), { image: fixed.itkImage, name: 'fixed.mha' })
   assert.deepEqual(movingPanelContent(store.state), { image: moving.itkImage, name: 'moving.mha' })
+  assert.deepEqual(resultPanelContent(store.state), { image: moving.itkImage, name: 'moving.mha' })
 
   const result = fakeResult()
   store.update(resultReady(result))
   assert.deepEqual(fixedPanelContent(store.state), { image: fixed.itkImage, name: 'fixed.mha' })
-  assert.deepEqual(movingPanelContent(store.state), { image: result.image, name: RESULT_NAME })
+  assert.deepEqual(movingPanelContent(store.state), { image: moving.itkImage, name: 'moving.mha' })
+  assert.deepEqual(resultPanelContent(store.state), { image: result.image, name: RESULT_NAME })
 
   store.update({ showResult: false })
-  assert.deepEqual(movingPanelContent(store.state), { image: moving.itkImage, name: 'moving.mha' })
+  assert.deepEqual(resultPanelContent(store.state), { image: moving.itkImage, name: 'moving.mha' })
 })
 
 test('registrationStarted blocks another run and input changes', () => {
@@ -307,52 +300,6 @@ test('writingStarted and writingFinished toggle one output and canDownload follo
   store.update(inputsLoaded(fakeImage('fixed'), fakeImage('moving')))
   assert.equal(hasResult(store.state), false)
   assert.equal(isWriting(store.state, 'image'), true)
-})
-
-test('the overlay follows the moving panel: the moving image, or the result while it is shown', () => {
-  const fixed = fakeImage('fixed.mha')
-  const moving = fakeImage('moving.mha')
-  const store = createStore()
-  // The switch is ignored without a pair to blend.
-  store.update(overlayToggled(true))
-  assert.equal(canOverlay(store.state), false)
-  assert.equal(overlayContent(store.state), undefined)
-
-  store.update(inputsLoaded(fixed, moving))
-  assert.equal(canOverlay(store.state), true)
-  assert.equal(store.state.overlay, false, 'a new pair starts with the overlay off')
-  assert.equal(overlayContent(store.state), undefined)
-
-  store.update(overlayToggled(true))
-  assert.deepEqual(overlayContent(store.state), { image: moving.itkImage, name: 'moving.mha' })
-
-  const result = fakeResult()
-  store.update(resultReady(result))
-  assert.deepEqual(overlayContent(store.state), { image: result.image, name: RESULT_NAME })
-  store.update({ showResult: false })
-  assert.deepEqual(overlayContent(store.state), { image: moving.itkImage, name: 'moving.mha' })
-
-  store.update(overlayToggled(false))
-  assert.equal(overlayContent(store.state), undefined)
-})
-
-test('inputsLoaded switches the overlay off but keeps its opacity', () => {
-  const store = createStore({ fixed: fakeImage('a'), moving: fakeImage('b'), overlay: true, overlayOpacity: 0.3 })
-  store.update(inputsLoaded(fakeImage('fixed'), fakeImage('moving')))
-  assert.equal(store.state.overlay, false)
-  assert.equal(store.state.overlayOpacity, 0.3)
-})
-
-test('overlayOpacityChanged clamps the slider value and falls back to the default for anything else', () => {
-  const store = createStore()
-  store.update(overlayOpacityChanged(0.35))
-  assert.equal(store.state.overlayOpacity, 0.35)
-  store.update(overlayOpacityChanged(1.5))
-  assert.equal(store.state.overlayOpacity, 1)
-  store.update(overlayOpacityChanged(-1))
-  assert.equal(store.state.overlayOpacity, 0)
-  store.update(overlayOpacityChanged(null))
-  assert.equal(store.state.overlayOpacity, DEFAULT_OVERLAY_OPACITY)
 })
 
 test('a listener that throws is reported and does not stop the others', () => {

@@ -1,10 +1,10 @@
 // Application state: the two loaded inputs, the registration result, the
 // registration options (resolutions and the pixel budget the inputs were
 // loaded under), whether a run or a budget reload is in progress, the
-// display toggles (the result switch and overlay mode with its opacity),
-// the download formats chosen in the pickers, and which outputs are being
-// written, held in a tiny synchronous store the shell renders from. Keep
-// this module free of DOM access so the node unit tests can exercise it.
+// result switch, the download formats chosen in the pickers, and which
+// outputs are being written, held in a tiny synchronous store the shell
+// renders from. Keep this module free of DOM access so the node unit tests
+// can exercise it.
 import type { Image } from 'itk-wasm'
 
 import {
@@ -19,7 +19,6 @@ import type { LoadedImage } from './io/load-image'
 import { PIXEL_BUDGET_BYTES } from './io/scale-select.ts'
 import { DEFAULT_NUMBER_OF_RESOLUTIONS, type RegistrationResult } from './registration/types.ts'
 import { clampResolutions } from './ui/registration-options.ts'
-import { DEFAULT_OVERLAY_OPACITY, clampOpacity } from './viewer/overlay-options.ts'
 
 /** The two outputs a registration result can be downloaded as. */
 export type OutputKind = 'image' | 'transform'
@@ -31,7 +30,7 @@ export interface AppState {
   fixed?: LoadedImage
   moving?: LoadedImage
   result?: RegistrationResult
-  /** Whether the moving panel shows the registered result instead of the moving input. */
+  /** Whether the result comparison shows the registered result instead of the moving input. */
   showResult: boolean
   /** True while elastix is running; blocks another run and input changes. */
   registering: boolean
@@ -44,10 +43,6 @@ export interface AppState {
    * input will be read under. Changed only by a completed budget reload.
    */
   budgetBytes: number
-  /** Whether the fixed panel blends the moving panel's content over the fixed image (overlay mode). */
-  overlay: boolean
-  /** Opacity the overlay is blended at, 0 to 1. Outlives the inputs, like a colormap choice. */
-  overlayOpacity: number
   /** Format the registered image is downloaded in: an id from src/io/formats.ts. */
   imageFormat: ImageFormatId
   /** Format the fixed-to-moving transform is downloaded in: an id from src/io/formats.ts. */
@@ -94,8 +89,6 @@ export function createStore(
     reloading: false,
     numberOfResolutions: DEFAULT_NUMBER_OF_RESOLUTIONS,
     budgetBytes: PIXEL_BUDGET_BYTES,
-    overlay: false,
-    overlayOpacity: DEFAULT_OVERLAY_OPACITY,
     imageFormat: DEFAULT_IMAGE_FORMAT.id,
     transformFormat: DEFAULT_TRANSFORM_FORMAT.id,
     writing: { image: false, transform: false },
@@ -191,8 +184,8 @@ export function reloadFailed(): Partial<AppState> {
 
 /**
  * Patch for a completed budget reload: the freshly loaded pair (which, like
- * any new pair, drops the result and resets the display toggles), the
- * budget it was read under, and the end of the reload.
+ * any new pair, drops the result and resets the result switch), the budget
+ * it was read under, and the end of the reload.
  */
 export function budgetApplied(fixed: LoadedImage, moving: LoadedImage, budgetBytes: number): Partial<AppState> {
   return { ...inputsLoaded(fixed, moving), budgetBytes, reloading: false }
@@ -205,26 +198,10 @@ export function isShowingResult(state: Readonly<AppState>): boolean {
 
 /**
  * Patch for a freshly loaded input pair. Any earlier result belongs to the
- * previous inputs, so it is dropped and the display toggles reset; the
- * overlay opacity, a preference, stays.
+ * previous inputs, so it is dropped and the result switch reset.
  */
 export function inputsLoaded(fixed: LoadedImage, moving: LoadedImage): Partial<AppState> {
-  return { fixed, moving, result: undefined, showResult: false, overlay: false }
-}
-
-/** Overlay mode may be switched on: both inputs are loaded. */
-export function canOverlay(state: Readonly<AppState>): boolean {
-  return hasInputs(state)
-}
-
-/** Patch for the overlay switch. */
-export function overlayToggled(overlay: boolean): Partial<AppState> {
-  return { overlay }
-}
-
-/** Patch for the opacity slider; its value is clamped to 0..1 (see `clampOpacity`). */
-export function overlayOpacityChanged(opacity: unknown): Partial<AppState> {
-  return { overlayOpacity: clampOpacity(opacity) }
+  return { fixed, moving, result: undefined, showResult: false }
 }
 
 /** Patch for the start of a registration run. */
@@ -300,28 +277,24 @@ export interface PanelContent {
   name: string
 }
 
-/** Content of the fixed panel: the fixed input, if loaded. */
+/** Content of the fixed side of either comparison: the fixed input, if loaded. */
 export function fixedPanelContent(state: Readonly<AppState>): PanelContent | undefined {
   return state.fixed ? { image: state.fixed.itkImage, name: state.fixed.name } : undefined
 }
 
-/**
- * Content of the moving panel: the registered result while it is selected
- * for display (it lives on the fixed grid), otherwise the moving input.
- */
+/** Content of the moving side of the inputs comparison: the moving input, if loaded. */
 export function movingPanelContent(state: Readonly<AppState>): PanelContent | undefined {
-  if (isShowingResult(state)) {
-    return { image: state.result!.image, name: RESULT_NAME }
-  }
   return state.moving ? { image: state.moving.itkImage, name: state.moving.name } : undefined
 }
 
 /**
- * Content blended over the fixed image while overlay mode is on: whatever
- * the moving panel shows, so the registered result while it is selected
- * for display and the moving input otherwise. Undefined while the mode is
- * off or the inputs are missing.
+ * Content of the moving side of the result comparison: the registered
+ * result while it is selected for display (it lives on the fixed grid),
+ * otherwise the moving input.
  */
-export function overlayContent(state: Readonly<AppState>): PanelContent | undefined {
-  return state.overlay && canOverlay(state) ? movingPanelContent(state) : undefined
+export function resultPanelContent(state: Readonly<AppState>): PanelContent | undefined {
+  if (isShowingResult(state)) {
+    return { image: state.result!.image, name: RESULT_NAME }
+  }
+  return movingPanelContent(state)
 }

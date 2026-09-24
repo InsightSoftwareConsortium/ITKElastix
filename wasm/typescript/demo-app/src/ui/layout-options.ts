@@ -2,7 +2,7 @@
 // resize guard (src/viewer/panel.ts), free of the DOM so node:test runs
 // them.
 
-/** Below this viewport width the two viewers stack instead of sitting side by side. */
+/** Below this viewport width the two comparisons stack instead of sitting side by side. */
 export const NARROW_LAYOUT_MAX_WIDTH_PX = 800
 
 /**

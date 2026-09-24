@@ -1,17 +1,26 @@
 // Human-readable summary of a loaded input image: the fields the splash
 // dialog shows under each slot ({@link imageSummaryFields}), which the
-// viewer panels' "Image details" repeat with the source format and pixel
+// comparisons' "Image details" repeat with the source format and pixel
 // budget added ({@link imageDetailFields}), or replace with the registered
-// result's while the moving panel shows it ({@link panelDetails}). Pure
-// functions over `LoadedImage` and the app state, free of DOM access, so
-// the Node unit tests cover them; src/ui/summary-list.ts renders the rows
-// and src/ui/image-info.ts binds them to the panels.
+// result's while the result comparison shows it ({@link panelDetails},
+// {@link comparisonDetails}). Pure functions over `LoadedImage` and the app
+// state, free of DOM access, so the Node unit tests cover them;
+// src/ui/summary-list.ts renders the rows and src/ui/image-info.ts binds
+// them to the comparisons.
 import { formatBytes, formatElapsed } from '../format.ts'
 import type { LoadedImage } from '../io/load-image.ts'
 import { REGISTRATION_TIMEPOINT_INDEX } from '../io/normalize.ts'
 import { AFFINE_STAGES_LABEL, type RegistrationResult } from '../registration/types.ts'
-import { hasInputs, hasResult, RESULT_NAME, type AppState } from '../state.ts'
-import type { DemoPanelRole } from '../viewer/panel.ts'
+import { hasInputs, isShowingResult, RESULT_NAME, type AppState } from '../state.ts'
+import {
+  COMPARISON_SIDES,
+  panelComparison,
+  panelRole,
+  panelSide,
+  type ComparisonRole,
+  type ComparisonSide,
+  type DemoPanelRole,
+} from '../viewer/comparison-options.ts'
 
 /** One row of a summary: a stable key (the row's `data-field`), a label, and its value. */
 export interface SummaryField {
@@ -126,14 +135,15 @@ export function imageDetailFields(image: LoadedImage): SummaryField[] {
   return fields
 }
 
-/** What the moving panel displays while the result toggle is on. */
+/** What the result comparison's moving side displays while the result switch is on. */
 export const RESULT_DISPLAY_NOTE = 'Registered result on the fixed grid'
 
 /**
- * The rows the moving panel's "Image details" shows while it displays the
- * registered result: what is displayed, the result's name and grid (the
- * moving image resampled onto the fixed image's), its dimension, shape,
- * data type, and spacing, and the transform stages and elapsed time.
+ * The rows the result comparison's "Image details" shows for its moving
+ * side while it displays the registered result: what is displayed, the
+ * result's name and grid (the moving image resampled onto the fixed
+ * image's), its dimension, shape, data type, and spacing, and the
+ * transform stages and elapsed time.
  */
 export function resultDetailFields(result: RegistrationResult, fixed: LoadedImage, moving: LoadedImage): SummaryField[] {
   const { image } = result
@@ -152,14 +162,19 @@ export function resultDetailFields(result: RegistrationResult, fixed: LoadedImag
   ]
 }
 
-/** One-line form of the result for the details' summary row. */
+/** One-line form of the result for the details' summary row: "3D 128 × 96 × 64 float32 on the fixed grid". */
 export function resultBrief(result: RegistrationResult): string {
   const { image } = result
-  return `registered result on the fixed grid, ${image.imageType.dimension}D ${formatShape(image.size)} ${image.imageType.componentType}`
+  return `${image.imageType.dimension}D ${formatShape(image.size)} ${image.imageType.componentType} on the fixed grid`
 }
 
 /** Which of the app's images a viewer panel displays. */
 export type PanelContentKind = 'fixed' | 'moving' | 'result'
+
+/** The heading over a side's rows in the details: "Fixed", "Moving", or "Registered". */
+export function contentTitle(content: PanelContentKind): string {
+  return content === 'fixed' ? 'Fixed' : content === 'moving' ? 'Moving' : 'Registered'
+}
 
 /** What a panel's "Image details" shows: the content, a one-line brief for the summary row, and the rows. */
 export interface PanelDetails {
@@ -169,23 +184,50 @@ export interface PanelDetails {
 }
 
 /**
- * The details for one panel, following the same rule as the panel content
- * selectors in src/state.ts: the fixed panel describes the fixed input;
- * the moving panel describes the registered result while it is shown
- * (both inputs are then loaded too) and the moving input otherwise.
- * Undefined while the panel is empty.
+ * The details for one panel, following the same rule as `panelContent` in
+ * src/viewer/comparison-options.ts: a fixed side describes the fixed
+ * input; the result comparison's moving side describes the registered
+ * result while it is shown (both inputs are then loaded too); any other
+ * moving side describes the moving input. Undefined while the panel is
+ * empty.
  */
 export function panelDetails(state: Readonly<AppState>, role: DemoPanelRole): PanelDetails | undefined {
-  if (role === 'moving' && state.showResult && hasResult(state) && hasInputs(state)) {
+  const side = panelSide(role)
+  if (side === 'moving' && panelComparison(role) === 'result' && isShowingResult(state) && hasInputs(state)) {
     return {
       content: 'result',
-      brief: resultBrief(state.result),
-      fields: resultDetailFields(state.result, state.fixed, state.moving),
+      brief: resultBrief(state.result!),
+      fields: resultDetailFields(state.result!, state.fixed, state.moving),
     }
   }
-  const image = state[role]
+  const image = state[side]
   if (image === undefined) {
     return undefined
   }
-  return { content: role, brief: shortSummary(image), fields: imageDetailFields(image) }
+  return { content: side, brief: shortSummary(image), fields: imageDetailFields(image) }
+}
+
+/** What a comparison's "Image details" shows: the details of each side and one line naming both for the summary row. */
+export interface ComparisonDetails {
+  sides: Readonly<Record<ComparisonSide, PanelDetails>>
+  /** "Fixed 2D 512 × 512 int16, 512.0 KB · Moving 2D 512 × 512 int16, 512.0 KB". */
+  brief: string
+}
+
+/**
+ * The details for one comparison: {@link panelDetails} of both its sides.
+ * Undefined while either side is empty, which is both, since the inputs
+ * load as a pair.
+ */
+export function comparisonDetails(state: Readonly<AppState>, comparison: ComparisonRole): ComparisonDetails | undefined {
+  const fixed = panelDetails(state, panelRole(comparison, 'fixed'))
+  const moving = panelDetails(state, panelRole(comparison, 'moving'))
+  if (fixed === undefined || moving === undefined) {
+    return undefined
+  }
+  const sides = { fixed, moving }
+  return {
+    sides,
+    brief: COMPARISON_SIDES.map((side) => `${contentTitle(sides[side].content)} ${sides[side].brief}`).join(' · '),
+  }
 }

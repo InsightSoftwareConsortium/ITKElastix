@@ -1,18 +1,21 @@
 // Application shell: binds the header controls (including the two download
 // format pickers with their buttons and tooltips), the status row, and the
-// two niivue panels inside the split panel (markup in index.html) to the
-// state store. Controls and panels are rendered from state, so swapping the
-// moving panel to the registered result, choosing a format, or showing a
-// button's spinner while its file is written is a state change, not a call
-// into this module. A status of a success, warning, or danger variant is
-// shown in the row in that colour and raised as a toast through the
-// notifier (src/ui/notify.ts), so the flows report through `setStatus`
-// alone. The two panels are linked so they navigate together
-// (src/viewer/panel.ts), and a freshly loaded pair opens on the default
-// view; the view controls in src/ui/view-controls.ts and the overlay in
-// src/viewer/overlay.ts drive the rest.
+// four niivue panels inside the two comparisons of the split panel (markup
+// in index.html) to the state store. Controls and panels are rendered from
+// state, so swapping the result comparison's moving side to the registered
+// result, choosing a format, or showing a button's spinner while its file
+// is written is a state change, not a call into this module. A status of a
+// success, warning, or danger variant is shown in the row in that colour
+// and raised as a toast through the notifier (src/ui/notify.ts), so the
+// flows report through `setStatus` alone. The panels are all linked so
+// they navigate together (src/viewer/panel.ts), the two comparison
+// dividers move together, and a freshly loaded pair opens on the default
+// view; the view controls in src/ui/view-controls.ts
+// drive the rest. Which panel shows what, and its caption, are decided in
+// src/viewer/comparison-options.ts.
 import type WaBadge from '@awesome.me/webawesome/dist/components/badge/badge.js'
 import type WaButton from '@awesome.me/webawesome/dist/components/button/button.js'
+import type WaComparison from '@awesome.me/webawesome/dist/components/comparison/comparison.js'
 import type WaProgressBar from '@awesome.me/webawesome/dist/components/progress-bar/progress-bar.js'
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js'
 import type WaSplitPanel from '@awesome.me/webawesome/dist/components/split-panel/split-panel.js'
@@ -24,17 +27,23 @@ import {
   canDownload,
   canLoadInputs,
   canRegister,
-  fixedPanelContent,
   formatChosen,
   hasResult,
   isShowingResult,
   isWriting,
-  movingPanelContent,
   type AppState,
   type AppStore,
   type OutputKind,
   type PanelContent,
 } from '../state'
+import {
+  COMPARISON_ROLES,
+  PANEL_ROLES,
+  panelCaption,
+  panelContent,
+  type ComparisonRole,
+  type DemoPanelRole,
+} from '../viewer/comparison-options'
 import { createViewerPanel, linkPanels, resetLinkedViews, type ViewerPanel } from '../viewer/panel'
 import { formatTooltip, pickerFormats, progressPercent, selectedFormat, type ProgressCounts } from './download-controls'
 import type { Notifier } from './notify'
@@ -86,20 +95,23 @@ export interface ShellElements {
   statusProgress: WaProgressBar
   statusMessage: HTMLElement
   viewers: WaSplitPanel
-  fixedCaption: WaBadge
-  movingCaption: WaBadge
+  /** `#inputs-comparison` / `#result-comparison`, the two `wa-comparison`s, whose dividers move together. */
+  comparisons: Readonly<Record<ComparisonRole, WaComparison>>
+  /** The badge over each panel; ids follow the `inputs-fixed-caption` pattern. */
+  captions: Readonly<Record<DemoPanelRole, WaBadge>>
 }
 
 export interface Shell {
   readonly elements: ShellElements
-  readonly fixedPanel: ViewerPanel
-  readonly movingPanel: ViewerPanel
+  /** The four niivue panels, one per side of each comparison, all linked. */
+  readonly panels: Readonly<Record<DemoPanelRole, ViewerPanel>>
   /** The notifier the shell raises its toasts through, for modules that report outside a status. */
   readonly notify: Notifier
   setStatus(options: StatusOptions): void
   /**
    * Resolves once every panel update queued so far has finished, the
-   * shell's own and those other modules (the overlay) queued on the panels.
+   * shell's own and those other modules (the view controls) queued on the
+   * panels.
    */
   settled(): Promise<void>
   destroy(): void
@@ -178,10 +190,15 @@ function sameContent(a: PanelContent | undefined, b: PanelContent | undefined): 
   return a?.image === b?.image && a?.name === b?.name
 }
 
+/** Build a record with one entry per panel role. */
+function perPanel<T>(make: (role: DemoPanelRole) => T): Record<DemoPanelRole, T> {
+  return Object.fromEntries(PANEL_ROLES.map((role) => [role, make(role)])) as Record<DemoPanelRole, T>
+}
+
 /**
- * Bind the shell markup under `root` to `store`, mount a niivue panel in each
- * half of the split panel, and keep the controls and panels in sync with
- * the state until `destroy()` is called.
+ * Bind the shell markup under `root` to `store`, mount a niivue panel on
+ * each side of the two comparisons, and keep the controls and panels in
+ * sync with the state until `destroy()` is called.
  */
 export async function createShell(root: ParentNode, store: AppStore, options: ShellOptions): Promise<Shell> {
   const { notify, ...handlers } = options
@@ -194,19 +211,23 @@ export async function createShell(root: ParentNode, store: AppStore, options: Sh
     statusProgress: requireElement(root, '#status-progress'),
     statusMessage: requireElement(root, '#status-message'),
     viewers: requireElement(root, '#viewers'),
-    fixedCaption: requireElement(root, '#fixed-caption'),
-    movingCaption: requireElement(root, '#moving-caption'),
+    comparisons: {
+      inputs: requireElement(root, '#inputs-comparison'),
+      result: requireElement(root, '#result-comparison'),
+    },
+    captions: perPanel((role) => requireElement(root, `#${role}-caption`)),
   }
   for (const kind of OUTPUT_KINDS) {
     fillFormatPicker(elements.downloads[kind].format, kind)
   }
 
-  const fixedPanel = await createViewerPanel(requireElement(root, '[data-panel="fixed"]'), 'Fixed', { role: 'fixed' })
-  const movingPanel = await createViewerPanel(requireElement(root, '[data-panel="moving"]'), 'Moving', {
-    role: 'moving',
-  })
-  // Either panel's navigation moves the other, from now until destroy().
-  const unlinkPanels = linkPanels(fixedPanel, movingPanel)
+  const panels: Record<DemoPanelRole, ViewerPanel> = {} as Record<DemoPanelRole, ViewerPanel>
+  for (const role of PANEL_ROLES) {
+    panels[role] = await createViewerPanel(requireElement(root, `[data-panel="${role}"]`), role)
+  }
+  const allPanels = PANEL_ROLES.map((role) => panels[role])
+  // Any panel's navigation moves all the others, from now until destroy().
+  const unlinkPanels = linkPanels(allPanels)
 
   function setStatus({ message, busy = false, variant = 'neutral', progress }: StatusOptions): void {
     const bar = elements.statusProgress
@@ -279,40 +300,52 @@ export async function createShell(root: ParentNode, store: AppStore, options: Sh
       renderDownload(state, kind)
     }
 
-    elements.fixedCaption.textContent = state.fixed ? `Fixed · ${state.fixed.name}` : 'Fixed'
-    if (isShowingResult(state)) {
-      elements.movingCaption.textContent = 'Registered · on the fixed grid'
-      elements.movingCaption.variant = 'success'
-    } else {
-      elements.movingCaption.textContent = state.moving ? `Moving · ${state.moving.name}` : 'Moving'
-      elements.movingCaption.variant = 'brand'
+    for (const role of PANEL_ROLES) {
+      const caption = panelCaption(state, role)
+      const badge = elements.captions[role]
+      badge.textContent = caption.text
+      badge.variant = caption.variant
     }
   }
 
   /**
-   * Once both panels' queued updates are done, return them to the default
-   * view, centred on the fixed image. Queued on both panels, so `settled()`
+   * Once every panel's queued updates are done, return them to the default
+   * view, centred on the fixed image. Queued on every panel, so `settled()`
    * covers the reset too.
    */
   function queueViewReset(): void {
-    const panels = [fixedPanel, movingPanel]
-    const reset = Promise.all(panels.map((panel) => pending.get(panel) ?? Promise.resolve())).then(() => {
-      resetLinkedViews(fixedPanel, movingPanel)
+    const [leader, ...followers] = allPanels
+    const reset = Promise.all(allPanels.map((panel) => pending.get(panel) ?? Promise.resolve())).then(() => {
+      resetLinkedViews(leader!, followers)
     })
-    for (const panel of panels) {
+    for (const panel of allPanels) {
       pending.set(panel, reset)
     }
   }
 
   function render(state: Readonly<AppState>): void {
     renderControls(state)
-    queuePanelUpdate(fixedPanel, fixedPanelContent(state))
-    queuePanelUpdate(movingPanel, movingPanelContent(state))
+    for (const role of PANEL_ROLES) {
+      queuePanelUpdate(panels[role], panelContent(state, role))
+    }
   }
 
   // Event listeners are collected so destroy() can remove them all.
   const bag = createListenerBag()
 
+  // `wa-comparison` fires `change` for every position change, a copy made
+  // here included; the equality check stops the copy from echoing back.
+  for (const source of COMPARISON_ROLES) {
+    const comparison = elements.comparisons[source]
+    bag.listen(comparison, 'change', () => {
+      for (const target of COMPARISON_ROLES) {
+        const other = elements.comparisons[target]
+        if (other !== comparison && other.position !== comparison.position) {
+          other.position = comparison.position
+        }
+      }
+    })
+  }
   bag.listen(elements.loadImages, 'click', () => handlers.onLoadImages?.())
   bag.listen(elements.register, 'click', () => handlers.onRegister?.())
   bag.listen(elements.showResult, 'change', () => {
@@ -332,8 +365,8 @@ export async function createShell(root: ParentNode, store: AppStore, options: Sh
 
   const unsubscribe = store.subscribe((state, previous) => {
     render(state)
-    // A new pair opens on the default view; the result toggle, which only
-    // swaps the moving panel's volume, keeps the user's.
+    // A new pair opens on the default view; the result switch, which only
+    // swaps one panel's volume, keeps the user's.
     if (state.fixed !== previous.fixed || state.moving !== previous.moving) {
       queueViewReset()
     }
@@ -342,19 +375,19 @@ export async function createShell(root: ParentNode, store: AppStore, options: Sh
 
   return {
     elements,
-    fixedPanel,
-    movingPanel,
+    panels,
     notify,
     setStatus,
     async settled() {
-      await Promise.all([...pending.values(), fixedPanel.settled(), movingPanel.settled()])
+      await Promise.all([...pending.values(), ...allPanels.map((panel) => panel.settled())])
     },
     destroy() {
       unsubscribe()
       bag.removeAll()
       unlinkPanels()
-      fixedPanel.destroy()
-      movingPanel.destroy()
+      for (const panel of allPanels) {
+        panel.destroy()
+      }
     },
   }
 }

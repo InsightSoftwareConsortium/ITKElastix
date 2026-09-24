@@ -14,15 +14,20 @@ in WebAssembly and web workers; nothing is uploaded.
   from a local file, a drag-and-drop, or a URL. Two sample pairs are bundled:
   2D CT head slices and the 3D MNI152 T2w and MNI305 T1w templates.
 - **Registration:** elastix's translation → rigid → affine stage sequence with
-  its default parameter maps, run in a web worker and cancellable. The number
+  its default parameter maps, run in a web worker and cancellable. It starts
+  as soon as a loaded pair is on screen; Register runs it again. The number
   of resolutions per stage and the pixel budget (below) are adjustable, and a
   summary card shows the fixed-to-moving matrix, the elapsed time, and a copy
   button for the elastix transform parameters as JSON.
-- **Viewing:** two linked niivue panels (crosshair, pan and zoom, and 3D camera
-  move together), axial, coronal, sagittal, multiplanar, and 3D-render layouts
-  for volumes, a colormap per panel, an overlay mode that blends the moving
-  image or the result over the fixed image, a result toggle, and an "Image
-  details" list under each panel.
+- **Viewing:** two before/after comparisons, each a draggable divider between
+  the fixed image on the left and another on the right: the moving image in
+  the left-hand comparison, and in the right-hand one the registered result
+  once a run has finished (a switch brings the moving image back for a
+  before/after of its own). The two dividers move together. The four niivue
+  panels behind them navigate together (crosshair, pan and zoom, and 3D
+  camera; 2D images are drawn without the crosshair), with axial, coronal,
+  sagittal, multiplanar, and 3D-render layouts for volumes, a colormap for
+  each side, and an "Image details" list under each comparison.
 - **Outputs:** the registered image as OME-Zarr OZX (the default, with the
   transform embedded as an [RFC-5](https://ngff.openmicroscopy.org/rfc/5/)
   affine), OME-TIFF, or any of 17 ITK formats; the transform as a standalone
@@ -72,8 +77,9 @@ Useful while developing:
 - `?budget=<MiB>` on the page URL (for example
   `http://localhost:5188/?budget=4`) shrinks the pixel budget so the ingest
   pipeline downsamples even the bundled samples; fractional values work.
-- `window.__demo` exposes the state store (`state`), the two niivue instances
-  (`fixed`, `moving`), the splash dialog (`splash`), and the notifier
+- `window.__demo` exposes the state store (`state`), the four niivue instances
+  (`panels`, keyed `inputs-fixed`, `inputs-moving`, `result-fixed`, and
+  `result-moving`), the splash dialog (`splash`), and the notifier
   (`notify`), which is how the Playwright specs read the app.
 
 ### Sample images
@@ -164,11 +170,11 @@ specs, all under `test/`:
 
 | Spec                    | Covers                                                                                                    |
 | ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| `smoke.spec.ts`         | Load the 2D CT pair, register, toggle the result, download both outputs in their default OME-Zarr formats. |
+| `smoke.spec.ts`         | Load the 2D CT pair, which registers on its own, toggle the result, download both outputs in their default OME-Zarr formats. |
 | `inputs.spec.ts`        | The 3D sample under the default and a forced budget, the URL fields, the file pickers, the pair check and swap. |
 | `outputs.spec.ts`       | Every image and transform format, the RFC-5 metadata of the two OME-Zarr archives, OZX and OME-TIFF round trips. |
-| `registration.spec.ts`  | The options pickers, the summary card, a budget reload, and cancelling a run.                             |
-| `viewer.spec.ts`        | Linked navigation, colormaps, slice layouts, overlay mode.                                                |
+| `registration.spec.ts`  | The run each loaded or reloaded pair starts, the options pickers, the summary card, and cancelling a run. |
+| `viewer.spec.ts`        | Linked navigation, colormaps, slice layouts, the comparison dividers and what each side shows.            |
 | `layout.spec.ts`        | The narrow-window layout, the theme toggle, the footer links.                                             |
 | `notify.spec.ts`        | Toasts for outcomes, above the splash, and the no-WebGL2 message.                                         |
 | `register-3d.spec.ts`   | A full 3D registration of the MNI pair and its OME-Zarr downloads (marked slow, up to ten minutes).       |
@@ -314,9 +320,11 @@ times its size in memory.
 To change the budget: pass `?budget=<MiB>` on the page URL, or pick 10, 25,
 50, or 100 MB in the "Registration options" panel, which reloads both inputs
 from their files or URLs at the finest level that fits the new budget (and
-drops any earlier result, as any new pair does). Raising it registers at a
-finer scale and takes longer; lowering it is the way to register a pair that
-would otherwise be slow or run out of memory.
+drops any earlier result, as any new pair does) and registers the reloaded
+pair. Raising it registers at a finer scale and takes longer; lowering it is
+the way to register a pair that would otherwise be slow or run out of
+memory. A run is already under way once a pair loads, so press Cancel first
+to change the options for a slow pair.
 
 ## Project layout
 
@@ -336,7 +344,7 @@ demo-app/
 │   │                        export-image, export-transform, export, rfc5-transform,
 │   │                        transform-list, iwi-cbor, download).
 │   ├── registration/        registerAffine, its types, and cancellation.
-│   ├── viewer/              niivue panels, overlay mode, 2D-to-3D promotion, WebGL2 probe.
+│   ├── viewer/              niivue panels, the comparison layout, 2D-to-3D promotion, WebGL2 probe.
 │   └── ui/                  Shell, splash, flows, panels, controls, theme, layout, toasts,
 │                            each with a DOM-free *-options module beside it.
 ├── test/                    Playwright specs plus helpers.ts and ome-zarr.ts.

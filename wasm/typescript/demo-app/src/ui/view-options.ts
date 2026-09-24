@@ -1,7 +1,7 @@
 // The decisions behind the view controls (src/ui/view-controls.ts): the
 // slice layouts a 3D pair can be shown in, when that picker applies, the
-// layout a panel draws content of a given dimension in, and the colormap
-// list each panel's picker offers. Pure functions over niivue's constants
+// layout and crosshair a panel draws content of a given dimension with,
+// and the colormap list each panel's picker offers. Pure functions over niivue's constants
 // and the state, free of DOM access, so the node unit tests can cover them.
 // niivue's entry module imports cleanly in Node, so `SLICE_TYPE` is taken
 // from the package rather than copied.
@@ -57,6 +57,18 @@ export function sliceTypeIdFor(sliceType: number): SliceTypeId | undefined {
  */
 export function sliceTypeForDimension(dimension: 2 | 3, chosen: number): number {
   return dimension === 2 ? SLICE_TYPE.AXIAL : chosen
+}
+
+/** Crosshair thickness, in canvas pixels, a panel draws over a 3D image. */
+export const CROSSHAIR_WIDTH = 1
+
+/**
+ * Crosshair thickness a panel draws content of `dimension` with: none over
+ * a 2D image, where the lines would only cover the picture (there are no
+ * other planes for them to locate), {@link CROSSHAIR_WIDTH} over a 3D one.
+ */
+export function crosshairWidthForDimension(dimension: 2 | 3): number {
+  return dimension === 2 ? 0 : CROSSHAIR_WIDTH
 }
 
 /** The slice layout picker applies: the loaded pair is 3D (the pair check keeps both dimensions equal). */

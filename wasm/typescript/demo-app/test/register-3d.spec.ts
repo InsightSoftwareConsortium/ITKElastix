@@ -1,7 +1,8 @@
 // End-to-end 3D registration: the MNI pair from the splash at full
-// resolution, one affine run at the default settings, the result and
-// overlay switches on, and the two default OME-Zarr downloads read back in
-// Node, the transform's affine three rows deep. One long browser session,
+// resolution, the affine run at the default settings it starts on its own, the result switch
+// swapping the result comparison's moving side, and the two default
+// OME-Zarr downloads read back in Node, the transform's affine three rows
+// deep. One long browser session,
 // so the test is marked slow and capped at ten minutes; only the chromium
 // project launches with the SwiftShader WebGL2 flags niivue needs, so it
 // skips elsewhere. Elements are found by their stable ids; the store and
@@ -20,15 +21,16 @@ import {
   collectPageErrors,
   downloadOutput,
   imageFacts,
+  isRegistering,
   loadSample,
   selectValue,
   switchState,
   toasts,
   volumeCount,
-  volumeFacts,
   volumeName,
 } from './helpers'
 import { expectAffineMatrix, parseOzx } from './ome-zarr'
+import { PANEL_ROLES } from '../src/viewer/comparison-options'
 
 /**
  * Ceiling for the whole run, loading and downloads included. `test.slow()`
@@ -54,7 +56,6 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
   const showResult = page.locator('#show-result')
-  const overlayToggle = page.locator('#overlay-toggle')
   /** The affine the registered image's own archive embeds, to compare with the standalone transform. */
   let imageAffine: number[][] | undefined
 
@@ -63,14 +64,14 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
     await loadSample(page, MNI_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
     expect(await imageFacts(page, 'store', 'fixed')).toMatchObject({ name: MNI_FIXED, dimension: 3, scaleIndex: 0 })
     expect(await imageFacts(page, 'store', 'moving')).toMatchObject({ name: MNI_MOVING, dimension: 3, scaleIndex: 0 })
-    // A 3D pair gets the slice layout picker; the result switch waits for a run.
+    // A 3D pair gets the slice layout picker; the result switch waits for
+    // the run, which a full-resolution volume keeps going for seconds.
     await expect(page.locator('#slice-type')).toBeVisible()
+    expect(await isRegistering(page)).toBe(true)
     expect(await switchState(showResult)).toEqual({ disabled: true, checked: false })
-    expect(await switchState(overlayToggle)).toEqual({ disabled: false, checked: false })
   })
 
-  await test.step('register at the default settings and wait for the result switch', async () => {
-    await page.locator('#register').click()
+  await test.step('the run at the default settings finishes and enables the result switch', async () => {
     await expect
       .poll(async () => (await switchState(showResult)).disabled, {
         message: 'the 3D registration should finish and enable "Show registered result"',
@@ -80,32 +81,28 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
     await expect(toasts(page, 'danger')).toHaveCount(0)
   })
 
-  await test.step('enable the result switch: the registered volume replaces the moving image', async () => {
+  await test.step('enable the result switch: the registered volume replaces the moving image on the right', async () => {
     // A finished run switches the result on by itself (`resultReady` in
     // src/state.ts); switching it off and on again is the user's "enable".
     expect((await switchState(showResult)).checked).toBe(true)
-    await expect.poll(() => volumeName(page, 'moving')).toContain('registered')
+    await expect.poll(() => volumeName(page, 'result-moving')).toContain('registered')
 
     await showResult.click()
     await expect.poll(async () => (await switchState(showResult)).checked).toBe(false)
-    await expect.poll(() => volumeName(page, 'moving')).toContain('MNI305')
+    await expect.poll(() => volumeName(page, 'result-moving')).toContain('MNI305')
 
     await showResult.click()
     await expect.poll(async () => (await switchState(showResult)).checked).toBe(true)
-    await expect.poll(() => volumeName(page, 'moving')).toContain('registered')
-    expect(await volumeName(page, 'fixed')).toContain('MNI152')
+    await expect.poll(() => volumeName(page, 'result-moving')).toContain('registered')
   })
 
-  await test.step('enable overlay: the registered result over the fixed image in red', async () => {
-    await overlayToggle.click()
-    await expect.poll(() => volumeCount(page, 'fixed')).toBe(2)
-    const [base, overlay] = (await volumeFacts(page, 'fixed'))!
-    expect(base!.name).toContain('MNI152')
-    expect(base!.colormap).toBe('Gray')
-    expect(overlay!.name).toContain('registered')
-    expect(overlay!.colormap).toBe('Red')
-    expect(overlay!.opacity).toBeCloseTo(0.5)
-    expect(await volumeCount(page, 'moving')).toBe(1)
+  await test.step('the inputs comparison and both fixed sides keep the input volumes', async () => {
+    expect(await volumeName(page, 'inputs-fixed')).toContain('MNI152')
+    expect(await volumeName(page, 'inputs-moving')).toContain('MNI305')
+    expect(await volumeName(page, 'result-fixed')).toContain('MNI152')
+    for (const role of PANEL_ROLES) {
+      expect(await volumeCount(page, role)).toBe(1)
+    }
   })
 
   await test.step('the summary card shows a three-axis affine', async () => {

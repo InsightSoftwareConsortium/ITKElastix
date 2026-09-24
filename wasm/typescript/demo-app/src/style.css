@@ -287,8 +287,8 @@ html:not(.wa-dark) .theme-icon-sun {
 
 /* The row between the status and the viewers (src/ui/view-controls.ts):
    the slice layout picker and "Reset view" on the left, a colormap picker
-   per panel on the right. The pickers keep their labels above the control,
-   so everything aligns on the bottom edge of the controls. */
+   per comparison side on the right. The pickers keep their labels above
+   the control, so everything aligns on the bottom edge of the controls. */
 .view-controls {
   display: flex;
   align-items: flex-end;
@@ -309,19 +309,6 @@ html:not(.wa-dark) .theme-icon-sun {
    "Ct_soft_tissue") and for "Multiplanar" to read in full. */
 .view-picker {
   width: 11rem;
-}
-
-/* Overlay mode (src/viewer/overlay.ts): the switch sits on the controls'
-   line, centred on the buttons beside it, and the slider keeps its label
-   above the track like the pickers do. */
-.overlay-toggle {
-  align-self: center;
-  margin-top: var(--wa-form-control-label-line-height, 1.5em);
-  white-space: nowrap;
-}
-
-.overlay-opacity {
-  width: 10rem;
 }
 
 /* Viewers ----------------------------------------------------------------- */
@@ -348,7 +335,7 @@ html:not(.wa-dark) .theme-icon-sun {
   border-radius: var(--wa-border-radius-pill);
 }
 
-/* One column of the split panel: the viewer over its "Image details". */
+/* One column of the split panel: the comparison over its "Image details". */
 .viewer-column {
   display: flex;
   flex-direction: column;
@@ -359,7 +346,8 @@ html:not(.wa-dark) .theme-icon-sun {
   height: 100%;
 }
 
-/* One niivue viewer: a caption over a canvas that fills the remaining space. */
+/* One comparison: a wa-comparison that fills the remaining space, two
+   niivue canvases inside it under their captions. */
 .viewer-panel {
   position: relative;
   display: flex;
@@ -373,13 +361,49 @@ html:not(.wa-dark) .theme-icon-sun {
   overflow: hidden;
 }
 
+/* The comparison sizes itself from its `before` slot, so the slot's
+   container and the slotted side must carry the panel's height down to the
+   canvases; the `after` side is laid over it at the same size and clipped at
+   the divider. The divider is a thin light line with a compact handle. */
+.viewer-comparison {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  --divider-width: 2px;
+  --handle-size: 2rem;
+}
+
+.viewer-comparison::part(comparison),
+.viewer-comparison::part(before) {
+  height: 100%;
+}
+
+/* One side of a comparison: the canvas with its caption over it. */
+.viewer-side {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+/* The fixed side's caption sits at the start edge, the moving side's at the
+   end edge, so each is over the image it names while the divider is
+   anywhere near the middle. */
 .viewer-caption {
   position: absolute;
   top: var(--wa-space-s);
-  left: var(--wa-space-s);
   z-index: 1;
   max-width: calc(100% - 2 * var(--wa-space-s));
   pointer-events: none;
+}
+
+.viewer-side[data-side='fixed'] .viewer-caption {
+  left: var(--wa-space-s);
+}
+
+.viewer-side[data-side='moving'] .viewer-caption {
+  right: var(--wa-space-s);
 }
 
 .viewer-caption::part(badge) {
@@ -389,10 +413,9 @@ html:not(.wa-dark) .theme-icon-sun {
 }
 
 /* niivue resizes its drawing buffer from the canvas's CSS box, so the canvas
-   must fill its panel and never impose an intrinsic size of its own. */
+   must fill its side and never impose an intrinsic size of its own. */
 .viewer-canvas {
   display: block;
-  flex: 1 1 auto;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -400,8 +423,9 @@ html:not(.wa-dark) .theme-icon-sun {
   box-sizing: border-box;
 }
 
-/* "Image details" under a viewer (src/ui/image-info.ts): a compact
-   wa-details whose summary row carries a one-line brief of the content. */
+/* "Image details" under a comparison (src/ui/image-info.ts): a compact
+   wa-details whose summary row carries a one-line brief of both sides and
+   whose body lists the two images side by side, wrapping when narrow. */
 .viewer-details {
   flex: none;
   font-size: var(--wa-font-size-s);
@@ -430,7 +454,24 @@ html:not(.wa-dark) .theme-icon-sun {
   font-variant-numeric: tabular-nums;
 }
 
-/* Cap the open body so a long list scrolls instead of squeezing the canvas away. */
+.viewer-details-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s) var(--wa-space-l);
+}
+
+.viewer-details-side {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.viewer-details-side-title {
+  margin: 0 0 var(--wa-space-2xs);
+  font-size: var(--wa-font-size-s);
+  font-weight: var(--wa-font-weight-semibold);
+}
+
+/* Cap the open body so a long list scrolls instead of squeezing the canvases away. */
 .viewer-details::part(content) {
   max-height: 40vh;
   overflow: auto;

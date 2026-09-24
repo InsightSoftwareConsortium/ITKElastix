@@ -11,13 +11,13 @@ import '@awesome.me/webawesome/dist/styles/themes/default.css'
 import '@awesome.me/webawesome/dist/styles/utilities/visually-hidden.css'
 import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@awesome.me/webawesome/dist/components/card/card.js'
+import '@awesome.me/webawesome/dist/components/comparison/comparison.js'
 import '@awesome.me/webawesome/dist/components/copy-button/copy-button.js'
 import '@awesome.me/webawesome/dist/components/details/details.js'
 import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
 import '@awesome.me/webawesome/dist/components/input/input.js'
 import '@awesome.me/webawesome/dist/components/split-panel/split-panel.js'
 import '@awesome.me/webawesome/dist/components/switch/switch.js'
-import '@awesome.me/webawesome/dist/components/slider/slider.js'
 import '@awesome.me/webawesome/dist/components/select/select.js'
 import '@awesome.me/webawesome/dist/components/option/option.js'
 import '@awesome.me/webawesome/dist/components/progress-bar/progress-bar.js'
@@ -56,7 +56,6 @@ import { createShell } from './ui/shell'
 import { createSplash } from './ui/splash'
 import { createThemeToggle } from './ui/theme'
 import { createViewControls } from './ui/view-controls'
-import { createOverlay } from './viewer/overlay'
 import { exposeDemoGlobals } from './viewer/panel'
 import { webgl2Available } from './viewer/webgl'
 
@@ -67,7 +66,7 @@ if (!app) {
 
 // The notifier comes first, so anything that fails from here on, the
 // start-up included, has somewhere to report. Playwright reads it, the
-// store, the two NiiVue instances the panels publish, and the splash from
+// store, the NiiVue instances the panels publish, and the splash from
 // window.__demo.
 const notify = createNotifier(app)
 exposeDemoGlobals({ notify })
@@ -117,31 +116,28 @@ async function bootstrap(root: HTMLElement, notify: Notifier): Promise<void> {
   createLayout(root)
 
   // `splash`, `registration`, `reloads`, and `downloads` are assigned
-  // below; the handlers only run on user clicks, long after bootstrap has
-  // finished. Every flow catches its own failures and returns the store to
-  // idle; the guard reports anything that still escapes.
+  // below; the handlers only run once a pair is loaded or on user clicks,
+  // long after bootstrap has finished. Every flow catches its own failures
+  // and returns the store to idle; the guard reports anything that still
+  // escapes.
   const shell = await createShell(root, store, {
     notify,
     onLoadImages: () => splash.open(),
-    onRegister: () => {
-      void notify.guard('Registration failed', registration.run())
-    },
+    onRegister: startRegistration,
     onDownload: (kind) => {
       void notify.guard(`The ${kind} download failed`, downloads.download(kind))
     },
   })
-  // The "Image details" under each viewer, the view controls above them,
-  // the overlay on the fixed panel, and the registration panel follow the
-  // store on their own.
+  // The "Image details" under each comparison, the view controls above
+  // them, and the registration panel follow the store on their own.
   createImageInfo(root, store)
   createViewControls(root, store, shell)
-  createOverlay(root, store, shell)
   const registration = createRegisterFlow(store, shell, { register: registerAffine })
   const reloads = createReloadFlow(store, shell, { loadImage: loadImageSource })
   createRegistrationPanel(root, store, {
     onCancel: () => registration.cancel(),
     onBudgetChosen: (budgetBytes) => {
-      void notify.guard('The budget reload failed', reloads.reload(budgetBytes))
+      void notify.guard('The budget reload failed', reloadAndRegister(budgetBytes))
     },
   })
   const downloads = createDownloadFlow(store, shell, {
@@ -150,6 +146,18 @@ async function bootstrap(root: HTMLElement, notify: Notifier): Promise<void> {
     download: downloadBytes,
   })
 
+  /** Register the pair in the store; the flow reports the outcome in the status row. */
+  function startRegistration(): void {
+    void notify.guard('Registration failed', registration.run())
+  }
+
+  /** Reload both inputs under `budgetBytes` and register the reloaded pair straight away. */
+  async function reloadAndRegister(budgetBytes: number): Promise<void> {
+    if (await reloads.reload(budgetBytes)) {
+      startRegistration()
+    }
+  }
+
   const splash = createSplash(root, {
     store,
     samples,
@@ -157,13 +165,13 @@ async function bootstrap(root: HTMLElement, notify: Notifier): Promise<void> {
     // (a very large image about to be downsampled) is a toast.
     onWarning: (message) => notify.warning(message),
     // The splash has already run `assertCompatiblePair` on the two images.
+    // The pair is registered as soon as it is on screen; the dialog closes
+    // without waiting for the run.
     async onLoaded(fixed, moving) {
       store.update(inputsLoaded(fixed, moving))
       shell.setStatus({ message: `Displaying ${fixed.name} and ${moving.name}…`, busy: true })
       await shell.settled()
-      shell.setStatus({
-        message: `Loaded ${fixed.name} (fixed) and ${moving.name} (moving), ${fixed.dimension}D. Ready to register.`,
-      })
+      startRegistration()
     },
   })
 

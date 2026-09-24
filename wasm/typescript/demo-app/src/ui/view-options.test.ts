@@ -7,11 +7,13 @@ import { SLICE_TYPE } from '@niivue/niivue'
 import type { LoadedImage } from '../io/load-image.ts'
 import { createStore, inputsLoaded } from '../state.ts'
 import {
+  CROSSHAIR_WIDTH,
   DEFAULT_COLORMAP,
   DEFAULT_SLICE_TYPE,
   DEFAULT_SLICE_TYPE_ID,
   SLICE_TYPE_OPTIONS,
   colormapOptions,
+  crosshairWidthForDimension,
   isSliceTypeId,
   showsSliceTypePicker,
   sliceTypeForDimension,
@@ -72,6 +74,12 @@ test('2D content is always axial; 3D content takes the chosen layout', () => {
     assert.equal(sliceTypeForDimension(2, option.sliceType), SLICE_TYPE.AXIAL)
     assert.equal(sliceTypeForDimension(3, option.sliceType), option.sliceType)
   }
+})
+
+test('a 2D image is drawn without a crosshair, a 3D image with one', () => {
+  assert.equal(crosshairWidthForDimension(2), 0)
+  assert.equal(crosshairWidthForDimension(3), CROSSHAIR_WIDTH)
+  assert.ok(CROSSHAIR_WIDTH > 0)
 })
 
 test('the layout picker shows for a 3D pair only', () => {

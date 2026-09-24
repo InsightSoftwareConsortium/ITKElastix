@@ -1,5 +1,6 @@
-// Unit tests for the Register and Cancel buttons' flow, driven with a
-// stand-in runner and a recording shell. Run with `pnpm test:unit`.
+// Unit tests for the registration flow a loaded pair and the Register and
+// Cancel buttons start and stop, driven with a stand-in runner and a
+// recording shell. Run with `pnpm test:unit`.
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
@@ -11,7 +12,7 @@ import {
   type RegistrationResult,
 } from '../registration/types.ts'
 import { abortable } from '../registration/abortable.ts'
-import { createStore, inputsLoaded, resolutionsChosen, resultReady } from '../state.ts'
+import { createStore, inputsLoaded, reloadStarted, resolutionsChosen, resultReady } from '../state.ts'
 import { createRegisterFlow, type RegisterFlowShell } from './register-flow.ts'
 import type { StatusOptions } from './shell.ts'
 
@@ -157,6 +158,24 @@ test('discards a result whose inputs were replaced during the run', async () => 
   assert.equal(store.state.registering, false)
   assert.equal(store.state.result, undefined)
   assert.equal(shell.statuses.at(-1)!.variant, 'warning')
+})
+
+test('does nothing while a budget reload is replacing the inputs', async () => {
+  const store = loadedStore()
+  store.update(reloadStarted())
+  const shell = recordingShell()
+  let calls = 0
+  const { run } = createRegisterFlow(store, shell, {
+    register: async () => {
+      calls += 1
+      return fakeResult()
+    },
+  })
+
+  await run()
+  assert.equal(calls, 0)
+  assert.deepEqual(shell.statuses, [])
+  assert.equal(store.state.registering, false)
 })
 
 test('ignores a second click while a run is active', async () => {

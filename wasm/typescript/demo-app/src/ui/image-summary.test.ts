@@ -7,6 +7,8 @@ import type { RegistrationResult } from '../registration/types.ts'
 import { createStore, type AppState } from '../state.ts'
 import {
   axisLabels,
+  comparisonDetails,
+  contentTitle,
   downsampleFactor,
   formatShape,
   formatSpacing,
@@ -151,7 +153,7 @@ test('image details add the source format after the name and the budget after th
   assert.deepEqual(squeezed.slice(-3).map((field) => field.key), ['budget', 'channel', 'squeezed'])
 })
 
-test('result details say the moving panel shows the result on the fixed grid', () => {
+test('result details say the result comparison shows the result on the fixed grid', () => {
   const fixed = fakeImage({ name: 'fixed.nii.gz' })
   const moving = fakeImage({ name: 'moving.nii.gz' })
   const fields = resultDetailFields(fakeResult(), fixed, moving)
@@ -171,33 +173,69 @@ test('result details say the moving panel shows the result on the fixed grid', (
   assert.equal(values.transform, 'translation → rigid → affine')
   assert.equal(values.elapsed, '2.3 s')
   assert.equal(fields.find((field) => field.key === 'shape')?.label, 'Shape (x × y × z)')
-  assert.equal(resultBrief(fakeResult()), 'registered result on the fixed grid, 3D 128 × 96 × 64 float32')
+  assert.equal(resultBrief(fakeResult()), '3D 128 × 96 × 64 float32 on the fixed grid')
 })
 
-test('panelDetails follows the store: the inputs, then the result while it is shown', () => {
+test('panelDetails follows the store: the inputs, then the result on the result comparison while it is shown', () => {
   const fixed = fakeImage({ name: 'fixed.nii.gz' })
-  const moving = fakeImage({ name: 'moving.nii.gz', format: 'OZX' })
+  const moving = fakeImage({ name: 'moving.ome.zarr.ozx', kind: 'ozx', format: 'OZX' })
   const empty: AppState = createStore().state
-  assert.equal(panelDetails(empty, 'fixed'), undefined)
-  assert.equal(panelDetails(empty, 'moving'), undefined)
+  for (const role of ['inputs-fixed', 'inputs-moving', 'result-fixed', 'result-moving'] as const) {
+    assert.equal(panelDetails(empty, role), undefined, role)
+  }
 
   const loaded: AppState = { ...empty, fixed, moving }
-  const fixedDetails = panelDetails(loaded, 'fixed')
-  assert.equal(fixedDetails?.content, 'fixed')
-  assert.equal(fixedDetails?.brief, '3D 128 × 96 × 64 int16, 1.5 MB')
-  assert.equal(fixedDetails?.fields[0]?.value, 'fixed.nii.gz')
-  const movingDetails = panelDetails(loaded, 'moving')
-  assert.equal(movingDetails?.content, 'moving')
-  assert.equal(movingDetails?.fields.find((field) => field.key === 'source')?.value, 'OZX')
-  // The toggle alone, without a result, changes nothing.
-  assert.equal(panelDetails({ ...loaded, showResult: true }, 'moving')?.content, 'moving')
+  for (const role of ['inputs-fixed', 'result-fixed'] as const) {
+    const fixedDetails = panelDetails(loaded, role)
+    assert.equal(fixedDetails?.content, 'fixed', role)
+    assert.equal(fixedDetails?.brief, '3D 128 × 96 × 64 int16, 1.5 MB')
+    assert.equal(fixedDetails?.fields[0]?.value, 'fixed.nii.gz')
+  }
+  for (const role of ['inputs-moving', 'result-moving'] as const) {
+    const movingDetails = panelDetails(loaded, role)
+    assert.equal(movingDetails?.content, 'moving', role)
+    assert.equal(movingDetails?.fields.find((field) => field.key === 'source')?.value, 'OZX')
+  }
+  // The switch alone, without a result, changes nothing.
+  assert.equal(panelDetails({ ...loaded, showResult: true }, 'result-moving')?.content, 'moving')
 
   const shown: AppState = { ...loaded, result: fakeResult(), showResult: true }
-  const resultDetails = panelDetails(shown, 'moving')
+  const resultDetails = panelDetails(shown, 'result-moving')
   assert.equal(resultDetails?.content, 'result')
-  assert.equal(resultDetails?.brief, 'registered result on the fixed grid, 3D 128 × 96 × 64 float32')
+  assert.equal(resultDetails?.brief, '3D 128 × 96 × 64 float32 on the fixed grid')
   assert.equal(resultDetails?.fields[0]?.value, 'Registered result on the fixed grid')
-  // The fixed panel is never touched by the toggle, and toggling off restores the moving input.
-  assert.equal(panelDetails(shown, 'fixed')?.content, 'fixed')
-  assert.equal(panelDetails({ ...shown, showResult: false }, 'moving')?.content, 'moving')
+  // The inputs comparison and both fixed sides are never touched by the
+  // switch, and switching it off restores the moving input.
+  assert.equal(panelDetails(shown, 'inputs-moving')?.content, 'moving')
+  assert.equal(panelDetails(shown, 'inputs-fixed')?.content, 'fixed')
+  assert.equal(panelDetails(shown, 'result-fixed')?.content, 'fixed')
+  assert.equal(panelDetails({ ...shown, showResult: false }, 'result-moving')?.content, 'moving')
+})
+
+test('comparisonDetails pairs the two sides and names both in its brief', () => {
+  const fixed = fakeImage({ name: 'fixed.nii.gz' })
+  const moving = fakeImage({ name: 'moving.nii.gz', dimension: 3 })
+  const empty: AppState = createStore().state
+  assert.equal(comparisonDetails(empty, 'inputs'), undefined)
+  assert.equal(comparisonDetails({ ...empty, fixed }, 'inputs'), undefined, 'both sides load together')
+
+  const loaded: AppState = { ...empty, fixed, moving }
+  const inputs = comparisonDetails(loaded, 'inputs')!
+  assert.equal(inputs.sides.fixed.content, 'fixed')
+  assert.equal(inputs.sides.moving.content, 'moving')
+  assert.equal(inputs.brief, 'Fixed 3D 128 × 96 × 64 int16, 1.5 MB · Moving 3D 128 × 96 × 64 int16, 1.5 MB')
+  assert.deepEqual(comparisonDetails(loaded, 'result'), inputs, 'the same until a result is shown')
+
+  const shown: AppState = { ...loaded, result: fakeResult(), showResult: true }
+  const result = comparisonDetails(shown, 'result')!
+  assert.equal(result.sides.fixed.content, 'fixed')
+  assert.equal(result.sides.moving.content, 'result')
+  assert.equal(result.brief, 'Fixed 3D 128 × 96 × 64 int16, 1.5 MB · Registered 3D 128 × 96 × 64 float32 on the fixed grid')
+  assert.deepEqual(comparisonDetails(shown, 'inputs'), inputs, 'the inputs comparison is unchanged')
+})
+
+test('contentTitle heads each side', () => {
+  assert.equal(contentTitle('fixed'), 'Fixed')
+  assert.equal(contentTitle('moving'), 'Moving')
+  assert.equal(contentTitle('result'), 'Registered')
 })

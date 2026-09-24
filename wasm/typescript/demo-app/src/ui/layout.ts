@@ -1,4 +1,4 @@
-// The responsive layout: the split panel holding the two viewers sits
+// The responsive layout: the split panel holding the two comparisons sits
 // side by side on a wide viewport and stacks on a narrow one, following a
 // `matchMedia` listener on the breakpoint in src/ui/layout-options.ts. The
 // `@media` rules in style.css compact the header and control rows at the

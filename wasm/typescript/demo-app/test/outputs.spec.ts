@@ -20,7 +20,9 @@ import {
   REGISTRATION_TIMEOUT,
   collectPageErrors,
   downloadOutput,
+  holdRegistration,
   imageFacts,
+  isRegistering,
   loadSample,
   splashDialog,
   start,
@@ -100,8 +102,8 @@ const test = base.extend<{}, { session: Session }>({
       const errors: string[] = []
       collectPageErrors(page, errors)
       await page.goto('./')
+      // The pair starts registering as soon as it is on screen.
       await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
-      await page.locator('#register').click()
       await expect
         .poll(() => resultFacts(page), { message: 'registration should finish', timeout: REGISTRATION_TIMEOUT })
         .toBeDefined()
@@ -266,12 +268,19 @@ test.describe('round trips through the fixed picker', () => {
       const expected = { name: filename, kind, format, dimension: registered.dimension, size: registered.size }
       expect(await imageFacts(page, 'splash', 'fixed')).toMatchObject(expected)
 
+      const releaseRegistration = await holdRegistration(page)
       await start(page)
       expect(await imageFacts(page, 'store', 'fixed')).toMatchObject(expected)
       expect((await imageFacts(page, 'store', 'moving'))?.name).toBe(CT_MOVING)
-      await expect.poll(() => volumeName(page, 'fixed')).toContain(filename)
-      // A new pair drops the result it did not come from.
-      expect(await resultFacts(page)).toBeUndefined()
+      await expect.poll(() => volumeName(page, 'inputs-fixed')).toContain(filename)
+      // A new pair drops the result it did not come from and starts registering afresh.
+      expect(await page.evaluate(() => window.__demo?.state?.state.result)).toBeUndefined()
+      expect(await isRegistering(page)).toBe(true)
+
+      // A run disables "Load images", so it is cancelled for the next round trip.
+      await page.locator('#cancel-registration').click()
+      await expect.poll(() => isRegistering(page)).toBe(false)
+      await releaseRegistration()
     })
   }
 })

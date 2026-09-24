@@ -1,7 +1,7 @@
 // Helpers shared by the Playwright specs in this directory: the bundled
 // samples, the timeouts, and readers for what the app publishes on
-// `window.__demo` (the store from src/main.ts, the niivue instances from
-// src/viewer/panel.ts, the splash from src/ui/splash.ts). Elements are
+// `window.__demo` (the store from src/main.ts, the niivue instances of the
+// four panels from src/viewer/panel.ts, the splash from src/ui/splash.ts). Elements are
 // found by their stable ids. WebAwesome keeps `disabled`, `checked`, and
 // `value` as properties without reflecting them to attributes, so
 // Playwright's attribute-based matchers cannot see them; the helpers read
@@ -10,15 +10,17 @@
 // `*.spec.ts`.
 import { fileURLToPath } from 'node:url'
 
-import { expect, type Download, type Locator, type Page } from '@playwright/test'
+import { expect, type Download, type Locator, type Page, type Route } from '@playwright/test'
+import type WaBadge from '@awesome.me/webawesome/dist/components/badge/badge.js'
+import type WaComparison from '@awesome.me/webawesome/dist/components/comparison/comparison.js'
 import type WaSelect from '@awesome.me/webawesome/dist/components/select/select.js'
-import type WaSlider from '@awesome.me/webawesome/dist/components/slider/slider.js'
 import type WaSwitch from '@awesome.me/webawesome/dist/components/switch/switch.js'
 
 import type { LoadedImage } from '../src/io/load-image'
 import type { OutputKind } from '../src/state'
 import type { ToastVariant } from '../src/ui/notify-options'
 import type { SlotRole } from '../src/ui/splash-slots'
+import { PANEL_ROLES, type ComparisonRole, type DemoPanelRole } from '../src/viewer/comparison-options'
 
 /** The bundled sample images, downloaded by scripts/fetch-samples.mjs before the dev server starts. */
 export const SAMPLES_DIR = fileURLToPath(new URL('../public/samples/', import.meta.url))
@@ -61,18 +63,57 @@ export function collectPageErrors(page: Page, errors: string[]): void {
 }
 
 /** Number of volumes the niivue instance of the `role` panel shows. */
-export function volumeCount(page: Page, role: SlotRole): Promise<number | undefined> {
-  return page.evaluate((role) => window.__demo?.[role]?.volumes.length, role)
+export function volumeCount(page: Page, role: DemoPanelRole): Promise<number | undefined> {
+  return page.evaluate((role) => window.__demo?.panels?.[role]?.volumes.length, role)
 }
 
 /** Name of the first volume the niivue instance of the `role` panel shows. */
-export function volumeName(page: Page, role: SlotRole): Promise<string | undefined> {
-  return page.evaluate((role) => window.__demo?.[role]?.volumes[0]?.name, role)
+export function volumeName(page: Page, role: DemoPanelRole): Promise<string | undefined> {
+  return page.evaluate((role) => window.__demo?.panels?.[role]?.volumes[0]?.name, role)
 }
 
 /** Colormap of the first volume the `role` panel shows (a canonical niivue name such as `Gray`). */
-export function volumeColormap(page: Page, role: SlotRole): Promise<string | undefined> {
-  return page.evaluate((role) => window.__demo?.[role]?.volumes[0]?.colormap, role)
+export function volumeColormap(page: Page, role: DemoPanelRole): Promise<string | undefined> {
+  return page.evaluate((role) => window.__demo?.panels?.[role]?.volumes[0]?.colormap, role)
+}
+
+/** Thickness of the crosshair the `role` panel draws, in canvas pixels; 0 when hidden. */
+export function crosshairWidth(page: Page, role: DemoPanelRole): Promise<number | undefined> {
+  return page.evaluate((role) => window.__demo?.panels?.[role]?.crosshairWidth, role)
+}
+
+/** The text and variant of the caption badge over the `role` panel. */
+export function caption(page: Page, role: DemoPanelRole): Promise<{ text: string; variant: string }> {
+  return page
+    .locator(`#${role}-caption`)
+    .evaluate((element: WaBadge) => ({ text: element.textContent?.trim() ?? '', variant: element.variant }))
+}
+
+/** The divider position of the `comparison`'s `wa-comparison`, as a percentage of its width. */
+export function comparisonPosition(page: Page, comparison: ComparisonRole): Promise<number> {
+  return page.locator(`#${comparison}-comparison`).evaluate((element: WaComparison) => element.position)
+}
+
+/**
+ * The `data-role` of the canvas under the point at fractions `x` and `y`
+ * of the `comparison`'s box, so which panel a click there reaches; the tag
+ * name of whatever else is there (the comparison host, over its divider or
+ * handle). The side in the `after` slot is laid over the other and clipped
+ * at the divider, and a clip-path bounds hit testing, so the side beneath
+ * shows through where it is clipped away.
+ */
+export function panelAtPoint(page: Page, comparison: ComparisonRole, x: number, y: number): Promise<string | undefined> {
+  return page.evaluate(
+    ([comparison, x, y]) => {
+      const box = document.querySelector(`[data-comparison="${comparison}"]`)?.getBoundingClientRect()
+      if (!box) {
+        return undefined
+      }
+      const element = document.elementFromPoint(box.left + box.width * x, box.top + box.height * y)
+      return element instanceof HTMLCanvasElement ? element.dataset.role : element?.tagName.toLowerCase()
+    },
+    [comparison, x, y] as const,
+  )
 }
 
 /** How one niivue volume is drawn. niivue fills in both display fields on load, but types them as optional. */
@@ -82,11 +123,11 @@ export interface VolumeFacts {
   opacity?: number
 }
 
-/** Every volume the `role` panel shows, the base first and an overlay after it. */
-export function volumeFacts(page: Page, role: SlotRole): Promise<VolumeFacts[] | undefined> {
+/** Every volume the `role` panel shows; the panels show one each. */
+export function volumeFacts(page: Page, role: DemoPanelRole): Promise<VolumeFacts[] | undefined> {
   return page.evaluate(
     (role) =>
-      window.__demo?.[role]?.volumes.map((volume) => ({
+      window.__demo?.panels?.[role]?.volumes.map((volume) => ({
         name: volume.name,
         colormap: volume.colormap,
         opacity: volume.opacity,
@@ -96,11 +137,11 @@ export function volumeFacts(page: Page, role: SlotRole): Promise<VolumeFacts[] |
 }
 
 /** The niivue `SLICE_TYPE` value the `role` panel is drawn in. */
-export function sliceType(page: Page, role: SlotRole): Promise<number | undefined> {
-  return page.evaluate((role) => window.__demo?.[role]?.sliceType, role)
+export function sliceType(page: Page, role: DemoPanelRole): Promise<number | undefined> {
+  return page.evaluate((role) => window.__demo?.panels?.[role]?.sliceType, role)
 }
 
-/** The navigation state of one panel that the viewer spec compares across the two. */
+/** The navigation state of one panel that the viewer spec compares across all of them. */
 export interface ViewFacts {
   /** Crosshair as niivue scene fractions, 0 to 1 per axis. */
   crosshair: number[]
@@ -115,9 +156,9 @@ export interface ViewFacts {
   zoom: number
 }
 
-export function viewFacts(page: Page, role: SlotRole): Promise<ViewFacts | undefined> {
+export function viewFacts(page: Page, role: DemoPanelRole): Promise<ViewFacts | undefined> {
   return page.evaluate((role) => {
-    const nv = window.__demo?.[role]
+    const nv = window.__demo?.panels?.[role]
     if (!nv) {
       return undefined
     }
@@ -141,11 +182,11 @@ export interface ViewChange {
   zoom?: number
 }
 
-/** Move the `role` panel's view and redraw, which is what broadcasts the change to the linked panel. */
-export function navigate(page: Page, role: SlotRole, change: ViewChange): Promise<void> {
+/** Move the `role` panel's view and redraw, which is what broadcasts the change to the linked panels. */
+export function navigate(page: Page, role: DemoPanelRole, change: ViewChange): Promise<void> {
   return page.evaluate(
     ([role, change]) => {
-      const nv = window.__demo?.[role]
+      const nv = window.__demo?.panels?.[role]
       if (!nv) {
         throw new Error(`No ${role} viewer`)
       }
@@ -226,22 +267,6 @@ export function isDisabled(control: Locator): Promise<boolean> {
   return control.evaluate((element: HTMLElement & { disabled: boolean }) => element.disabled)
 }
 
-/** The value of a `wa-slider`; a property, like the switch's state. */
-export function sliderValue(slider: Locator): Promise<number> {
-  return slider.evaluate((element: WaSlider) => element.value)
-}
-
-/**
- * Give a `wa-slider` the keyboard. `locator.focus()` uses the browser's
- * native focus, which the host (no tabindex) ignores; the component's own
- * `focus()` forwards to the thumb inside its shadow root, which then takes
- * arrow, Home, and End keys. Mind that a `wa-switch` left focused by a
- * click takes ArrowLeft/ArrowRight as uncheck/check.
- */
-export function focusSlider(slider: Locator): Promise<void> {
-  return slider.evaluate((element: WaSlider) => element.focus())
-}
-
 /** The `disabled` and `checked` properties of a `wa-switch`, neither of which is reflected. */
 export function switchState(toggle: Locator): Promise<{ disabled: boolean; checked: boolean }> {
   return toggle.evaluate((element: WaSwitch) => ({ disabled: element.disabled, checked: element.checked }))
@@ -278,13 +303,63 @@ export async function waitForSlot(page: Page, role: SlotRole, name: string, time
     .toEqual({ name, loading: false })
 }
 
-/** Click a sample button and wait for the pair to reach the store and both viewers. */
+/** The pipeline files every registration run fetches in its own new worker (see src/registration/register.ts). */
+const REGISTRATION_PIPELINES = /\/pipelines\/(default-parameter-map|elastix)\./
+
+/**
+ * Park every registration run at its first pipeline fetch until the
+ * returned function is called. A loaded pair starts registering as soon as
+ * it is on screen, so this is how a spec looks at the app between a load
+ * and its result, or keeps a run from finishing at all. Each run fetches
+ * its pipelines in a new worker, so re-runs are held too.
+ */
+export async function holdRegistration(page: Page): Promise<() => Promise<void>> {
+  let release!: () => void
+  const released = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const handler = async (route: Route) => {
+    await released
+    // A cancelled run has terminated the worker that made the request.
+    await route.continue().catch(() => undefined)
+  }
+  await page.context().route(REGISTRATION_PIPELINES, handler)
+  return async () => {
+    release()
+    await page.context().unroute(REGISTRATION_PIPELINES, handler)
+  }
+}
+
+/** Whether a registration run is under way. */
+export function isRegistering(page: Page): Promise<boolean | undefined> {
+  return page.evaluate(() => window.__demo?.state?.state.registering)
+}
+
+/** Wait for the run under way to finish with a result in the store. */
+export async function waitForResult(page: Page, timeout = REGISTRATION_TIMEOUT): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const state = window.__demo?.state?.state
+          return state?.result !== undefined && state.registering === false
+        }),
+      { message: 'the registration should finish with a result', timeout },
+    )
+    .toBe(true)
+}
+
+/**
+ * Click a sample button and wait for the pair to reach the store and every
+ * panel; its registration has started by then (and may have finished).
+ */
 export async function loadSample(page: Page, sampleId: string, timeout: number): Promise<void> {
   await expect(splashDialog(page)).toBeVisible()
   await page.locator(`#${sampleId}`).click()
   await expect(splashDialog(page)).toBeHidden({ timeout })
-  await expect.poll(() => volumeCount(page, 'fixed'), { timeout }).toBe(1)
-  await expect.poll(() => volumeCount(page, 'moving'), { timeout }).toBe(1)
+  for (const role of PANEL_ROLES) {
+    await expect.poll(() => volumeCount(page, role), { timeout }).toBe(1)
+  }
 }
 
 /** Press "Start" and wait for the dialog to hand the pair to the app. */

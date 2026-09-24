@@ -21,6 +21,7 @@ import {
   LOAD_TIMEOUT,
   REGISTRATION_TIMEOUT,
   collectPageErrors,
+  holdRegistration,
   isDisabled,
   loadSample,
   selectValue,
@@ -43,12 +44,13 @@ function raise(page: Page, variant: 'success' | 'warning' | 'danger', message: s
 test('reports registration and download outcomes as toasts that dismiss themselves or on click', async ({ page }) => {
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
+  const releaseRegistration = await holdRegistration(page)
   await page.goto('./')
   await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
   expect(await toastFacts(page)).toEqual([])
 
-  await test.step('a finished registration raises a success toast and colours the status line', async () => {
-    await page.locator('#register').click()
+  await test.step('the registration the load started raises a success toast and colours the status line', async () => {
+    await releaseRegistration()
     await expect(toasts(page, 'success')).toHaveCount(1, { timeout: REGISTRATION_TIMEOUT })
     const [toast] = await toastFacts(page)
     // The status row is a live region, so the shell raises its toasts unannounced.
@@ -115,6 +117,8 @@ test('a toast shows above the splash dialog, and the oldest toast gives way beyo
   })
 
   await test.step('beyond the limit the oldest toast gives way, and a click dismisses one', async () => {
+    // Parked, the registration the load starts raises no toast of its own.
+    await holdRegistration(page)
     await loadSample(page, CT_SAMPLE_BUTTON, LOAD_TIMEOUT)
     for (let index = 1; index <= MAX_TOASTS + 1; index += 1) {
       await raise(page, 'success', `Toast ${index}`)
