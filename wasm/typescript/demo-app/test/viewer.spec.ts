@@ -17,7 +17,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { SLICE_TYPE } from '@niivue/niivue'
 
-import { CROSSHAIR_WIDTH, VOLUME_GRADIENT_OPACITY } from '../src/ui/view-options'
+import { COLORMAP_CHOICES, CROSSHAIR_WIDTH, VOLUME_GRADIENT_OPACITY } from '../src/ui/view-options'
 import { COMPARISON_ROLES, PANEL_ROLES, type ComparisonRole } from '../src/viewer/comparison-options'
 import {
   LOAD_TIMEOUT,
@@ -196,9 +196,11 @@ test('the colormap pickers apply to their side of both comparisons and survive t
     for (const role of PANEL_ROLES) {
       expect(await volumeColormap(page, role), role).toBe('Gray')
     }
-    // The pickers list niivue's built-in names.
-    const options = await page.locator('#moving-colormap wa-option').evaluateAll((nodes) => nodes.length)
-    expect(options).toBeGreaterThan(20)
+    // The pickers list the curated choices, all of which niivue registers.
+    const options = await page.locator('#moving-colormap wa-option').evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute('value')),
+    )
+    expect(options).toEqual([...COLORMAP_CHOICES])
   })
 
   await test.step('a picker changes its side of both comparisons only', async () => {

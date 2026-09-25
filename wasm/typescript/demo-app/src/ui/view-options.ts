@@ -100,21 +100,36 @@ export function showsSliceTypePicker(state: Readonly<Pick<AppState, 'fixed'>>): 
 export const DEFAULT_COLORMAP = 'Gray'
 
 /**
- * The names a colormap picker lists: niivue's built-in colormaps (the
- * `colormaps` getter), with the default guaranteed present, duplicates
- * (compared case-insensitively, the first kept) and niivue's internal
- * `_`-prefixed tables dropped, sorted case-insensitively.
+ * The colormaps a picker offers, in the order it lists them: grayscale,
+ * heat, perceptually uniform, rainbow, and diverging. Names use niivue's
+ * canonical casing (first letter uppercased).
+ */
+export const COLORMAP_CHOICES = [
+  DEFAULT_COLORMAP,
+  'Bone',
+  'Hot',
+  'Viridis',
+  'Plasma',
+  'Inferno',
+  'Cividis',
+  'Turbo',
+  'Jet',
+  'Blue2red',
+] as const
+
+/**
+ * The names a colormap picker lists: the `COLORMAP_CHOICES` that niivue
+ * registers (its `colormaps` getter, compared case-insensitively, niivue's
+ * first spelling kept), in `COLORMAP_CHOICES` order, with the default
+ * guaranteed present.
  */
 export function colormapOptions(names: readonly string[]): string[] {
-  const seen = new Set<string>()
-  const options: string[] = []
+  const available = new Map<string, string>()
   for (const name of [DEFAULT_COLORMAP, ...names]) {
     const key = name.toLowerCase()
-    if (name === '' || name.startsWith('_') || seen.has(key)) {
-      continue
+    if (!available.has(key)) {
+      available.set(key, name)
     }
-    seen.add(key)
-    options.push(name)
   }
-  return options.sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }))
+  return COLORMAP_CHOICES.flatMap((choice) => available.get(choice.toLowerCase()) ?? [])
 }
