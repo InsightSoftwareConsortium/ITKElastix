@@ -44,7 +44,7 @@ Home = "https://github.com/InsightSoftwareConsortium/ITKElastix"
 Source = "https://github.com/InsightSoftwareConsortium/ITKElastix"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-pyodide", "hatch>=1.12.0,<2", "pyodide-py>=0.26.2,<0.27"]
+test = ["pytest", "pytest-pyodide>=0.58.3,<0.59", "hatch>=1.12.0,<2", "pyodide-py>=0.26.2,<0.27"]
 
 [tool.hatch.version]
 path = "itkwasm_elastix/_version.py"
@@ -78,12 +78,13 @@ exclude = [
   "/examples",
 ]
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64"]
 
 [tool.pixi.pypi-dependencies]
 itkwasm-elastix = { path = ".", editable = true }
+itkwasm-elastix-wasi = { path = "../itkwasm-elastix-wasi", editable = true }
 
 [tool.pixi.environments]
 default = {features = [], solve-group = "default"}
@@ -95,5 +96,6 @@ tar = ">=1.34,<2"
 
 [tool.pixi.feature.test.tasks]
 download-pyodide = { cmd = "curl -L https://github.com/pyodide/pyodide/releases/download/0.26.2/pyodide-0.26.2.tar.bz2 -o pyodide.tar.bz2 && tar xjf pyodide.tar.bz2 && rm -rf dist/pyodide && mkdir -p dist && mv pyodide dist", description = "Download Pyodide", outputs = ["pyodide.tar.bz2"] }
-serve = { cmd = 'hatch build -t wheel ./dist/pyodide/ && echo "\nVisit http://localhost:8877/console.html\n" && python -m http.server --directory=./dist/pyodide 8877', description = "Serve the Pyodide distribution", depends-on = ["download-pyodide"] }
-test = { cmd = "hatch build -t wheel ./dist/pyodide/ && pytest --dist-dir=./dist/pyodide --rt=chrome", description = "Run the test suite", depends-on = ["download-pyodide"] }
+build-wheels = { cmd = "hatch build -t wheel ./dist/pyodide/ && (cd ../itkwasm-elastix-emscripten && hatch build -t wheel ../itkwasm-elastix/dist/pyodide/)", description = "Build the dispatch and emscripten wheels into the Pyodide distribution", depends-on = ["download-pyodide"] }
+serve = { cmd = 'echo "\nVisit http://localhost:8877/console.html\n" && python -m http.server --directory=./dist/pyodide 8877', description = "Serve the Pyodide distribution", depends-on = ["build-wheels"] }
+test = { cmd = "pytest --dist-dir=./dist/pyodide --rt=chrome", description = "Run the test suite", depends-on = ["build-wheels"] }

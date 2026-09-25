@@ -13,15 +13,18 @@ def package_wheel():
     return f"itkwasm_elastix-{test_package_version}-py3-none-any.whl"
 
 @pytest.fixture
+def emscripten_package_wheel():
+    return f"itkwasm_elastix_emscripten-{test_package_version}-py3-none-any.whl"
+
+@pytest.fixture
 def input_data():
     from pathlib import Path
-    input_base_path = Path('..', '..', 'test', 'data')
+    input_base_path = Path(__file__).parent.parent.parent.parent / 'test' / 'data'
     test_files = [
         Path('input') / 'parameters_multiple.json',
     ]
     data = {}
     for f in test_files:
         with open(input_base_path / f, 'rb') as fp:
-            print(str(f.name))
             data[str(f.name)] = fp.read()
     return data

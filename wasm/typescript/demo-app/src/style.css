@@ -1,0 +1,866 @@
+/* Application styles. WebAwesome supplies the theme tokens (--wa-*), the
+   component chrome, and the dark palette (html.wa-dark). */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--wa-font-family-body, system-ui, sans-serif);
+  background: var(--wa-color-surface-lowered);
+  color: var(--wa-color-text-normal);
+}
+
+/* Custom elements set their own display in shadow styles; document rules
+   still win, so this keeps the `hidden` attribute meaningful on them. */
+[hidden] {
+  display: none !important;
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header ------------------------------------------------------------------ */
+
+/* The title grows, so the toolbar and the theme toggle sit at the right
+   end of the first row; the downloads always take a row of their own. */
+.app-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s) var(--wa-space-l);
+  padding: var(--wa-space-s) var(--wa-space-m);
+  background: var(--wa-color-surface-default);
+  border-bottom: 1px solid var(--wa-color-surface-border);
+}
+
+.app-title {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  gap: var(--wa-space-s);
+  min-width: 0;
+}
+
+.app-logo {
+  display: block;
+  flex: none;
+}
+
+.app-title h1 {
+  margin: 0;
+  font-family: var(--wa-font-family-heading);
+  font-size: var(--wa-font-size-l);
+  font-weight: var(--wa-font-weight-heading);
+  line-height: var(--wa-line-height-condensed);
+  white-space: nowrap;
+}
+
+.app-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s);
+}
+
+/* The theme toggle (src/ui/theme.ts): an icon-only button whose icon is
+   the scheme it switches to, chosen by the root element's class so the
+   inline script's first paint already shows the right one. */
+.app-theme {
+  display: flex;
+  align-items: center;
+}
+
+.theme-icon {
+  display: block;
+  width: 1.25em;
+  height: 1.25em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html.wa-dark .theme-icon-moon,
+html:not(.wa-dark) .theme-icon-sun {
+  display: none;
+}
+
+/* The outputs row under the title and toolbar: the two downloads, each a
+   format picker beside its button, kept on their own full-width row so the
+   long format labels never squeeze the toolbar. */
+.app-downloads {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  order: 2;
+  gap: var(--wa-space-s) var(--wa-space-m);
+}
+
+/* One download: the format picker beside its button. The picker's label is
+   visually hidden (WebAwesome's `wa-visually-hidden-label`), so the group is
+   as tall as its button. */
+.download-group {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-2xs);
+}
+
+/* Wide enough for the longest labels, "OME-Zarr transform (.ome.zarr.ozx)"
+   and "elastix TransformParameters (.json)", to read in full. */
+.download-format {
+  width: 23rem;
+}
+
+/* Status row -------------------------------------------------------------- */
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-s);
+  min-height: 2.5rem;
+  padding: var(--wa-space-2xs) var(--wa-space-m);
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+}
+
+#status-progress {
+  flex: none;
+  width: 10rem;
+  --track-height: 0.5rem;
+}
+
+.status-message {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* While something runs, the message reads as the active line, not a hint. */
+.status-row[data-busy='true'] .status-message {
+  color: var(--wa-color-text-normal);
+}
+
+/* The outcome of the last flow, in its variant's colour; the toast that
+   went with it (src/ui/notify.ts) carried the same text. */
+.status-row[data-variant='brand'] .status-message {
+  color: var(--wa-color-brand-on-quiet);
+}
+
+.status-row[data-variant='success'] .status-message {
+  color: var(--wa-color-success-on-quiet);
+}
+
+.status-row[data-variant='warning'] .status-message {
+  color: var(--wa-color-warning-on-quiet);
+}
+
+.status-row[data-variant='danger'] .status-message {
+  color: var(--wa-color-danger-on-quiet);
+}
+
+/* Registration panel ------------------------------------------------------ */
+
+/* The row between the status and the view controls (src/ui/registration-
+   panel.ts): the options details on the left and, once a result exists, the
+   summary card on the right. Both are compact so the viewers keep their
+   space; the card wraps under the details on a narrow window. */
+.registration-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s) var(--wa-space-m);
+  padding: 0 var(--wa-space-m) var(--wa-space-s);
+  font-size: var(--wa-font-size-s);
+}
+
+.registration-options {
+  flex: 0 1 auto;
+  min-width: 0;
+  --spacing: var(--wa-space-s);
+}
+
+.registration-options-summary {
+  font-weight: var(--wa-font-weight-semibold);
+}
+
+.registration-options-form {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s);
+}
+
+/* Wide enough for "Resolutions per stage" and "100 MB" to read in full. */
+.registration-picker {
+  width: 11rem;
+}
+
+.registration-summary {
+  flex: 1 1 24rem;
+  min-width: 0;
+  --spacing: var(--wa-space-s);
+}
+
+.registration-summary-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--wa-space-2xs) var(--wa-space-s);
+  min-width: 0;
+}
+
+.registration-summary-title {
+  font-weight: var(--wa-font-weight-semibold);
+}
+
+.registration-summary-brief {
+  color: var(--wa-color-text-quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The summary rows beside the matrix, wrapping under it when narrow. */
+.registration-summary-body {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s) var(--wa-space-l);
+}
+
+.registration-matrix-figure {
+  margin: 0;
+  min-width: 0;
+  overflow: auto;
+}
+
+.registration-matrix-figure figcaption {
+  margin-bottom: var(--wa-space-2xs);
+  color: var(--wa-color-text-quiet);
+  white-space: nowrap;
+}
+
+/* The affine: axis labels down the side and across the top, the offset in
+   its own column set off by a rule, every number right-aligned in
+   tabular figures so the columns line up. */
+.registration-matrix {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.registration-matrix th,
+.registration-matrix td {
+  padding: var(--wa-space-3xs) var(--wa-space-xs);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.registration-matrix th {
+  color: var(--wa-color-text-quiet);
+  font-weight: var(--wa-font-weight-normal);
+}
+
+.registration-matrix thead th {
+  border-bottom: 1px solid var(--wa-color-surface-border);
+}
+
+.registration-matrix .registration-matrix-offset {
+  border-left: 1px solid var(--wa-color-surface-border);
+}
+
+/* View controls ----------------------------------------------------------- */
+
+/* The row between the status and the viewers (src/ui/view-controls.ts):
+   the slice layout picker and "Reset view" on the left, a colormap picker
+   per comparison side on the right. The pickers keep their labels above
+   the control, so everything aligns on the bottom edge of the controls. */
+.view-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s) var(--wa-space-l);
+  padding: 0 var(--wa-space-m) var(--wa-space-s);
+}
+
+.view-controls-group {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s);
+}
+
+/* Wide enough for the longest built-in colormap names ("Afni_blues_inv",
+   "Ct_soft_tissue") and for "Multiplanar" to read in full. */
+.view-picker {
+  width: 11rem;
+}
+
+/* Viewers ----------------------------------------------------------------- */
+
+.viewers {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 var(--wa-space-s) var(--wa-space-s);
+  --divider-width: var(--wa-space-2xs);
+  --min: 15%;
+  --max: 85%;
+}
+
+/* The split panel is a grid whose two cells stretch to the host's height;
+   give each cell a column flex context so the slotted panel can fill it. */
+.viewers::part(panel) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.viewers::part(divider) {
+  border-radius: var(--wa-border-radius-pill);
+}
+
+/* One column of the split panel: the comparison over its "Image details". */
+.viewer-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: var(--wa-space-xs);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+/* One comparison: a wa-comparison that fills the remaining space, two
+   niivue canvases inside it under their captions. */
+.viewer-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: #000;
+  border-radius: var(--wa-border-radius-m);
+  overflow: hidden;
+}
+
+/* The comparison sizes itself from its `before` slot, so the slot's
+   container and the slotted side must carry the panel's height down to the
+   canvases; the `after` side is laid over it at the same size and clipped at
+   the divider. The divider is a thin light line with a compact handle. */
+.viewer-comparison {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  --divider-width: 2px;
+  --handle-size: 2rem;
+}
+
+.viewer-comparison::part(comparison),
+.viewer-comparison::part(before) {
+  height: 100%;
+}
+
+/* One side of a comparison: the canvas with its caption over it. */
+.viewer-side {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+/* The fixed side's caption sits at the start edge, the moving side's at the
+   end edge, so each is over the image it names while the divider is
+   anywhere near the middle. */
+.viewer-caption {
+  position: absolute;
+  top: var(--wa-space-s);
+  z-index: 1;
+  max-width: calc(100% - 2 * var(--wa-space-s));
+  pointer-events: none;
+}
+
+.viewer-side[data-side='fixed'] .viewer-caption {
+  left: var(--wa-space-s);
+}
+
+.viewer-side[data-side='moving'] .viewer-caption {
+  right: var(--wa-space-s);
+}
+
+.viewer-caption::part(badge) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* niivue resizes its drawing buffer from the canvas's CSS box, so the canvas
+   must fill its side and never impose an intrinsic size of its own. */
+.viewer-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+/* "Image details" under a comparison (src/ui/image-info.ts): a compact
+   wa-details whose summary row carries a one-line brief of both sides and
+   whose body lists the two images side by side, wrapping when narrow. */
+.viewer-details {
+  flex: none;
+  font-size: var(--wa-font-size-s);
+  --spacing: var(--wa-space-s);
+}
+
+.viewer-details-summary {
+  display: flex;
+  align-items: baseline;
+  flex: 1 1 auto;
+  gap: var(--wa-space-s);
+  min-width: 0;
+}
+
+.viewer-details-title {
+  flex: none;
+  font-weight: var(--wa-font-weight-semibold);
+}
+
+.viewer-details-brief {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wa-color-text-quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+.viewer-details-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wa-space-s) var(--wa-space-l);
+}
+
+.viewer-details-side {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.viewer-details-side-title {
+  margin: 0 0 var(--wa-space-2xs);
+  font-size: var(--wa-font-size-s);
+  font-weight: var(--wa-font-weight-semibold);
+}
+
+/* Cap the open body so a long list scrolls instead of squeezing the canvases away. */
+.viewer-details::part(content) {
+  max-height: 40vh;
+  overflow: auto;
+}
+
+/* Footer ------------------------------------------------------------------ */
+
+/* One quiet line under the viewers: what the demo is built on. */
+.app-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--wa-space-2xs) var(--wa-space-m);
+  padding: var(--wa-space-2xs) var(--wa-space-m);
+  border-top: 1px solid var(--wa-color-surface-border);
+  background: var(--wa-color-surface-default);
+  font-size: var(--wa-font-size-xs);
+  color: var(--wa-color-text-quiet);
+}
+
+.app-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wa-space-2xs) var(--wa-space-m);
+}
+
+.app-footer a {
+  color: var(--wa-color-text-link);
+  text-decoration: var(--wa-link-decoration-default);
+}
+
+.app-footer a:hover {
+  text-decoration: var(--wa-link-decoration-hover);
+}
+
+/* Notifications ----------------------------------------------------------- */
+
+/* The toast stack (src/ui/notify.ts): a manual popover pinned to the top
+   right corner, so it renders in the top layer, painted above the splash
+   dialog. The user agent's popover box (centred, bordered, opaque) is undone
+   here, and only the toasts take pointer events, so the empty part of the
+   stack never blocks the header under it. The stack shows while it holds
+   a toast (`:popover-open`, or `data-open` where popovers are unsupported)
+   and is hidden otherwise. On a narrow window it spans the width, which
+   needs no media query. */
+.toast-stack {
+  position: fixed;
+  inset: var(--wa-space-m) var(--wa-space-m) auto auto;
+  z-index: 10;
+  display: none;
+  flex-direction: column;
+  gap: var(--wa-space-s);
+  width: min(24rem, calc(100vw - 2 * var(--wa-space-m)));
+  max-height: calc(100dvh - 2 * var(--wa-space-m));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.toast-stack:popover-open {
+  display: flex;
+}
+
+.toast-stack[data-open] {
+  display: flex;
+}
+
+/* One toast: a raised callout with the variant's accent down its start
+   edge and its icon in the variant's colour (the `wa-<variant>` class on
+   the host maps the tokens), lifted off the page by a shadow. The fade in
+   and out are driven from the module (Web Animations, skipped under
+   prefers-reduced-motion), so no keyframes live here. */
+.toast {
+  pointer-events: auto;
+  align-items: flex-start;
+  padding: var(--wa-space-s) var(--wa-space-xs) var(--wa-space-s) var(--wa-space-m);
+  background: var(--wa-color-surface-raised);
+  border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+  border-inline-start: var(--wa-space-2xs) solid var(--wa-color-fill-loud);
+  border-radius: var(--wa-border-radius-m);
+  box-shadow: var(--wa-shadow-l);
+  color: var(--wa-color-text-normal);
+  font-size: var(--wa-font-size-s);
+  line-height: var(--wa-line-height-normal);
+}
+
+.toast::part(icon) {
+  color: var(--wa-color-on-quiet);
+  font-size: 1.25em;
+}
+
+.toast-icon {
+  display: block;
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The message beside its dismiss button, whose box hangs into the padding
+   so the toast stays as tall as a line of text. */
+.toast-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--wa-space-xs);
+  min-width: 0;
+}
+
+/* elastix and writer errors arrive as several lines; keep the breaks and
+   scroll a very long one rather than filling the screen. */
+.toast-message {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 10rem;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+  padding-block: var(--wa-space-3xs);
+}
+
+.toast-dismiss {
+  flex: none;
+  margin-block: calc(-1 * var(--wa-space-2xs));
+  color: var(--wa-color-text-quiet);
+}
+
+.toast-dismiss .toast-icon {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+/* Narrow viewports -------------------------------------------------------- */
+
+/* Below the breakpoint in src/ui/layout-options.ts, where src/ui/layout.ts
+   also stacks the split panel, the theme toggle joins the title row, the
+   toolbar and each download take a row of their own, the rows tighten, and
+   the things that could push the stacked viewers off the screen are
+   capped. The query must stay identical to NARROW_LAYOUT_QUERY. */
+@media (width < 800px) {
+  /* The stacked layout is taller than most narrow windows: let the page
+     scroll and give the viewers a height of their own, rather than
+     squeezing them to a strip under the rows above (and the rows into
+     each other). */
+  #app {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .viewers {
+    flex: none;
+    height: 70vh;
+    min-height: 24rem;
+  }
+
+  .app-header {
+    gap: var(--wa-space-xs) var(--wa-space-s);
+    padding: var(--wa-space-xs) var(--wa-space-s);
+  }
+
+  .app-title h1 {
+    font-size: var(--wa-font-size-m);
+  }
+
+  .app-toolbar {
+    flex-basis: 100%;
+    order: 1;
+  }
+
+  /* Each download fills a row; the button drops under its picker only
+     once the row is too narrow for both. */
+  .download-group {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  .download-format {
+    flex: 1 1 14rem;
+    width: auto;
+    min-width: 0;
+  }
+
+  .status-row,
+  .registration-row,
+  .view-controls {
+    padding-inline: var(--wa-space-s);
+  }
+
+  .view-controls {
+    gap: var(--wa-space-xs) var(--wa-space-m);
+  }
+
+  /* Room for the rows and a 2D affine; a 3D one scrolls within the card. */
+  .registration-summary-body {
+    max-height: 12rem;
+    overflow: auto;
+  }
+
+  .viewers {
+    margin: 0 var(--wa-space-xs) var(--wa-space-xs);
+  }
+
+  .viewer-details::part(content) {
+    max-height: 25vh;
+  }
+
+  .app-footer {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+/* Splash dialog ----------------------------------------------------------- */
+
+#splash {
+  --width: 46rem;
+}
+
+/* Until both images exist the dialog cannot be dismissed, so hide the X. */
+#splash[data-locked]::part(close-button) {
+  display: none;
+}
+
+.splash-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wa-space-m);
+}
+
+.splash-section h3 {
+  margin: 0 0 var(--wa-space-2xs);
+  font-size: var(--wa-font-size-m);
+  font-weight: var(--wa-font-weight-semibold);
+}
+
+.splash-hint {
+  margin: 0 0 var(--wa-space-s);
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+}
+
+.splash-hint code {
+  font-size: 0.9em;
+}
+
+/* Sample pairs: a column of buttons with their descriptions lined up beside them. */
+.splash-samples {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: var(--wa-space-xs) var(--wa-space-s);
+}
+
+.splash-sample {
+  display: contents;
+}
+
+.splash-sample wa-button {
+  min-width: 11rem;
+}
+
+.splash-sample-description {
+  min-width: 0;
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+}
+
+/* Input slots: one drop zone per image, side by side when there is room. */
+.splash-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--wa-space-m);
+}
+
+.splash-slot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wa-space-s);
+  min-width: 0;
+  padding: var(--wa-space-s);
+  border: 2px dashed var(--wa-color-surface-border);
+  border-radius: var(--wa-border-radius-m);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.splash-slot[data-dragover] {
+  border-color: var(--wa-color-brand-border-loud);
+  background: var(--wa-color-brand-fill-quiet);
+}
+
+.splash-slot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wa-space-s);
+}
+
+.splash-slot-drop-hint {
+  font-size: var(--wa-font-size-xs);
+  color: var(--wa-color-text-quiet);
+}
+
+.splash-slot-url {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--wa-space-xs);
+}
+
+.splash-slot-url wa-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.splash-slot-url wa-button,
+.splash-slot-file wa-button {
+  flex: none;
+}
+
+.splash-slot-status {
+  display: flex;
+  align-items: center;
+  gap: var(--wa-space-xs);
+  min-height: 1.5rem;
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+  font-variant-numeric: tabular-nums;
+}
+
+.splash-slot-status span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.splash-slot-status[data-state='failed'] {
+  color: var(--wa-color-danger-on-quiet);
+}
+
+.splash-slot-spinner {
+  flex: none;
+  font-size: 1.25rem;
+}
+
+.splash-slot-status:not([data-state='loading']) .splash-slot-spinner {
+  display: none;
+}
+
+/* Summary rows (src/ui/summary-list.ts): a two-column label/value grid. */
+.summary-list {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--wa-space-3xs) var(--wa-space-s);
+  margin: 0;
+  font-size: var(--wa-font-size-s);
+}
+
+.summary-list .summary-row {
+  display: contents;
+}
+
+.summary-list dt {
+  color: var(--wa-color-text-quiet);
+  white-space: nowrap;
+}
+
+.summary-list dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.splash-pair-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--wa-space-s);
+}
+
+#splash-error {
+  margin-top: var(--wa-space-s);
+  white-space: pre-line;
+}

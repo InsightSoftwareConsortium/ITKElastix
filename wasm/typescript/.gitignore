@@ -1,4 +1,8 @@
-demo-app/
-test/browser-demo-app/public/
 playwright-report/
 test-results/
+vite.config.js
+test/browser/demo-app/
+
+# pixi run bindgen-typescript (itk-wasm bindgen) regenerates the legacy demo scaffold
+# and vite.config.js into test/browser/demo-app/ and vite.config.js on every run and
+# they must never be committed again.

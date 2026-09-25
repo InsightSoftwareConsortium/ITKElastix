@@ -1,6 +1,6 @@
 {
   "name": "@itk-wasm/elastix",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "A toolbox for rigid and nonrigid registration of images.",
   "type": "module",
   "module": "./dist/index.js",
@@ -14,16 +14,13 @@
     }
   },
   "scripts": {
-    "start": "pnpm copyDemoAppAssets && vite",
     "test": "pnpm run test:node && pnpm run test:browser",
     "test:node": "ava --timeout 10m test/node/*.js",
-    "test:browser": "pnpm exec playwright test",
-    "copyDemoAppAssets": "shx mkdir -p test/browser/demo-app/public/shoelace && shx cp -r node_modules/@itk-wasm/demo-app/dist/assets test/browser/demo-app/public/",
-    "build": "pnpm build:tsc && pnpm build:browser:workerEmbedded && pnpm build:browser:workerEmbeddedMin && pnpm build:demo",
+    "test:browser": "pnpm --dir demo-app test",
+    "build": "pnpm build:tsc && pnpm build:browser:workerEmbedded && pnpm build:browser:workerEmbeddedMin",
     "build:browser:workerEmbedded": "esbuild --loader:.worker.js=dataurl --bundle --format=esm --outfile=./dist/bundle/index-worker-embedded.js ./src/index-worker-embedded.ts",
     "build:browser:workerEmbeddedMin": "esbuild --minify --loader:.worker.js=dataurl --bundle --format=esm --outfile=./dist/bundle/index-worker-embedded.min.js ./src/index-worker-embedded.min.ts",
-    "build:tsc": "tsc --pretty",
-    "build:demo": "pnpm copyDemoAppAssets && vite build"
+    "build:tsc": "tsc --pretty"
   },
   "keywords": [
     "itk",
@@ -37,18 +34,13 @@
     "itk-wasm": "^1.0.0-b.201"
   },
   "devDependencies": {
-    "@itk-wasm/demo-app": "^0.2.0",
     "@itk-wasm/image-io": "^1.6.1",
     "@itk-wasm/transform-io": "^1.1.0",
-    "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.3",
     "ava": "^8.0.1",
     "debug": "^4.4.3",
     "esbuild": "^0.28.2",
-    "shx": "^0.4.0",
-    "typescript": "^7.0.2",
-    "vite": "^8.3.0",
-    "vite-plugin-static-copy": "^4.1.1"
+    "typescript": "^7.0.2"
   },
   "repository": {
     "type": "git",

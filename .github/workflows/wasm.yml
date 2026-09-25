@@ -36,8 +36,8 @@ jobs:
         cache: pnpm
 
     - name: Install Playwright Browsers
-      working-directory: wasm/typescript
-      run: pnpm exec playwright install --with-deps
+      working-directory: wasm/typescript/demo-app
+      run: pnpm exec playwright install --with-deps chromium
 
     - name: Build Typescript
       run: |
@@ -46,6 +46,13 @@ jobs:
     - name: Build Python
       run: |
         pixi run bindgen-build-python
+
+    # The Playwright web server does not download the sample images when CI
+    # is set (see wasm/typescript/demo-app/playwright.config.ts), so fetch
+    # them here, where --strict fails the job on a bad download instead of
+    # leaving the browser tests to fail on missing files.
+    - name: Fetch demo sample images
+      run: pnpm --filter itk-elastix-demo fetch-samples -- --strict
 
     - name: Test TypeScript
       run: |

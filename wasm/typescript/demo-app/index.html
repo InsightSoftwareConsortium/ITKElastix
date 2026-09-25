@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>elastix affine registration</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <!-- Apply the pinned or system color scheme before the first paint, so a
+         pinned theme never flashes the other one. src/ui/theme.ts takes over
+         once the app runs; the storage key, the class, and the media query
+         here must match src/ui/theme-options.ts (its test checks). -->
+    <script>
+      ;(function () {
+        var stored = null
+        try {
+          stored = localStorage.getItem('elastix-demo-theme')
+        } catch (error) {}
+        var pinned = stored === 'light' || stored === 'dark'
+        var dark = pinned ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
+        document.documentElement.classList.toggle('wa-dark', dark)
+        if (pinned) {
+          document.querySelector('meta[name="color-scheme"]').setAttribute('content', stored)
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="app-title">
+          <img class="app-logo" src="/logo.svg" alt="" width="28" height="28" />
+          <h1>elastix affine registration</h1>
+        </div>
+        <div class="app-toolbar">
+          <wa-button id="load-images" appearance="outlined">Load images</wa-button>
+          <wa-button id="register" variant="brand" disabled>Register</wa-button>
+          <wa-tooltip for="register">
+            Run the translation → rigid → affine registration again in a web worker, for example after changing the
+            options; a newly loaded pair registers on its own
+          </wa-tooltip>
+          <wa-button id="cancel-registration" variant="danger" appearance="outlined" disabled>Cancel</wa-button>
+          <wa-tooltip for="cancel-registration">Stop the running registration; the elastix worker is terminated</wa-tooltip>
+          <wa-switch id="show-result" disabled>Show registered result</wa-switch>
+          <wa-tooltip for="show-result">
+            Compare the fixed image with the registered result in the right-hand comparison; off, it shows the moving
+            image again, like the left-hand one
+          </wa-tooltip>
+        </div>
+        <!-- The theme toggle (src/ui/theme.ts): an icon-only button showing
+             the scheme it switches to. The icon is chosen from the root
+             element's class, so the first paint is already right; the
+             visually hidden label and the tooltip name the action. -->
+        <div class="app-theme">
+          <wa-button id="theme-toggle" class="theme-toggle" appearance="plain">
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+            <span id="theme-toggle-label" class="wa-visually-hidden">Switch to the dark theme</span>
+          </wa-button>
+          <wa-tooltip id="theme-toggle-tooltip" for="theme-toggle">Switch to the dark theme</wa-tooltip>
+        </div>
+        <!-- The outputs row: each download is a format picker beside its button.
+             The shell fills the pickers from the format registry and keeps the
+             tooltip on each button describing the chosen format. The picker
+             labels are for assistive technology only, so the row stays as tall
+             as its buttons. -->
+        <div class="app-downloads">
+          <div class="download-group" data-output="image">
+            <wa-select
+              id="image-format"
+              class="download-format wa-visually-hidden-label"
+              label="Image format"
+              placement="bottom"
+            ></wa-select>
+            <wa-button id="download-image" appearance="outlined" disabled>Download image</wa-button>
+            <wa-tooltip id="download-image-tooltip" for="download-image"></wa-tooltip>
+          </div>
+          <div class="download-group" data-output="transform">
+            <wa-select
+              id="transform-format"
+              class="download-format wa-visually-hidden-label"
+              label="Transform format"
+              placement="bottom"
+            ></wa-select>
+            <wa-button id="download-transform" appearance="outlined" disabled>Download transform</wa-button>
+            <wa-tooltip id="download-transform-tooltip" for="download-transform"></wa-tooltip>
+          </div>
+        </div>
+      </header>
+
+      <!-- The status row: one line the shell keeps current (src/ui/shell.ts),
+           coloured by the variant of the last status; anything but a neutral
+           status is also raised as a toast in the stack at the end of the app. -->
+      <div id="status" class="status-row" role="status" aria-live="polite" data-variant="neutral">
+        <wa-progress-bar id="status-progress" indeterminate label="Working" hidden></wa-progress-bar>
+        <span id="status-message" class="status-message">Starting…</span>
+      </div>
+
+      <!-- The registration panel (src/ui/registration-panel.ts): the options
+           for the next run and the summary of the last one. The pickers are
+           filled and rendered from the store; the Cancel button that belongs
+           with the options sits in the toolbar above so it is reachable during
+           a run. The summary card stays hidden until a result exists. -->
+      <div id="registration-row" class="registration-row">
+        <wa-details id="registration-options" class="registration-options" appearance="outlined">
+          <span slot="summary" class="registration-options-summary">Registration options</span>
+          <div class="registration-options-form">
+            <wa-select id="resolutions" class="registration-picker" size="s" label="Resolutions per stage" placement="bottom"></wa-select>
+            <wa-tooltip for="resolutions">
+              Multi-resolution pyramid levels each elastix stage is optimized over (NumberOfResolutions)
+            </wa-tooltip>
+            <wa-select id="pixel-budget" class="registration-picker" size="s" label="Pixel budget" placement="bottom" disabled></wa-select>
+            <wa-tooltip for="pixel-budget">
+              Largest image buffer handed to elastix; choosing another budget reloads both inputs at the finest
+              pyramid level that fits it
+            </wa-tooltip>
+          </div>
+        </wa-details>
+        <wa-card id="registration-summary" class="registration-summary" appearance="outlined" with-header with-header-actions hidden>
+          <span slot="header" class="registration-summary-header">
+            <span class="registration-summary-title">Registration summary</span>
+            <span id="registration-summary-brief" class="registration-summary-brief"></span>
+          </span>
+          <wa-copy-button
+            slot="header-actions"
+            id="copy-transform-parameters"
+            copy-label="Copy the elastix transform parameters (JSON)"
+            success-label="Copied the elastix transform parameters"
+            error-label="Could not copy; the clipboard is unavailable"
+          ></wa-copy-button>
+          <div class="registration-summary-body">
+            <dl id="registration-summary-list" class="summary-list"></dl>
+            <figure class="registration-matrix-figure">
+              <figcaption>Fixed → moving affine (matrix | offset)</figcaption>
+              <table id="registration-matrix" class="registration-matrix"></table>
+            </figure>
+          </div>
+        </wa-card>
+      </div>
+
+      <!-- The view controls: the slice layout picker (shown for a 3D pair only),
+           "Reset view", and a colormap picker per comparison side.
+           src/ui/view-controls.ts fills the pickers and forwards the choices
+           to the four panels, which always navigate together. -->
+      <div id="view-controls" class="view-controls">
+        <div class="view-controls-group">
+          <wa-select id="slice-type" class="view-picker" size="s" label="View" placement="bottom" hidden></wa-select>
+          <wa-button id="reset-view" size="s" appearance="outlined">Reset view</wa-button>
+          <wa-tooltip for="reset-view">
+            Recenter every panel, return the zoom and 3D camera to their defaults, and centre both comparison dividers
+          </wa-tooltip>
+        </div>
+        <div class="view-controls-group">
+          <wa-select id="fixed-colormap" class="view-picker" size="s" label="Fixed colormap" placement="bottom"></wa-select>
+          <wa-select id="moving-colormap" class="view-picker" size="s" label="Moving colormap" placement="bottom"></wa-select>
+        </div>
+      </div>
+
+      <!-- The two comparisons (src/ui/shell.ts), one in each half of the split
+           panel: the inputs on the left, the fixed image against the moving
+           image; the result on the right, the fixed image against the
+           registered result once a run has finished and the result switch is
+           on, the moving image otherwise. Each is a wa-comparison whose
+           divider is dragged (or moved with the arrow keys on its handle) to
+           reveal more of either image, and the other comparison's divider
+           follows; each side holds a niivue canvas under a
+           caption badge. wa-comparison draws its `after` slot on the left of
+           the divider (its clip is inset from the right), so the fixed side
+           takes that slot to sit on the left; see SIDE_SLOTS in
+           src/viewer/comparison-options.ts. -->
+      <wa-split-panel id="viewers" class="viewers">
+        <div slot="start" class="viewer-column">
+          <section class="viewer-panel" data-comparison="inputs">
+            <wa-comparison id="inputs-comparison" class="viewer-comparison" position="50">
+              <div slot="after" class="viewer-side" data-panel="inputs-fixed" data-side="fixed">
+                <wa-badge id="inputs-fixed-caption" class="viewer-caption" variant="neutral">Fixed</wa-badge>
+              </div>
+              <div slot="before" class="viewer-side" data-panel="inputs-moving" data-side="moving">
+                <wa-badge id="inputs-moving-caption" class="viewer-caption" variant="brand">Moving</wa-badge>
+              </div>
+            </wa-comparison>
+          </section>
+          <wa-details id="inputs-details" class="viewer-details" hidden>
+            <span slot="summary" class="viewer-details-summary">
+              <span class="viewer-details-title">Image details</span>
+              <span id="inputs-details-brief" class="viewer-details-brief"></span>
+            </span>
+            <div class="viewer-details-sides">
+              <section id="inputs-fixed-details" class="viewer-details-side">
+                <h4 id="inputs-fixed-details-title" class="viewer-details-side-title">Fixed</h4>
+                <dl id="inputs-fixed-details-list" class="summary-list"></dl>
+              </section>
+              <section id="inputs-moving-details" class="viewer-details-side">
+                <h4 id="inputs-moving-details-title" class="viewer-details-side-title">Moving</h4>
+                <dl id="inputs-moving-details-list" class="summary-list"></dl>
+              </section>
+            </div>
+          </wa-details>
+        </div>
+        <div slot="end" class="viewer-column">
+          <section class="viewer-panel" data-comparison="result">
+            <wa-comparison id="result-comparison" class="viewer-comparison" position="50">
+              <div slot="after" class="viewer-side" data-panel="result-fixed" data-side="fixed">
+                <wa-badge id="result-fixed-caption" class="viewer-caption" variant="neutral">Fixed</wa-badge>
+              </div>
+              <div slot="before" class="viewer-side" data-panel="result-moving" data-side="moving">
+                <wa-badge id="result-moving-caption" class="viewer-caption" variant="brand">Moving</wa-badge>
+              </div>
+            </wa-comparison>
+          </section>
+          <wa-details id="result-details" class="viewer-details" hidden>
+            <span slot="summary" class="viewer-details-summary">
+              <span class="viewer-details-title">Image details</span>
+              <span id="result-details-brief" class="viewer-details-brief"></span>
+            </span>
+            <div class="viewer-details-sides">
+              <section id="result-fixed-details" class="viewer-details-side">
+                <h4 id="result-fixed-details-title" class="viewer-details-side-title">Fixed</h4>
+                <dl id="result-fixed-details-list" class="summary-list"></dl>
+              </section>
+              <section id="result-moving-details" class="viewer-details-side">
+                <h4 id="result-moving-details-title" class="viewer-details-side-title">Moving</h4>
+                <dl id="result-moving-details-list" class="summary-list"></dl>
+              </section>
+            </div>
+          </wa-details>
+        </div>
+      </wa-split-panel>
+
+      <footer class="app-footer">
+        <span class="app-footer-note">Registration runs in your browser; nothing is uploaded.</span>
+        <nav class="app-footer-links" aria-label="Projects this demo is built on">
+          <a href="https://github.com/InsightSoftwareConsortium/ITKElastix" target="_blank" rel="noopener">ITKElastix</a>
+          <a href="https://elastix.dev/" target="_blank" rel="noopener">elastix</a>
+          <a href="https://github.com/niivue/niivue" target="_blank" rel="noopener">niivue</a>
+          <a href="https://github.com/fideus-labs/ngff-zarr" target="_blank" rel="noopener">ngff-zarr</a>
+          <a href="https://webawesome.com/" target="_blank" rel="noopener">Web Awesome</a>
+        </nav>
+      </footer>
+
+      <!-- The toast stack (src/ui/notify.ts): a manual popover, so it renders in
+           the top layer, painted above the splash dialog; the notifier shows it
+           while it holds a toast and hides it again once the last one has gone. -->
+      <div id="toast-stack" class="toast-stack" popover="manual" role="region" aria-label="Notifications"></div>
+
+      <wa-dialog id="splash" label="Load fixed and moving images" data-locked>
+        <div class="splash-body">
+          <section class="splash-section">
+            <h3>Sample data</h3>
+            <p class="splash-hint">
+              Everything runs in your browser; nothing is uploaded. Start with a bundled pair:
+            </p>
+            <div id="sample-buttons" class="splash-samples"></div>
+          </section>
+
+          <wa-divider></wa-divider>
+
+          <section class="splash-section">
+            <h3>Your images</h3>
+            <p class="splash-hint">
+              For each image, drop a file on its box, choose one, or enter a URL. OME-Zarr (a
+              <code>.ome.zarr</code> URL or a zipped <code>.ozx</code>), TIFF and OME-TIFF, and any format ITK reads
+              (NIfTI, NRRD, MetaImage, DICOM, PNG, …). Both images must be 2D or both 3D.
+            </p>
+            <div class="splash-slots">
+              <div id="fixed-slot" class="splash-slot" data-role="fixed">
+                <div class="splash-slot-header">
+                  <wa-badge variant="neutral">Fixed</wa-badge>
+                  <span class="splash-slot-drop-hint">Drop a file here</span>
+                </div>
+                <div class="splash-slot-url">
+                  <wa-input
+                    id="fixed-url"
+                    type="url"
+                    size="s"
+                    label="URL"
+                    placeholder="https://example.org/fixed.ome.zarr"
+                    with-clear
+                  ></wa-input>
+                  <wa-button id="fixed-url-load" size="s" appearance="outlined" disabled>Load</wa-button>
+                </div>
+                <div class="splash-slot-file">
+                  <wa-button id="pick-fixed" size="s" appearance="outlined">Choose fixed image</wa-button>
+                  <input id="fixed-file" type="file" hidden />
+                </div>
+                <div id="fixed-status" class="splash-slot-status" data-state="empty">
+                  <wa-spinner class="splash-slot-spinner"></wa-spinner>
+                  <span id="fixed-status-text">Nothing loaded yet</span>
+                </div>
+                <dl id="fixed-summary" class="splash-summary summary-list" hidden></dl>
+              </div>
+
+              <div id="moving-slot" class="splash-slot" data-role="moving">
+                <div class="splash-slot-header">
+                  <wa-badge variant="brand">Moving</wa-badge>
+                  <span class="splash-slot-drop-hint">Drop a file here</span>
+                </div>
+                <div class="splash-slot-url">
+                  <wa-input
+                    id="moving-url"
+                    type="url"
+                    size="s"
+                    label="URL"
+                    placeholder="https://example.org/moving.ome.zarr"
+                    with-clear
+                  ></wa-input>
+                  <wa-button id="moving-url-load" size="s" appearance="outlined" disabled>Load</wa-button>
+                </div>
+                <div class="splash-slot-file">
+                  <wa-button id="pick-moving" size="s" appearance="outlined">Choose moving image</wa-button>
+                  <input id="moving-file" type="file" hidden />
+                </div>
+                <div id="moving-status" class="splash-slot-status" data-state="empty">
+                  <wa-spinner class="splash-slot-spinner"></wa-spinner>
+                  <span id="moving-status-text">Nothing loaded yet</span>
+                </div>
+                <dl id="moving-summary" class="splash-summary summary-list" hidden></dl>
+              </div>
+            </div>
+            <wa-callout id="splash-error" variant="danger" hidden></wa-callout>
+            <div class="splash-pair-actions">
+              <wa-button id="swap-images" size="s" appearance="outlined" disabled>Swap fixed and moving</wa-button>
+            </div>
+          </section>
+        </div>
+        <wa-button slot="footer" id="start-registration-inputs" variant="brand" disabled>Start</wa-button>
+      </wa-dialog>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

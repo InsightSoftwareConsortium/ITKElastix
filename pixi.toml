@@ -1,4 +1,4 @@
-[project]
+[workspace]
 name = "@itk-wasm/elastix"
 version = "1.0.0"
 authors = ["Matt McCormick <matt.mccormick@kitware.com>"]
@@ -50,7 +50,7 @@ publish = { depends-on = ["publish-typescript", "publish-python"] }
 test-typescript = { cmd = "cd $ITK_WASM_TYPESCRIPT_OUTPUT_DIR && pnpm test", description = "Test the typescript package", depends-on = ["test-data-download"] }
 test-python-wasi = { cmd = "cd $ITK_WASM_PYTHON_OUTPUT_DIR/$ITK_WASM_PYTHON_PACKAGE_NAME-wasi && pixi run --manifest-path ./pyproject.toml test", description = "Test the Python WASI package", depends-on = ["test-data-download"] }
 test-python-emscripten = { cmd = "cd $ITK_WASM_PYTHON_OUTPUT_DIR/$ITK_WASM_PYTHON_PACKAGE_NAME-emscripten && pixi run --manifest-path ./pyproject.toml test", description = "Test the Python Emscripten package", depends-on = ["test-data-download"] }
-test-python-dispatch = { cmd = "cd $ITK_WASM_PYTHON_OUTPUT_DIR/$ITK_WASM_PYTHON_PACKAGE_NAME && hatch run test", description = "Test the Python dispatch package", depends-on = ["test-data-download"] }
+test-python-dispatch = { cmd = "cd $ITK_WASM_PYTHON_OUTPUT_DIR/$ITK_WASM_PYTHON_PACKAGE_NAME && pixi run --manifest-path ./pyproject.toml test", description = "Test the Python dispatch package", depends-on = ["test-data-download"] }
 test-python = { depends-on = ["test-python-wasi", "test-python-emscripten", "test-python-dispatch"] }
 test = { depends-on = ["test-typescript", "test-python"] }
 
