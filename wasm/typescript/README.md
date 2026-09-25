@@ -102,7 +102,7 @@ async function elastix(
 
 #### readParameterFiles
 
-*Read elastix parameter text files into a parameter object.*
+*Read elastix parameter files, in the legacy text (.txt) or TOML (.toml) format, into a parameter object.*
 
 ```ts
 async function readParameterFiles(
@@ -117,7 +117,7 @@ async function readParameterFiles(
 
 |     Property     |               Type               | Description                                                                                                                                           |
 | :--------------: | :------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `parameterFiles` | *string[] | File[] | TextFile[]* | Elastix parameter files                                                                                                                               |
+| `parameterFiles` | *string[] | File[] | TextFile[]* | Elastix parameter files. The file extension selects the format: .txt for the legacy text format, .toml for TOML.                                      |
 |    `webWorker`   |    *null or Worker or boolean*   | WebWorker for computation. Set to null to create a new worker. Or, pass an existing worker. Or, set to `false` to run in the current thread / worker. |
 |     `noCopy`     |             *boolean*            | When SharedArrayBuffer's are not available, do not copy inputs.                                                                                       |
 
@@ -165,7 +165,7 @@ async function transformix(
 
 #### writeParameterFiles
 
-*Write an elastix parameter text file from a parameter object.*
+*Write elastix parameter files, in the legacy text (.txt) or TOML (.toml) format, from a parameter object.*
 
 ```ts
 async function writeParameterFiles(
@@ -175,10 +175,10 @@ async function writeParameterFiles(
 ) : Promise<WriteParameterFilesResult>
 ```
 
-|     Parameter     |       Type       | Description                                                                                                 |
-| :---------------: | :--------------: | :---------------------------------------------------------------------------------------------------------- |
-| `parameterObject` | *JsonCompatible* | Elastix parameter object representation.                                                                    |
-|  `parameterFiles` |    *string[]*    | Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. |
+|     Parameter     |       Type       | Description                                                                                                                                                                                    |
+| :---------------: | :--------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parameterObject` | *JsonCompatible* | Elastix parameter object representation.                                                                                                                                                       |
+|  `parameterFiles` |    *string[]*    | Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. The file extension selects the format: .txt for the legacy text format, .toml for TOML. |
 
 **`WriteParameterFilesOptions` interface:**
 
@@ -189,10 +189,10 @@ async function writeParameterFiles(
 
 **`WriteParameterFilesResult` interface:**
 
-|     Property     |     Type     | Description                                                                                                 |
-| :--------------: | :----------: | :---------------------------------------------------------------------------------------------------------- |
-| `parameterFiles` | *TextFile[]* | Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. |
-|    `webWorker`   |   *Worker*   | WebWorker used for computation.                                                                             |
+|     Property     |     Type     | Description                                                                                                                                                                                    |
+| :--------------: | :----------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parameterFiles` | *TextFile[]* | Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. The file extension selects the format: .txt for the legacy text format, .toml for TOML. |
+|    `webWorker`   |   *Worker*   | WebWorker used for computation.                                                                                                                                                                |
 
 #### setPipelinesBaseUrl
 
@@ -289,7 +289,7 @@ async function elastixNode(
 
 #### readParameterFilesNode
 
-*Read elastix parameter text files into a parameter object.*
+*Read elastix parameter files, in the legacy text (.txt) or TOML (.toml) format, into a parameter object.*
 
 ```ts
 async function readParameterFilesNode(
@@ -346,7 +346,7 @@ async function transformixNode(
 
 #### writeParameterFilesNode
 
-*Write an elastix parameter text file from a parameter object.*
+*Write elastix parameter files, in the legacy text (.txt) or TOML (.toml) format, from a parameter object.*
 
 ```ts
 async function writeParameterFilesNode(
@@ -355,10 +355,10 @@ async function writeParameterFilesNode(
 ) : Promise<WriteParameterFilesNodeResult>
 ```
 
-|     Parameter     |       Type       | Description                                                                                                 |
-| :---------------: | :--------------: | :---------------------------------------------------------------------------------------------------------- |
-| `parameterObject` | *JsonCompatible* | Elastix parameter object representation.                                                                    |
-|  `parameterFiles` |    *string[]*    | Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. |
+|     Parameter     |       Type       | Description                                                                                                                                                                                    |
+| :---------------: | :--------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parameterObject` | *JsonCompatible* | Elastix parameter object representation.                                                                                                                                                       |
+|  `parameterFiles` |    *string[]*    | Elastix parameter files, must have the same length as the number of parameter maps in the parameter object. The file extension selects the format: .txt for the legacy text format, .toml for TOML. |
 
 **`WriteParameterFilesNodeResult` interface:**
 

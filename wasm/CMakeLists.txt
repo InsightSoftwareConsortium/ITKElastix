@@ -140,6 +140,37 @@ add_test(NAME read-parameter-files-multiple-test
        ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Affine.txt
   )
 
+# The TOML parameter file format is selected by the .toml file extension. The TOML files mirror the
+# legacy text files, so reading either format produces the same parameter object.
+add_test(NAME read-parameter-files-toml-test
+  COMMAND read-parameter-files
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_single_toml.json
+    -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Affine.toml
+  )
+
+add_test(NAME read-parameter-files-toml-matches-txt-test
+  COMMAND ${CMAKE_COMMAND} -E compare_files
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_single.json
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_single_toml.json
+  )
+set_tests_properties(read-parameter-files-toml-matches-txt-test PROPERTIES
+  DEPENDS "read-parameter-files-test;read-parameter-files-toml-test")
+
+add_test(NAME read-parameter-files-mixed-format-test
+  COMMAND read-parameter-files
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_multiple_mixed_format.json
+    -f ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Translation.toml
+       ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_Affine.txt
+  )
+
+add_test(NAME read-parameter-files-mixed-format-matches-txt-test
+  COMMAND ${CMAKE_COMMAND} -E compare_files
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_multiple.json
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_multiple_mixed_format.json
+  )
+set_tests_properties(read-parameter-files-mixed-format-matches-txt-test PROPERTIES
+  DEPENDS "read-parameter-files-multiple-test;read-parameter-files-mixed-format-test")
+
 add_test(NAME write-parameter-files-test
   COMMAND write-parameter-files
     ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_single.json
@@ -152,6 +183,30 @@ add_test(NAME write-parameter-files-multiple-test
     ${CMAKE_CURRENT_BINARY_DIR}/parameters_Translation.txt
     ${CMAKE_CURRENT_BINARY_DIR}/parameters_Affine.txt
   )
+
+add_test(NAME write-parameter-files-toml-test
+  COMMAND write-parameter-files
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/data/input/parameters_multiple.json
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_Translation.toml
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_Affine.toml
+  )
+
+# Round trip: the written TOML files read back to the parameter object they were written from.
+add_test(NAME read-parameter-files-toml-round-trip-test
+  COMMAND read-parameter-files
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_multiple_toml_round_trip.json
+    -f ${CMAKE_CURRENT_BINARY_DIR}/parameters_Translation.toml
+       ${CMAKE_CURRENT_BINARY_DIR}/parameters_Affine.toml
+  )
+set_tests_properties(read-parameter-files-toml-round-trip-test PROPERTIES DEPENDS write-parameter-files-toml-test)
+
+add_test(NAME read-parameter-files-toml-round-trip-matches-test
+  COMMAND ${CMAKE_COMMAND} -E compare_files
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_multiple.json
+    ${CMAKE_CURRENT_BINARY_DIR}/parameters_multiple_toml_round_trip.json
+  )
+set_tests_properties(read-parameter-files-toml-round-trip-matches-test PROPERTIES
+  DEPENDS "read-parameter-files-multiple-test;read-parameter-files-toml-round-trip-test")
 
 add_test(NAME default-parameter-map-test
   COMMAND default-parameter-map
