@@ -9,6 +9,8 @@
 // and the slot summaries are checked as the user sees them. The OZX and
 // OME-TIFF round trips live in test/outputs.spec.ts, which downloads their
 // fixtures first; the page helpers both files use are in test/helpers.ts.
+import { gzipSync } from 'node:zlib'
+
 import { expect, test as base, type Locator, type Page } from '@playwright/test'
 
 import { BUDGET_QUERY_PARAM, PIXEL_BUDGET_BYTES } from '../src/io/scale-select'
@@ -154,6 +156,43 @@ test.describe('3D zebrafish tailbud sample', () => {
         registrationBytes: 333 * 333 * 201 * 2,
         budgetBytes: PIXEL_BUDGET_BYTES,
       })
+    }
+  })
+
+  test('loads from a host that gzips whole-file responses, as GitHub Pages does', async ({ page }) => {
+    // Pages answers a request without a Range header gzip-encoded, so a HEAD
+    // reports the compressed Content-Length. A shard index located from that
+    // length is read at the wrong offset, and the chunk ranges it decodes
+    // come back 416. Range requests are served as they are, as Pages does.
+    await page.context().route(/\/samples\/zebrafish-tailbud_t\d+\.ome\.zarr\/\d+\/c\//, async (route) => {
+      const request = route.request()
+      if (request.headers()['range']) {
+        await route.continue()
+        return
+      }
+      // GET the file even for a HEAD, whose Content-Length must count the
+      // compressed bytes too.
+      const response = await route.fetch({ method: 'GET' })
+      const gzipped = gzipSync(await response.body())
+      await route.fulfill({
+        status: 200,
+        headers: {
+          'content-type': 'application/octet-stream',
+          'content-encoding': 'gzip',
+          'content-length': String(gzipped.length),
+        },
+        body: gzipped,
+      })
+    })
+    await holdRegistration(page)
+    await page.goto('./')
+    await loadSample(page, TAILBUD_3D_SAMPLE_BUTTON, LOAD_TIMEOUT_3D)
+
+    for (const [role, name] of [
+      ['fixed', TAILBUD_3D_FIXED],
+      ['moving', TAILBUD_3D_MOVING],
+    ] as const) {
+      expect(await imageFacts(page, 'store', role)).toMatchObject({ name, size: [333, 333, 201], scaleIndex: 0 })
     }
   })
 })
