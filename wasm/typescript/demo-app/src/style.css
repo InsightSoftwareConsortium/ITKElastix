@@ -121,9 +121,9 @@ html:not(.wa-dark) .theme-icon-sun {
 }
 
 /* Wide enough for the longest labels, "OME-Zarr transform (.ome.zarr.ozx)"
-   and "elastix TransformParameters (.json)", to read in full. */
+   and "elastix TransformParameters TOML (.zip)", to read in full. */
 .download-format {
-  width: 23rem;
+  width: 24rem;
 }
 
 /* Status row -------------------------------------------------------------- */

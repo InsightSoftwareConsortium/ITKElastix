@@ -285,9 +285,9 @@ test('plannedFilename names the file the exporter will produce', () => {
   assert.equal(plannedFilename(store.state, 'image'), 'registered.ome.zarr.ozx')
   assert.equal(plannedFilename(store.state, 'transform'), 'transform.ome.zarr.ozx')
   store.update(formatChosen('image', 'nii.gz'))
-  store.update(formatChosen('transform', 'elastix-json'))
+  store.update(formatChosen('transform', 'elastix-toml'))
   assert.equal(plannedFilename(store.state, 'image'), 'registered.nii.gz')
-  assert.equal(plannedFilename(store.state, 'transform'), 'transform-parameters.json')
+  assert.equal(plannedFilename(store.state, 'transform'), 'transform-parameters.zip')
 })
 
 test('exportStatus shows the bar as determinate only for a counted report with a total', () => {

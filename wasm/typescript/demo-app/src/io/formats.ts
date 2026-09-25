@@ -11,7 +11,7 @@
 export type ImageFormatKind = 'ozx' | 'ome-tiff' | 'itk'
 
 /** Writer a transform format is routed to. */
-export type TransformFormatKind = 'ozx' | 'itk' | 'json'
+export type TransformFormatKind = 'ozx' | 'itk' | 'toml'
 
 /** Identifiers of the image formats, in the order the picker lists them. */
 export type ImageFormatId =
@@ -45,7 +45,7 @@ export type TransformFormatId =
   | 'mat'
   | 'xfm'
   | 'iwt.cbor'
-  | 'elastix-json'
+  | 'elastix-toml'
 
 /** One entry of a format picker. */
 export interface OutputFormat<Id extends string, Kind extends string> {
@@ -232,7 +232,8 @@ export const IMAGE_FORMATS: readonly ImageFormat[] = [
 /**
  * Transform formats in picker order: the OME-Zarr RFC-5 transform-only OZX
  * (the default), the `@itk-wasm/transform-io` formats, and elastix's own
- * TransformParameters JSON. `tfm` is absent from transform-io's
+ * TransformParameters files in the TOML format, zipped since elastix keeps
+ * one parameter map per file. `tfm` is absent from transform-io's
  * extension table, so `writeTransform` probes each writer for it; ITK's text
  * transform writer accepts the extension. `h5` and `hdf5` share a writer.
  */
@@ -306,13 +307,13 @@ export const TRANSFORM_FORMATS: readonly TransformFormat[] = [
       'same list.',
   },
   {
-    id: 'elastix-json',
-    label: 'elastix TransformParameters (.json)',
-    extension: '.json',
-    kind: 'json',
+    id: 'elastix-toml',
+    label: 'elastix TransformParameters TOML (.zip)',
+    extension: '.zip',
+    kind: 'toml',
     description:
-      'elastix’s own TransformParameters maps as JSON, one map per stage, which elastix and transformix read back ' +
-      'as a parameter object.',
+      'elastix’s own TransformParameters files in the TOML format, one per stage, zipped. Each names the one before ' +
+      'it as its initial transform, so elastix and transformix read back the last one as the whole chain.',
   },
 ]
 

@@ -4,13 +4,15 @@
 // state an export needs, the file it is named, whether the registered
 // image's anatomical orientation can be trusted, how far its pyramid
 // extends, how the OME-TIFF writer's progress is counted, whether fiff's
-// deflate workers can be used on this page, the elastix parameter JSON,
-// and which transform format refuses the elastix list before a writer is
-// even tried.
+// deflate workers can be used on this page, the elastix parameter JSON the
+// copy button takes, the names and zip of the elastix TransformParameters
+// TOML files, and which transform format refuses the elastix list before a
+// writer is even tried.
 //
 // Keep this module free of DOM access and of the ITK-Wasm, fiff, and
 // ngff-zarr browser entry points; every import is a type or a pure helper.
 import type { NgffImage } from '@fideus-labs/ngff-zarr'
+import { zipSync } from 'fflate'
 import type { JsonCompatible, TransformList } from 'itk-wasm'
 
 import type { RegistrationResult } from '../registration/types.ts'
@@ -61,18 +63,47 @@ export function resultFilename(format: ImageFormat): string {
 /** Stem the fixed-to-moving transform files are named with. */
 export const TRANSFORM_STEM = 'transform'
 
-/** Stem of the elastix TransformParameters JSON file. */
+/** Stem of the zip holding the elastix TransformParameters TOML files. */
 export const TRANSFORM_PARAMETERS_STEM = 'transform-parameters'
 
 /**
  * File name the fixed-to-moving transform is downloaded as in `format`:
  * {@link TRANSFORM_STEM} plus the format's extension, except the elastix
- * parameter maps, which are named for what they hold since `transform.json`
+ * parameter files, which are named for what they hold since `transform.zip`
  * would suggest a serialized transform rather than elastix's own
- * TransformParameters document.
+ * TransformParameters files.
  */
 export function transformFilename(format: TransformFormat): string {
-  return outputFilename(format.kind === 'json' ? TRANSFORM_PARAMETERS_STEM : TRANSFORM_STEM, format)
+  return outputFilename(format.kind === 'toml' ? TRANSFORM_PARAMETERS_STEM : TRANSFORM_STEM, format)
+}
+
+/**
+ * Names of the elastix TransformParameters TOML files for `count` parameter
+ * maps, `TransformParameters.<i>.toml` as elastix names its own output. The
+ * `.toml` extension is what makes `writeParameterFiles` write TOML rather
+ * than the legacy text format, and the names are what it chains the files
+ * by: each file after the first gets the previous file's name as its
+ * `InitialTransformParameterFileName`, so the last one read on its own by
+ * transformix (from the directory the zip is extracted into) applies every
+ * stage.
+ */
+export function elastixParameterFileNames(count: number): string[] {
+  return Array.from({ length: count }, (_, index) => `TransformParameters.${index}.toml`)
+}
+
+/** A text file written by an ITK-Wasm pipeline, as `writeParameterFiles` returns them. */
+export interface NamedTextFile {
+  path: string
+  data: string
+}
+
+/**
+ * `files` zipped into one archive, in their order, each stored under its
+ * name at the archive root as UTF-8 and deflated.
+ */
+export function zipTextFiles(files: readonly NamedTextFile[]): Uint8Array {
+  const encoder = new TextEncoder()
+  return zipSync(Object.fromEntries(files.map(({ path, data }) => [path, encoder.encode(data)])))
 }
 
 /**
@@ -88,11 +119,6 @@ export function elastixParametersText(transformParameterObject: JsonCompatible):
     throw new Error('The registration result carries no elastix transform parameter maps')
   }
   return json
-}
-
-/** {@link elastixParametersText} as UTF-8 bytes, for the download. */
-export function elastixParametersJson(transformParameterObject: JsonCompatible): Uint8Array {
-  return new TextEncoder().encode(elastixParametersText(transformParameterObject))
 }
 
 /**

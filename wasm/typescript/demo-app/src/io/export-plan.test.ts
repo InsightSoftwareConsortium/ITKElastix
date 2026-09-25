@@ -3,14 +3,16 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import type { JsonCompatible, Transform, TransformList } from 'itk-wasm'
+import { strFromU8, unzipSync } from 'fflate'
+
+import type { Transform, TransformList } from 'itk-wasm'
 
 import type { ExportProgress } from './export-types.ts'
 import type { LoadedImage } from './load-image.ts'
 import {
   EXPORT_LEVEL_CAP,
   canUseDeflateWorkers,
-  elastixParametersJson,
+  elastixParameterFileNames,
   elastixParametersText,
   exportScaleFactors,
   inPlaneScaleFactors,
@@ -22,6 +24,7 @@ import {
   toWriterError,
   transformFilename,
   unsupportedTransformFormatReason,
+  zipTextFiles,
 } from './export-plan.ts'
 import { imageFormatById, TRANSFORM_FORMATS, transformFormatById } from './formats.ts'
 import type { ImageShapeInfo } from './scale-select.ts'
@@ -63,7 +66,7 @@ test('transformFilename names the transform files after their stem in the format
   assert.equal(transformFilename(transformFormatById('h5')), 'transform.h5')
   assert.equal(transformFilename(transformFormatById('tfm')), 'transform.tfm')
   assert.equal(transformFilename(transformFormatById('iwt.cbor')), 'transform.iwt.cbor')
-  assert.equal(transformFilename(transformFormatById('elastix-json')), 'transform-parameters.json')
+  assert.equal(transformFilename(transformFormatById('elastix-toml')), 'transform-parameters.zip')
   for (const format of TRANSFORM_FORMATS) {
     assert.ok(transformFilename(format).endsWith(format.extension), `${format.id} keeps its extension`)
   }
@@ -72,20 +75,29 @@ test('transformFilename names the transform files after their stem in the format
 test('elastixParametersText is the pretty-printed JSON the copy button puts on the clipboard', () => {
   const maps = [{ Transform: ['AffineTransform'], TransformParameters: ['1', '0'] }]
   assert.equal(elastixParametersText(maps), JSON.stringify(maps, null, 2))
-  assert.equal(new TextDecoder().decode(elastixParametersJson(maps)), elastixParametersText(maps))
   assert.throws(() => elastixParametersText(undefined as never), /no elastix transform parameter maps/)
 })
 
-test('elastixParametersJson pretty-prints the parameter maps as UTF-8', () => {
-  const maps: JsonCompatible = [{ Transform: ['TranslationTransform'], TransformParameters: [1.5, -2] }, { Note: ['µm'] }]
-  const bytes = elastixParametersJson(maps)
-  const text = new TextDecoder().decode(bytes)
-  assert.equal(text, JSON.stringify(maps, null, 2))
-  assert.match(text, /^\[\n  \{\n    "Transform": \[/)
-  assert.deepEqual(JSON.parse(text), maps)
-  // 'µ' is two bytes in UTF-8, so the byte count exceeds the character count.
-  assert.equal(bytes.byteLength, text.length + 1)
-  assert.throws(() => elastixParametersJson(undefined as never), /no elastix transform parameter maps/)
+test('elastixParameterFileNames names one TOML file per map the way elastix names its output', () => {
+  assert.deepEqual(elastixParameterFileNames(3), [
+    'TransformParameters.0.toml',
+    'TransformParameters.1.toml',
+    'TransformParameters.2.toml',
+  ])
+  assert.deepEqual(elastixParameterFileNames(1), ['TransformParameters.0.toml'])
+  assert.deepEqual(elastixParameterFileNames(0), [])
+})
+
+test('zipTextFiles stores each file under its name, in order, as UTF-8', () => {
+  const files = [
+    { path: 'TransformParameters.0.toml', data: 'Transform = "TranslationTransform"\n' },
+    { path: 'TransformParameters.1.toml', data: '# µm\nInitialTransformParameterFileName = "TransformParameters.0.toml"\n' },
+  ]
+  const entries = unzipSync(zipTextFiles(files))
+  assert.deepEqual(Object.keys(entries), files.map(({ path }) => path))
+  for (const { path, data } of files) {
+    assert.equal(strFromU8(entries[path]), data)
+  }
 })
 
 /** A stand-in stage of an elastix list; `Composite` markers use it too. */
