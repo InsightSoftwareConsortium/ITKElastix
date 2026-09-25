@@ -39,6 +39,7 @@ import {
 } from '@fideus-labs/ngff-zarr/browser'
 import { formatBytes } from '../format'
 import { memoryStoreFromZip, omeZarrVersionOption } from './ozx-store'
+import { RangeFetchStore } from './range-fetch-store'
 import {
   channelAndTimepointInfo,
   fillMissingTranslation,
@@ -373,7 +374,11 @@ async function loadOmeZarrUrlSource(
   }
   const report = makeReporter(options.onProgress)
   report('fetch', `Reading OME-Zarr metadata from ${name}…`)
-  const multiscales = await fromOmeZarr(absoluteStoreUrl(source.url), { cache: chunkCache })
+  // A store rather than the URL string: ngff-zarr opens a string with
+  // zarrita's FetchStore, which cannot find a shard's end on a host that
+  // gzips responses, as GitHub Pages does (see range-fetch-store.ts).
+  const store = new RangeFetchStore(absoluteStoreUrl(source.url))
+  const multiscales = await fromOmeZarr(store, { cache: chunkCache })
   return finalizeFromMultiscales(name, multiscales, options.budgetBytes, options.onProgress, 'ome-zarr-url')
 }
 
