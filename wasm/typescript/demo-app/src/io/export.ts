@@ -1,14 +1,16 @@
 // Serialize the registration outputs to file bytes with ITK-Wasm's writers.
 // The file format follows from the file name's extension; the registry-driven
 // exporters (src/io/export-image.ts, src/io/export-transform.ts) pick the
-// name for the `itk` kinds and call in here. Each write runs in its own
+// name for the `itk` kinds and call in here, as does the elastix `toml`
+// kind for elastix's own parameter file writer. Each write runs in its own
 // itk-wasm web worker, which is terminated once the bytes are back.
+import { writeParameterFiles } from '@itk-wasm/elastix'
 import { writeImage } from '@itk-wasm/image-io'
 import { writeTransform } from '@itk-wasm/transform-io'
-import { createWebWorker, type Image, type TransformList } from 'itk-wasm'
+import { createWebWorker, type Image, type JsonCompatible, type TransformList } from 'itk-wasm'
 
 import { toPlainUint8Array } from './bytes'
-import { toWriterError } from './export-plan'
+import { elastixParameterFileNames, toWriterError, zipTextFiles } from './export-plan'
 import { RESULT_IMAGE_FILENAME, TRANSFORM_FILENAME, type ExportedFile } from './export-types'
 import { withTypedParameterArrays } from './transform-list'
 
@@ -59,6 +61,42 @@ export async function exportTransform(
       throw toWriterError(error, filename, 'transform')
     })
     return { filename, bytes: toPlainUint8Array(serializedTransform.data) }
+  } finally {
+    webWorker.terminate()
+  }
+}
+
+/**
+ * Write the elastix `transformParameterObject` as TransformParameters files
+ * in the TOML format, one per parameter map and chained to the one before
+ * (see `elastixParameterFileNames`), and return them zipped as `filename`.
+ * elastix keeps one parameter map per file, so the zip is what lets the
+ * multi-stage result travel as a single download.
+ */
+export async function exportElastixParameterFiles(
+  transformParameterObject: JsonCompatible,
+  filename: string,
+): Promise<ExportedFile> {
+  const count = Array.isArray(transformParameterObject) ? transformParameterObject.length : 0
+  if (count === 0) {
+    throw new Error('The registration result carries no elastix transform parameter maps')
+  }
+  const webWorker = await createWebWorker()
+  try {
+    const { parameterFiles } = await writeParameterFiles(
+      transformParameterObject,
+      elastixParameterFileNames(count),
+      { webWorker },
+    ).catch((error: unknown) => {
+      throw toWriterError(error, filename, 'transform')
+    })
+    // The pipeline only throws when it also wrote to stderr; a silent
+    // failure hands back the requested files empty.
+    const empty = parameterFiles.find((file) => file.data === '')
+    if (empty !== undefined) {
+      throw new Error(`elastix wrote ${empty.path} empty, so ${filename} could not be written`)
+    }
+    return { filename, bytes: zipTextFiles(parameterFiles) }
   } finally {
     webWorker.terminate()
   }

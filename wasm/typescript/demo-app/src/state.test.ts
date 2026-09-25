@@ -262,12 +262,12 @@ test('formatChosen changes one picker at a time and refuses ids the registry lac
   assert.equal(store.state.transformFormat, 'ozx-transform')
   assert.equal(selectedFormatId(store.state, 'image'), 'nii.gz')
 
-  store.update(formatChosen('transform', 'elastix-json'))
+  store.update(formatChosen('transform', 'elastix-toml'))
   assert.equal(store.state.imageFormat, 'nii.gz')
-  assert.equal(store.state.transformFormat, 'elastix-json')
-  assert.equal(selectedFormatId(store.state, 'transform'), 'elastix-json')
+  assert.equal(store.state.transformFormat, 'elastix-toml')
+  assert.equal(selectedFormatId(store.state, 'transform'), 'elastix-toml')
 
-  assert.throws(() => formatChosen('image', 'elastix-json'), /Unknown image format: elastix-json/)
+  assert.throws(() => formatChosen('image', 'elastix-toml'), /Unknown image format: elastix-toml/)
   assert.throws(() => formatChosen('transform', 'nrrd'), /Unknown transform format: nrrd/)
   assert.throws(() => formatChosen('image', ''), /Unknown image format: /)
 })

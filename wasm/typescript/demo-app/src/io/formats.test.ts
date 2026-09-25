@@ -69,10 +69,10 @@ test('every ITK image format is keyed by the extension the itk-wasm writer selec
   }
 })
 
-test('TRANSFORM_FORMATS lists the RFC-5 OZX first, the ITK-Wasm formats, then elastix JSON', () => {
+test('TRANSFORM_FORMATS lists the RFC-5 OZX first, the ITK-Wasm formats, then elastix TOML', () => {
   assert.deepEqual(
     TRANSFORM_FORMATS.map((format) => format.id),
-    ['ozx-transform', 'h5', 'hdf5', 'tfm', 'txt', 'mat', 'xfm', 'iwt.cbor', 'elastix-json'],
+    ['ozx-transform', 'h5', 'hdf5', 'tfm', 'txt', 'mat', 'xfm', 'iwt.cbor', 'elastix-toml'],
   )
   assert.deepEqual(entry(TRANSFORM_FORMATS[0]), {
     id: 'ozx-transform',
@@ -81,10 +81,10 @@ test('TRANSFORM_FORMATS lists the RFC-5 OZX first, the ITK-Wasm formats, then el
     kind: 'ozx',
   })
   assert.deepEqual(entry(TRANSFORM_FORMATS.at(-1)!), {
-    id: 'elastix-json',
-    label: 'elastix TransformParameters (.json)',
-    extension: '.json',
-    kind: 'json',
+    id: 'elastix-toml',
+    label: 'elastix TransformParameters TOML (.zip)',
+    extension: '.zip',
+    kind: 'toml',
   })
   for (const format of TRANSFORM_FORMATS.slice(1, -1)) {
     assert.equal(format.kind, 'itk', format.id)
@@ -130,8 +130,8 @@ test('formats are looked up by id and unknown ids throw', () => {
   assert.throws(() => imageFormatById('ozx-transform'), /Unknown image format: ozx-transform/)
   assert.throws(() => transformFormatById('nrrd'), /Unknown transform format: nrrd/)
   assert.equal(isImageFormatId('png'), true)
-  assert.equal(isImageFormatId('elastix-json'), false)
-  assert.equal(isTransformFormatId('elastix-json'), true)
+  assert.equal(isImageFormatId('elastix-toml'), false)
+  assert.equal(isTransformFormatId('elastix-toml'), true)
   assert.equal(isTransformFormatId('png'), false)
 })
 
@@ -168,6 +168,6 @@ test('outputFilename replaces the input extension with the format extension', ()
   assert.equal(outputFilename('slide.OME.TIFF', imageFormatById('png')), 'slide.png')
   assert.equal(outputFilename('x.iwi.cbor.zst', imageFormatById('iwi.cbor')), 'x.iwi.cbor')
   assert.equal(outputFilename('transform', transformFormatById('ozx-transform')), 'transform.ome.zarr.ozx')
-  assert.equal(outputFilename('transform.h5', transformFormatById('elastix-json')), 'transform.json')
+  assert.equal(outputFilename('transform.h5', transformFormatById('elastix-toml')), 'transform.zip')
   assert.equal(outputFilename('transform.iwt.cbor', transformFormatById('tfm')), 'transform.tfm')
 })
