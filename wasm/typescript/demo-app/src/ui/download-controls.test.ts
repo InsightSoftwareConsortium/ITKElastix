@@ -29,8 +29,8 @@ test('formatTooltip names what the button writes, the format, and its descriptio
     'Download the registered image as NRRD (.nrrd). A header and the pixels.',
   )
   assert.equal(
-    formatTooltip('transform', transformFormatById('elastix-json')),
-    `Download the fixed-to-moving transform as elastix TransformParameters (.json). ${transformFormatById('elastix-json').description}`,
+    formatTooltip('transform', transformFormatById('elastix-toml')),
+    `Download the fixed-to-moving transform as elastix TransformParameters TOML (.zip). ${transformFormatById('elastix-toml').description}`,
   )
 })
 

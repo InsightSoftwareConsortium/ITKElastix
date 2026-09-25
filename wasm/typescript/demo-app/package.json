@@ -18,7 +18,7 @@
     "@fideus-labs/ngff-zarr": "^0.33.0",
     "@fideus-labs/worker-pool": "^2.1.0",
     "@itk-wasm/downsample": "^2.0.2",
-    "@itk-wasm/elastix": "2.0.0",
+    "@itk-wasm/elastix": "2.1.0",
     "@itk-wasm/image-io": "^1.6.1",
     "@itk-wasm/transform-io": "^1.1.0",
     "@niivue/cbor-loader": "^1.2.1",

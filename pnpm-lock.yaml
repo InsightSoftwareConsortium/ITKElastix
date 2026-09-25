@@ -61,8 +61,8 @@ importers:
         specifier: ^2.0.2
         version: 2.0.2
       '@itk-wasm/elastix':
-        specifier: 2.0.0
-        version: 2.0.0
+        specifier: 2.1.0
+        version: 2.1.0
       '@itk-wasm/image-io':
         specifier: ^1.6.1
         version: 1.6.1(debug@4.4.3)
@@ -369,8 +369,8 @@ packages:
   '@itk-wasm/downsample@2.0.2':
     resolution: {integrity: sha512-ixIltTf6XypLkXBmIIhblD4AZX0Uhjk7n6Q8ZinLcudc+9v5YgBbUC2jffusVFf2rS6J3g+QMZGotXSikv/VFQ==}
 
-  '@itk-wasm/elastix@2.0.0':
-    resolution: {integrity: sha512-NAHEtCDjQchmUr3JNGR2W/BJQrxxMPC0rluYIjOr2ZeNRlky6tZG3tCfqhO/Ez/LNsbSNsn8W9IsZyPMIXKuxg==}
+  '@itk-wasm/elastix@2.1.0':
+    resolution: {integrity: sha512-CDnqFd3OiXnjGwTLqkVw8KjPBZcsEwsXaCcNR8CYtZliwXwCKnz1nmBVFEMHTIhwkqdcolP2+8KGHciFHQGvdA==}
 
   '@itk-wasm/image-io@1.6.1':
     resolution: {integrity: sha512-WAQSlC018JDJ0YNDnJcIox0F/lN/LkkxovtAulGdwXUiRsW1bBm6NPUNBYMCeU0iT1FpU2CBiZdJysYGTgVQbg==}
@@ -2558,7 +2558,7 @@ snapshots:
       - debug
       - supports-color
 
-  '@itk-wasm/elastix@2.0.0':
+  '@itk-wasm/elastix@2.1.0':
     dependencies:
       itk-wasm: 1.0.0-b.201(debug@4.4.3)
     transitivePeerDependencies:

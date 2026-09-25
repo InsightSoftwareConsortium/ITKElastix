@@ -235,7 +235,7 @@ writer is dispatched on), `download-flow.ts` calling the exporter for the
 chosen id with the state captured at the click, and `download.ts` saving the
 bytes through a temporary anchor. The exporters return the bytes with the
 file name they should get; the names (`registered.<ext>`,
-`transform.<ext>`, `transform-parameters.json`) and every other decision are
+`transform.<ext>`, `transform-parameters.zip`) and every other decision are
 in `export-plan.ts`.
 
 ```mermaid
@@ -247,7 +247,7 @@ flowchart TD
   R --> TR{"transform format kind"}
   TR -->|ozx| S["buildRfc5TransformSet → transformOnlyOzx: a scene with the fixed and moving systems"]
   TR -->|itk| WT["withTypedParameterArrays → writeTransform, one entry per stage"]
-  TR -->|json| J["transformParameterObject pretty-printed"]
+  TR -->|toml| J["transformParameterObject → writeParameterFiles, one chained TOML file per stage → zip"]
 ```
 
 **Registered image** (`export-image.ts`). The result is turned into an

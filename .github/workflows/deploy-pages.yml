@@ -41,7 +41,7 @@ jobs:
         node-version: '22'
         cache: pnpm
 
-    # The demo depends on the published @itk-wasm/elastix@2.0.0 (see
+    # The demo depends on the published @itk-wasm/elastix@2.1.0 (see
     # pnpm-lock.yaml), so the workspace install is all the build needs: no
     # Emscripten toolchain and no pixi.
     - name: Install dependencies
