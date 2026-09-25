@@ -4,7 +4,9 @@
 
 > A toolbox for rigid and nonrigid registration of images.
 
-[👨‍💻 **Live API Demo** ✨](https://itk-wasm-elastix-app-js.on.fleek.co/ ':include :type=iframe width=100% height=800px')
+The demo performs affine registration with elastix entirely in the browser: it takes OME-Zarr, OME-TIFF, or any ITK-readable images as input, renders the fixed, moving, and registered images with niivue, and writes the registered image and the fixed-to-moving transform back out as OME-Zarr.
+
+[👨‍💻 **Live Demo** ✨](https://insightsoftwareconsortium.github.io/ITKElastix/ ':include :type=iframe width=100% height=800px')
 
 [🕮 **Documentation** 📚](https://js.docs.elastix.wasm.itk.eth.limo/)
 
