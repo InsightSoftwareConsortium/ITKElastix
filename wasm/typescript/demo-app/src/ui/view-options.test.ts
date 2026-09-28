@@ -7,6 +7,7 @@ import { SLICE_TYPE } from '@niivue/niivue'
 import type { LoadedImage } from '../io/load-image.ts'
 import { createStore, inputsLoaded } from '../state.ts'
 import {
+  COLORMAP_CHOICES,
   CROSSHAIR_WIDTH,
   DEFAULT_COLORMAP,
   DEFAULT_SLICE_TYPE,
@@ -100,13 +101,16 @@ test('the layout picker shows for a 3D pair only', () => {
   assert.equal(showsSliceTypePicker(store.state), true)
 })
 
-test('colormap options are sorted case-insensitively and always include the default', () => {
+test('colormap options list the curated choices niivue registers, in curated order, always with the default', () => {
   assert.equal(DEFAULT_COLORMAP, 'Gray')
-  assert.deepEqual(colormapOptions(['Red', 'Hot', 'Gray', 'Blue2cyan']), ['Blue2cyan', 'Gray', 'Hot', 'Red'])
-  assert.deepEqual(colormapOptions(['Red', 'Hot']), ['Gray', 'Hot', 'Red'])
+  assert.equal(COLORMAP_CHOICES.length, 10)
+  assert.equal(COLORMAP_CHOICES[0], DEFAULT_COLORMAP)
+  assert.deepEqual(colormapOptions(['Red', 'Viridis', 'Hot', 'Gray', 'Blue2cyan']), ['Gray', 'Hot', 'Viridis'])
+  assert.deepEqual(colormapOptions(['Hot']), ['Gray', 'Hot'])
   assert.deepEqual(colormapOptions([]), ['Gray'])
+  assert.deepEqual(colormapOptions([...COLORMAP_CHOICES].reverse()), [...COLORMAP_CHOICES])
 })
 
-test('colormap options drop niivue internal tables, blanks, and duplicates', () => {
-  assert.deepEqual(colormapOptions(['_draw', '_itksnap', 'Hot', 'Hot', '', 'hot', 'gray']), ['Gray', 'Hot'])
+test('colormap options match niivue names case-insensitively and drop everything else', () => {
+  assert.deepEqual(colormapOptions(['_draw', '_itksnap', 'hot', 'HOT', '', 'gray', 'ct_bones']), ['Gray', 'hot'])
 })
