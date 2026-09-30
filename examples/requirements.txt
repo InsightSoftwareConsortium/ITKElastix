@@ -1,4 +1,5 @@
 itk-elastix>=0.25.1
+ngff-zarr>=0.48.0
 itkwidgets>=0.32.0
 jupyterlab>=2.2.0
 imageio

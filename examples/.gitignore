@@ -5,3 +5,5 @@ result-downsampled.mha
 result.mha
 result.png
 
+# OME-Zarr stores written by the example notebooks
+exampleoutput/*.ome.zarr/
