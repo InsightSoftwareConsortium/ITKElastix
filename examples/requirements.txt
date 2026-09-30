@@ -14,3 +14,4 @@ tqdm
 itkwasm-mesh-io>=1.7.1
 napari[all]
 itk-napari-conversion
+pytest-xvfb
