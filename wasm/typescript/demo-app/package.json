@@ -13,26 +13,26 @@
     "test:unit": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test \"src/**/*.test.ts\" \"scripts/**/*.test.mjs\""
   },
   "dependencies": {
-    "@awesome.me/webawesome": "^3.13.0",
-    "@fideus-labs/fiff": "^0.7.0",
-    "@fideus-labs/ngff-zarr": "^0.33.0",
+    "@awesome.me/webawesome": "^3.14.0",
+    "@fideus-labs/fiff": "^0.8.0",
+    "@fideus-labs/ngff-zarr": "^0.34.0",
     "@fideus-labs/worker-pool": "^2.1.0",
     "@itk-wasm/downsample": "^2.0.2",
-    "@itk-wasm/elastix": "2.0.0",
+    "@itk-wasm/elastix": "2.1.0",
     "@itk-wasm/image-io": "^1.6.1",
     "@itk-wasm/transform-io": "^1.1.0",
     "@niivue/cbor-loader": "^1.2.1",
-    "@niivue/niivue": "1.0.0-rc.13",
+    "@niivue/niivue": "1.0.0-rc.16",
     "cbor-x": "^1.6.6",
-    "fflate": "^0.8.2",
+    "fflate": "^0.8.3",
     "geotiff": "^3.0.5",
     "itk-wasm": "^1.0.0-b.201"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
-    "@types/node": "^22.20.3",
+    "@types/node": "^22.20.4",
     "typescript": "^7.0.2",
-    "vite": "^8.3.0",
+    "vite": "^8.3.1",
     "vite-plugin-static-copy": "^4.1.1"
   }
 }

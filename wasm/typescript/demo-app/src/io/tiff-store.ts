@@ -51,7 +51,7 @@ export type TiffSource = Blob | ArrayBuffer | string
  * (fiff's decode tasks receive the pool's idle worker or `null`, spawn one
  * when `null`, and hand back the worker they used), but worker-pool 2.x
  * types its slots as `WorkerLike` (a browser `Worker` or a Node worker)
- * while fiff 0.7's `DeflatePool` still spells `Worker`, so the structural
+ * while fiff 0.8's `DeflatePool` still spells `Worker`, so the structural
  * check fails on that parameter and the cast is made here, once.
  */
 export interface OpenTiffStoreOptions extends Omit<TiffStoreOptions, 'pool'> {
@@ -72,16 +72,16 @@ function toTiffStoreOptions({ pool, ...rest }: OpenTiffStoreOptions): TiffStoreO
   return pool === undefined ? rest : { ...rest, pool: asDeflatePool(pool) }
 }
 
-/** The geotiff 2.x entry point fiff 0.7 still calls, and where geotiff 3.x keeps it. */
+/** The geotiff 2.x entry point fiff 0.8 still calls, and where geotiff 3.x keeps it. */
 interface LegacyIfdParsing {
   parser?: { parseFileDirectoryAt(offset: number): Promise<unknown> }
   parseFileDirectoryAt?: (offset: number) => Promise<unknown>
 }
 
 /**
- * Make SubIFD pyramid levels readable. fiff 0.7 reaches the sub-resolution
+ * Make SubIFD pyramid levels readable. fiff 0.8 reaches the sub-resolution
  * IFDs of an OME-TIFF pyramid through `GeoTIFF.parseFileDirectoryAt`, a
- * geotiff 2.x internal that every geotiff 3.x release (fiff's own `^3.0.3`
+ * geotiff 2.x internal that every geotiff 3.x release (fiff's own `^3.0.5`
  * range included) moved onto `GeoTIFF.parser`, so every level but the
  * first fails with "tiff.parseFileDirectoryAt is not a function". Putting
  * the old entry point back on the instance, delegating to the parser,
