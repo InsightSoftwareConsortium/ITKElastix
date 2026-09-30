@@ -64,7 +64,7 @@ pixi run -- pnpm --filter itk-elastix-demo dev
 `dev` downloads the sample images (next section) and starts the Vite dev
 server at <http://localhost:5188/> (the port is strict, so a second instance
 fails rather than moving). The app depends on the published
-`@itk-wasm/elastix@2.0.0` from the registry, not on the sibling workspace
+`@itk-wasm/elastix@2.1.0` from the registry, not on the sibling workspace
 package, so it needs neither the Emscripten toolchain nor a package build.
 
 | Script          | What it does                                                                                  |
