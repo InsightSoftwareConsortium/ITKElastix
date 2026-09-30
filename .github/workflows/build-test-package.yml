@@ -18,7 +18,9 @@ jobs:
     if: github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags')
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.7
     with:
-      python3-minor-versions: '["10","11"]'
+      # The notebook job runs on the first version listed. ngff-zarr, which
+      # examples/requirements.txt pulls in, requires Python >= 3.11.
+      python3-minor-versions: '["11","10"]'
       test-notebooks: true
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
@@ -27,7 +29,9 @@ jobs:
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags')
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@v5.4.7
     with:
-      python3-minor-versions: '["10","11"]'
+      # The notebook job runs on the first version listed. ngff-zarr, which
+      # examples/requirements.txt pulls in, requires Python >= 3.11.
+      python3-minor-versions: '["11","10"]'
       test-notebooks: true
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
