@@ -12,6 +12,6 @@ matplotlib>=3.5.0
 voila
 tqdm
 itkwasm-mesh-io>=1.7.1
-napari[all]
+napari[optional,pyqt5]
 itk-napari-conversion
 pytest-xvfb
