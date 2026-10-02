@@ -1,7 +1,7 @@
 // End-to-end tests for the output side of the demo: the format pickers and
 // download buttons for the formats named in the Phase 03 playbook, the
-// RFC-5 metadata of the two OME-Zarr archives (read in Node from the
-// downloaded bytes), and the OZX and OME-TIFF round trips back through the
+// RFC-5 metadata of the two OME-Zarr archives and the elastix TOML files
+// (read in Node from the downloaded bytes), and the OZX and OME-TIFF round trips back through the
 // fixed file picker. One registration of the 2D tailbud sample serves the whole
 // file: the tests run serially on a page a worker fixture prepares once,
 // and every download's bytes are kept for the tests after it. The file
@@ -10,6 +10,7 @@
 import { readFile } from 'node:fs/promises'
 
 import { expect, test as base, type Page } from '@playwright/test'
+import { strFromU8, unzipSync } from 'fflate'
 
 import type { LoadedImage } from '../src/io/load-image'
 import type { OutputKind } from '../src/state'
@@ -35,6 +36,7 @@ import { expectAffineMatrix, parseOzx, type OzxContents } from './ome-zarr'
 const IMAGE_OZX = 'registered.ome.zarr.ozx'
 const IMAGE_OME_TIFF = 'registered.ome.tif'
 const TRANSFORM_OZX = 'transform.ome.zarr.ozx'
+const TRANSFORM_PARAMETERS_ZIP = 'transform-parameters.zip'
 
 /** Image formats under test, with the file name each download must carry. */
 const IMAGE_DOWNLOADS: readonly { id: string; filename: string }[] = [
@@ -49,7 +51,7 @@ const TRANSFORM_DOWNLOADS: readonly { id: string; filename: string }[] = [
   { id: 'ozx-transform', filename: TRANSFORM_OZX },
   { id: 'h5', filename: 'transform.h5' },
   { id: 'tfm', filename: 'transform.tfm' },
-  { id: 'elastix-json', filename: 'transform-parameters.json' },
+  { id: 'elastix-toml', filename: TRANSFORM_PARAMETERS_ZIP },
 ]
 
 /** The two OME downloads the ingest pipeline reads back, with how it reports each. */
@@ -247,6 +249,31 @@ test.describe('OME-Zarr RFC-5 metadata', () => {
     // same matrix under its own input name.
     const standalone = readOzx(session.files, TRANSFORM_OZX).root.attributes.ome.scene?.coordinateTransformations[0]
     expect(affine?.affine).toEqual(standalone?.affine)
+  })
+})
+
+test.describe('elastix TransformParameters TOML', () => {
+  test('the zip holds one chained TOML file per stage', ({ session }) => {
+    const bytes = session.files.get(TRANSFORM_PARAMETERS_ZIP)
+    expect(bytes, `${TRANSFORM_PARAMETERS_ZIP} is downloaded earlier in this file`).toBeDefined()
+    const entries = unzipSync(new Uint8Array(bytes ?? Buffer.alloc(0)))
+    const names = ['TransformParameters.0.toml', 'TransformParameters.1.toml', 'TransformParameters.2.toml']
+    expect(Object.keys(entries)).toEqual(names)
+
+    const texts = names.map((name) => strFromU8(entries[name]))
+    // translation -> rigid -> affine, in the TOML format rather than the
+    // legacy `(Transform "...")` text format.
+    const transforms = ['TranslationTransform', 'EulerTransform', 'AffineTransform']
+    texts.forEach((text, index) => {
+      expect(text).toContain(`Transform = "${transforms[index]}"`)
+      expect(text).toMatch(/^TransformParameters = \[/m)
+      expect(text).not.toContain('(Transform ')
+    })
+    // Each file after the first starts from the one before, so transformix
+    // given the last file applies every stage.
+    for (let index = 1; index < names.length; index++) {
+      expect(texts[index]).toContain(`InitialTransformParameterFileName = "${names[index - 1]}"`)
+    }
   })
 })
 

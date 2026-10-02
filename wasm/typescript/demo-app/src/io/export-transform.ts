@@ -11,17 +11,18 @@
 //   is, so the file holds one ITK transform per stage in the list's order,
 //   which is ITK's composite-queue order: affine, rigid, translation, the
 //   last entry being the one applied first.
-// - `json`: elastix's own transform parameter maps, pretty-printed, which
-//   elastix or transformix can read back as a parameter object.
+// - `toml`: elastix's own TransformParameters files in the TOML format,
+//   written by `@itk-wasm/elastix`'s `writeParameterFiles`, one per stage and
+//   each chained to the one before, zipped (src/io/export.ts). elastix and
+//   transformix read them back.
 //
-// The decisions (file names, the JSON bytes, which format refuses the list)
+// The decisions (file names, the zip, which format refuses the list)
 // live in src/io/export-plan.ts so the Node unit tests can cover them; this
-// module is the wiring, and it reaches the ITK-Wasm writer's web worker
+// module is the wiring, and it reaches the ITK-Wasm writers' web workers
 // through src/io/export.ts, so only the Playwright specs run it.
 import { formatBytes } from '../format'
-import { exportTransform } from './export'
+import { exportElastixParameterFiles, exportTransform } from './export'
 import {
-  elastixParametersJson,
   progressReporter,
   registrationOutputs,
   transformFilename,
@@ -74,8 +75,8 @@ export async function exportRegisteredTransform(
     case 'ozx':
       bytes = writeOzx(outputs)
       break
-    case 'json':
-      bytes = elastixParametersJson(outputs.result.transformParameterObject)
+    case 'toml':
+      bytes = (await exportElastixParameterFiles(outputs.result.transformParameterObject, filename)).bytes
       break
     case 'itk':
       bytes = (await exportTransform(outputs.result.transform, filename)).bytes
