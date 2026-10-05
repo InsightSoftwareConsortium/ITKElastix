@@ -7,3 +7,8 @@ result.png
 
 # OME-Zarr stores written by the example notebooks
 exampleoutput/*.ome.zarr/
+
+# Data downloaded by the 3D lung CT MONAI example
+paired_ct_lung/
+paired_ct_lung.zip
+pretrained_weight.pth
