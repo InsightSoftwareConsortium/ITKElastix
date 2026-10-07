@@ -10,13 +10,15 @@
 //   extension (src/io/export.ts). elastix's list goes to the writer as it
 //   is, so the file holds one ITK transform per stage in the list's order,
 //   which is ITK's composite-queue order: affine, rigid, translation, the
-//   last entry being the one applied first.
+//   last entry being the one applied first. MINC XFM holds a single 3D
+//   linear transform, so its writer gets the stages multiplied out into one
+//   affine instead, lifted into 3D for a 2D registration.
 // - `toml`: elastix's own TransformParameters files in the TOML format,
 //   written by `@itk-wasm/elastix`'s `writeParameterFiles`, one per stage and
 //   each chained to the one before, zipped (src/io/export.ts). elastix and
 //   transformix read them back.
 //
-// The decisions (file names, the zip, which format refuses the list)
+// The decisions (file names, the zip, the list each writer is given)
 // live in src/io/export-plan.ts so the Node unit tests can cover them; this
 // module is the wiring, and it reaches the ITK-Wasm writers' web workers
 // through src/io/export.ts, so only the Playwright specs run it.
@@ -26,7 +28,7 @@ import {
   progressReporter,
   registrationOutputs,
   transformFilename,
-  unsupportedTransformFormatReason,
+  transformForFormat,
   type ExportableState,
   type RegistrationOutputs,
 } from './export-plan'
@@ -38,7 +40,7 @@ export {
   TRANSFORM_PARAMETERS_STEM,
   TRANSFORM_STEM,
   transformFilename,
-  unsupportedTransformFormatReason,
+  transformForFormat,
   type ExportableState,
 } from './export-plan'
 export type { ExportProgress, ExportProgressCallback, ExportRegisteredTransformFunction } from './export-types'
@@ -50,8 +52,8 @@ export type { ExportProgress, ExportProgressCallback, ExportRegisteredTransformF
  * downloaded as. `onProgress` receives the `package` phase when writing
  * starts and `done` with the size; none of these writers counts anything,
  * so the counts are never set. Throws on an unknown format, on a state
- * without a result, on a format that cannot hold the elastix list (MINC
- * XFM), and on anything the writer refuses.
+ * without a result, on a list MINC XFM cannot hold (a stage that is not
+ * linear), and on anything the writer refuses.
  */
 export async function exportRegisteredTransform(
   state: ExportableState,
@@ -62,10 +64,8 @@ export async function exportRegisteredTransform(
   const outputs = registrationOutputs(state)
   const filename = transformFilename(format)
 
-  const reason = unsupportedTransformFormatReason(format, outputs.result.transform)
-  if (reason !== undefined) {
-    throw new Error(reason)
-  }
+  // Before any progress is reported, so a list MINC XFM cannot hold fails at once.
+  const transform = transformForFormat(format, outputs.result.transform)
 
   const report = progressReporter(onProgress)
   report('package', `Writing ${filename}…`)
@@ -79,7 +79,7 @@ export async function exportRegisteredTransform(
       bytes = (await exportElastixParameterFiles(outputs.result.transformParameterObject, filename)).bytes
       break
     case 'itk':
-      bytes = (await exportTransform(outputs.result.transform, filename)).bytes
+      bytes = (await exportTransform(transform, filename)).bytes
       break
   }
   report('done', `Wrote ${filename} (${formatBytes(bytes.byteLength)})`)

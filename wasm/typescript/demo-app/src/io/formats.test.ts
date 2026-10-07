@@ -114,7 +114,8 @@ test('every format carries a distinct one- or two-sentence description for its t
   }
   // The formats a writer refuses say so, since the picker still lists them.
   assert.match(imageFormatById('png').description, /cannot be written/)
-  assert.match(transformFormatById('xfm').description, /cannot be written/)
+  // MINC XFM says the stages are combined, since every other transform file keeps them apart.
+  assert.match(transformFormatById('xfm').description, /multiplied out into one affine/)
 })
 
 test('the defaults are the first entries: OZX for the image and the RFC-5 OZX for the transform', () => {

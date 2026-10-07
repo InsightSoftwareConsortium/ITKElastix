@@ -6,8 +6,7 @@
 // extends, how the OME-TIFF writer's progress is counted, whether fiff's
 // deflate workers can be used on this page, the elastix parameter JSON the
 // copy button takes, the names and zip of the elastix TransformParameters
-// TOML files, and which transform format refuses the elastix list before a
-// writer is even tried.
+// TOML files, and the transform list each transform writer is given.
 //
 // Keep this module free of DOM access and of the ITK-Wasm, fiff, and
 // ngff-zarr browser entry points; every import is a type or a pure helper.
@@ -22,7 +21,7 @@ import { outputFilename, type ImageFormat, type TransformFormat } from './format
 import type { LoadedImage } from './load-image.ts'
 import { planScaleFactors, SPATIAL_DIMS, type ImageShapeInfo } from './scale-select.ts'
 import { hasOrientationExtension } from './source-kind.ts'
-import { withoutCompositeHeader } from './transform-list.ts'
+import { composedAffineTransform } from './transform-list.ts'
 
 /** Most levels a registered image's pyramid is written with, the base included. */
 export const EXPORT_LEVEL_CAP = 4
@@ -121,31 +120,29 @@ export function elastixParametersText(transformParameterObject: JsonCompatible):
   return json
 }
 
+/** Dimension of the one linear transform a MINC XFM file holds. */
+export const XFM_DIMENSION = 3
+
 /**
- * Why `format` cannot hold `transform`, or `undefined` when its writer can
- * be tried. ITK's MINC XFM writer takes exactly one 3D linear transform
- * (elastix's leading `Composite` marker is ignored) and rejects anything
- * else with a bare wasm exception, so the translation → rigid → affine list
- * every run of this demo produces is refused up front with the reason.
- * Every other writer takes the multi-stage list as it is.
+ * The transform list `format`'s ITK-Wasm writer is given for `transform`,
+ * elastix's list. Every writer but MINC XFM's takes the multi-stage list as
+ * it is. ITK's MINC XFM writer takes exactly one 3D linear transform and
+ * rejects anything else with a bare wasm exception, so for it the stages
+ * (translation, rigid, affine) are multiplied out into the single `Affine`
+ * that maps every point where the list does, and a 2D registration's is
+ * lifted into 3D with z passed through ({@link composedAffineTransform}).
+ * Throws, naming the format, when a stage is not linear.
  */
-export function unsupportedTransformFormatReason(
-  format: TransformFormat,
-  transform: TransformList,
-): string | undefined {
+export function transformForFormat(format: TransformFormat, transform: TransformList): TransformList {
   if (format.id !== 'xfm') {
-    return undefined
+    return transform
   }
-  const stages = withoutCompositeHeader(transform)
-  const dimension = stages[0]?.transformType.inputDimension
-  if (stages.length === 1 && dimension === 3) {
-    return undefined
+  try {
+    return [composedAffineTransform(transform, XFM_DIMENSION)]
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    throw new Error(`MINC XFM holds a single 3D linear transform. ${reason}; choose another format`, { cause: error })
   }
-  const produced =
-    stages.length === 1
-      ? `a ${dimension}D transform`
-      : `${stages.length} stages${dimension === undefined ? '' : ` in ${dimension}D`}`
-  return `MINC XFM holds a single 3D linear transform, but this registration produced ${produced}; choose another format`
 }
 
 /** The parts of the fixed input the orientation rule reads. */
@@ -230,11 +227,11 @@ const WRITER_HINTS: Record<WriterSubject, string> = {
  * Turn whatever an ITK-Wasm writer rejected with into an `Error` naming the
  * file. The writers report most problems through an `Error`, but an
  * uncaught C++ exception inside the wasm module (ITK's PNG writer refusing a
- * signed 16-bit slice, any 2D-only format given a volume, or the MINC XFM
- * writer given more than one transform) reaches JavaScript as Emscripten's
- * raw exception pointer, a bare number, which would otherwise be shown to
- * the user as is; `subject` picks the hint that follows the code. The
- * counterpart of `toRegistrationError` in src/registration/register.ts.
+ * signed 16-bit slice, or any 2D-only format given a volume) reaches
+ * JavaScript as Emscripten's raw exception pointer, a bare number, which
+ * would otherwise be shown to the user as is; `subject` picks the hint that
+ * follows the code. The counterpart of `toRegistrationError` in
+ * src/registration/register.ts.
  */
 export function toWriterError(error: unknown, filename: string, subject: WriterSubject = 'image'): Error {
   if (error instanceof Error) {

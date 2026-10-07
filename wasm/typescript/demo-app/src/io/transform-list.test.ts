@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import type { Transform, TransformList } from 'itk-wasm'
 import {
   ANGLE_OR_VERSOR_PARAMETERIZATIONS,
+  composedAffineTransform,
   toAffineTransform,
   withAffineStages,
   withoutCompositeHeader,
@@ -203,4 +204,140 @@ test('withAffineStages rewrites only the angle and versor stages of a list', () 
   assert.equal(rewritten[2]!.transformType.transformParameterization, 'Affine')
   assertClose(rewritten[2]!.parameters, [1, 0, 0, 1, 1, 2], 'rewritten Euler2D')
   assert.equal(rewritten[3], translation)
+})
+
+/**
+ * Where `transform` sends `point`, straight from the ITK class's formula:
+ * the independent check on {@link composedAffineTransform}'s arithmetic.
+ */
+function applyStage(transform: Transform, point: readonly number[]): number[] {
+  const p = Array.from(transform.parameters as Float64Array)
+  const c = Array.from(transform.fixedParameters as Float64Array)
+  const d = point.length
+  switch (transform.transformType.transformParameterization) {
+    case 'Translation':
+      return point.map((value, i) => value + p[i]!)
+    case 'Euler2D': {
+      // y = R(angle) (x - c) + c + t
+      const [angle, tx, ty] = p as [number, number, number]
+      const [dx, dy] = [point[0]! - c[0]!, point[1]! - c[1]!]
+      return [
+        Math.cos(angle) * dx - Math.sin(angle) * dy + c[0]! + tx,
+        Math.sin(angle) * dx + Math.cos(angle) * dy + c[1]! + ty,
+      ]
+    }
+    case 'Affine':
+      // y = M (x - c) + c + t, M row by row
+      return point.map((_, row) =>
+        point.reduce((sum, value, k) => sum + p[row * d + k]! * (value - (c[k] ?? 0)), (c[row] ?? 0) + p[d * d + row]!),
+      )
+    default:
+      throw new Error(`applyStage does not know ${transform.transformType.transformParameterization}`)
+  }
+}
+
+/** Where an ITK transform list sends `point`: its last entry is applied first. */
+function applyList(transforms: TransformList, point: readonly number[]): number[] {
+  return withoutCompositeHeader(transforms).reduceRight((moved, transform) => applyStage(transform, moved), [...point])
+}
+
+/** elastix's 2D list, header included: affine, rigid, translation, each stage but the last with its own center. */
+function elastixList2d(): TransformList {
+  return [
+    transform('Composite', { n: 0, fixedN: 0, parameters: PLACEHOLDER, fixedParameters: PLACEHOLDER }),
+    stage('Affine', 2, [1.1, 0.2, -0.15, 0.95, 2, -3], [12, 30]),
+    stage('Euler2D', 2, [0.3, 1.5, -2.5], [40, 25]),
+    { ...stage('Translation', 2, [5, -4], []), fixedParameters: PLACEHOLDER } as unknown as Transform,
+  ]
+}
+
+const POINTS_2D = [
+  [0, 0],
+  [100, 0],
+  [0, 100],
+  [37.5, -12.25],
+]
+
+test('composedAffineTransform maps every point where the elastix list does, its last stage applied first', () => {
+  const list = elastixList2d()
+  const affine = composedAffineTransform(list)
+
+  assert.equal(affine.transformType.transformParameterization, 'Affine')
+  assert.equal(affine.transformType.inputDimension, 2)
+  assert.equal(affine.transformType.outputDimension, 2)
+  assert.equal(affine.numberOfParameters, 6)
+  assert.equal(affine.numberOfFixedParameters, 2)
+  assertClose(affine.fixedParameters, [0, 0], 'centered on the origin')
+  assert.ok(affine.parameters instanceof Float64Array)
+  for (const point of POINTS_2D) {
+    assertClose(applyStage(affine, point), applyList(list, point), `point ${point}`)
+  }
+  // The order matters: the same stages applied first to last land elsewhere.
+  const reversed = [list[0]!, ...list.slice(1).reverse()]
+  assert.ok(Math.abs(applyList(reversed, [100, 0])[0]! - applyStage(affine, [100, 0])[0]!) > 1e-6)
+})
+
+test('composedAffineTransform lifts a 2D list into 3D, passing z through unchanged', () => {
+  const list = elastixList2d()
+  const planar = composedAffineTransform(list)
+  const lifted = composedAffineTransform(list, 3)
+
+  assert.equal(lifted.transformType.inputDimension, 3)
+  assert.equal(lifted.transformType.outputDimension, 3)
+  assert.equal(lifted.numberOfParameters, 12)
+  assert.equal(lifted.numberOfFixedParameters, 3)
+  const [a, b, c, d, ox, oy] = Array.from(planar.parameters as Float64Array)
+  assertClose(lifted.parameters, [a!, b!, 0, c!, d!, 0, 0, 0, 1, ox!, oy!, 0], 'the 2D map in the leading block')
+  for (const [x, y] of POINTS_2D) {
+    assertClose(applyStage(lifted, [x!, y!, 7]), [...applyList(list, [x!, y!]), 7], `point ${[x, y, 7]}`)
+  }
+})
+
+test('composedAffineTransform folds a 3D affine stage’s center into its translation', () => {
+  const list = [
+    stage('Affine', 3, [1, 0.1, 0, 0, 0.9, 0.2, -0.1, 0, 1.2, 1, 2, 3], [10, 20, 30]),
+    stage('Translation', 3, [-4, 5, -6], []),
+  ]
+  const affine = composedAffineTransform(list)
+
+  assert.equal(affine.numberOfParameters, 12)
+  assertClose(affine.fixedParameters, [0, 0, 0], 'centered on the origin')
+  for (const point of [[0, 0, 0], [10, 20, 30], [-5, 8, 13]]) {
+    assertClose(applyStage(affine, point), applyList(list, point), `point ${point}`)
+  }
+})
+
+test('composedAffineTransform keeps float32 and reads the angle and versor stages through toAffineTransform', () => {
+  const affine32 = composedAffineTransform([stage('Translation', 2, [1, 2], [], 'float32')])
+  assert.ok(affine32.parameters instanceof Float32Array)
+  assert.equal(affine32.transformType.parametersValueType, 'float32')
+
+  // A quarter turn about z around (1, 0, 0) then a shift: (2, 0, 0) -> (1, 1, 0) -> (1, 1, 5).
+  const versor = composedAffineTransform([
+    stage('Translation', 3, [0, 0, 5], []),
+    stage('VersorRigid3D', 3, [0, 0, Math.SQRT1_2, 0, 0, 0], [1, 0, 0]),
+  ])
+  assertClose(applyStage(versor, [2, 0, 0]), [1, 1, 5], 'VersorRigid3D then Translation')
+})
+
+test('composedAffineTransform treats an Identity stage as leaving every point in place', () => {
+  const identity = composedAffineTransform([stage('Identity', 2, [], [])])
+  assertClose(identity.parameters, [1, 0, 0, 1, 0, 0], 'Identity alone')
+
+  const list = elastixList2d()
+  const withIdentity = composedAffineTransform([...list, stage('Identity', 2, [], [])])
+  assertClose(withIdentity.parameters, Array.from(composedAffineTransform(list).parameters as Float64Array), 'Identity appended')
+})
+
+test('composedAffineTransform refuses what no single affine can stand for', () => {
+  assert.throws(() => composedAffineTransform([]), /empty transform list/)
+  assert.throws(
+    () => composedAffineTransform([stage('BSpline', 2, [0, 0], [0, 0])]),
+    /An ITK BSpline transform cannot be multiplied into an affine; only Identity, Translation, Affine, and Euler2D/,
+  )
+  assert.throws(
+    () => composedAffineTransform([stage('Translation', 2, [0, 0], []), stage('Translation', 3, [0, 0, 0], [])]),
+    /3D-to-3D Translation stage cannot be multiplied into a 2D affine/,
+  )
+  assert.throws(() => composedAffineTransform([stage('Translation', 3, [0, 0, 0], [])], 2), /3D transform cannot be written as a 2D affine/)
 })

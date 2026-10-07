@@ -308,7 +308,7 @@ Both download buttons have a format picker filled from the registry in
 | ---------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | OME-Zarr transform (default)       | `transform.ome.zarr.ozx`    | A transform-only OME-Zarr 0.6 group holding the single RFC-5 affine from the `fixed` to the `moving` coordinate system, in a `scene`. |
 | ITK HDF5 (`.h5`, `.hdf5`), ITK text (`.tfm`, `.txt`), MATLAB (`.mat`), ITK-Wasm transform (`.iwt.cbor`) | `transform.<ext>` | Written by `@itk-wasm/transform-io`, one entry per elastix stage (affine, rigid, translation; the last applied first).          |
-| MINC XFM                           | `transform.xfm`             | Holds one 3D linear transform, so the three-stage list is refused up front with the reason.                                     |
+| MINC XFM                           | `transform.xfm`             | Holds one 3D linear transform, so the three stages are multiplied out into a single affine; a 2D registration's is lifted into 3D with z left unchanged. |
 | elastix TransformParameters (TOML) | `transform-parameters.zip`  | elastix's own parameter files in the TOML format, `TransformParameters.0.toml` to `.2.toml`, one per stage, written by `writeParameterFiles`. Each names the one before as its `InitialTransformParameterFileName`, so transformix given the last one applies every stage. |
 
 The two OME-Zarr outputs carry the same affine; only the name of its input
