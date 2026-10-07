@@ -18,7 +18,6 @@ import {
 import type { LoadedImage } from './io/load-image'
 import { PIXEL_BUDGET_BYTES } from './io/scale-select.ts'
 import { DEFAULT_NUMBER_OF_RESOLUTIONS, type RegistrationResult } from './registration/types.ts'
-import { clampResolutions } from './ui/registration-options.ts'
 
 /** The two outputs a registration result can be downloaded as. */
 export type OutputKind = 'image' | 'transform'
@@ -167,9 +166,9 @@ export function canReloadInputs(state: Readonly<AppState>): boolean {
   )
 }
 
-/** Patch for the resolutions picker; the value is clamped to the picker's range (see `clampResolutions`). */
-export function resolutionsChosen(value: unknown): Partial<AppState> {
-  return { numberOfResolutions: clampResolutions(value) }
+/** Patch for the resolutions picker, given the count `resolutionsForValue` read from it. */
+export function resolutionsChosen(numberOfResolutions: number): Partial<AppState> {
+  return { numberOfResolutions }
 }
 
 /** Patch for the start of a budget reload. */

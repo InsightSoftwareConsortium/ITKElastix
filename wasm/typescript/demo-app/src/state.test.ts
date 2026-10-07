@@ -69,16 +69,12 @@ test('starts empty with the result hidden, the OME-Zarr formats chosen, and noth
   }
 })
 
-test('resolutionsChosen clamps the picker value to 1..5 and falls back to the default', () => {
+test('resolutionsChosen sets the resolutions for the next run', () => {
   const store = createStore()
-  store.update(resolutionsChosen('5'))
+  store.update(resolutionsChosen(5))
   assert.equal(store.state.numberOfResolutions, 5)
-  store.update(resolutionsChosen('1'))
+  store.update(resolutionsChosen(1))
   assert.equal(store.state.numberOfResolutions, 1)
-  store.update(resolutionsChosen(0))
-  assert.equal(store.state.numberOfResolutions, 1)
-  store.update(resolutionsChosen(null))
-  assert.equal(store.state.numberOfResolutions, DEFAULT_NUMBER_OF_RESOLUTIONS)
 })
 
 test('a run can be cancelled only while it is active', () => {

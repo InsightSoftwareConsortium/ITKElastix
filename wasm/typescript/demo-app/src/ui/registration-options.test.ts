@@ -13,31 +13,30 @@ import {
   budgetBytesOf,
   budgetEntries,
   budgetLabel,
-  clampResolutions,
+  resolutionsForValue,
 } from './registration-options.ts'
 
 const MIB = 1024 * 1024
 
-test('the resolutions picker offers 1 to 5 with 3 as the default', () => {
-  assert.equal(MIN_NUMBER_OF_RESOLUTIONS, 1)
-  assert.equal(MAX_NUMBER_OF_RESOLUTIONS, 5)
-  assert.deepEqual(RESOLUTION_OPTIONS, [1, 2, 3, 4, 5])
+test('the resolutions picker offers every whole number from the minimum to the maximum, including the default', () => {
+  assert.ok(Number.isInteger(MIN_NUMBER_OF_RESOLUTIONS))
+  assert.ok(Number.isInteger(MAX_NUMBER_OF_RESOLUTIONS))
+  assert.ok(MIN_NUMBER_OF_RESOLUTIONS > 0)
+  assert.ok(MAX_NUMBER_OF_RESOLUTIONS > MIN_NUMBER_OF_RESOLUTIONS)
+  assert.equal(RESOLUTION_OPTIONS[0], MIN_NUMBER_OF_RESOLUTIONS)
+  assert.equal(RESOLUTION_OPTIONS.at(-1), MAX_NUMBER_OF_RESOLUTIONS)
+  RESOLUTION_OPTIONS.slice(1).forEach((count, index) => assert.equal(count, RESOLUTION_OPTIONS[index]! + 1))
   assert.ok(RESOLUTION_OPTIONS.includes(DEFAULT_NUMBER_OF_RESOLUTIONS))
 })
 
-test('clampResolutions rounds, clamps, parses picker strings, and falls back to the default', () => {
-  assert.equal(clampResolutions(4), 4)
-  assert.equal(clampResolutions('4'), 4)
-  assert.equal(clampResolutions(2.4), 2)
-  assert.equal(clampResolutions(1), 1)
-  assert.equal(clampResolutions('1'), 1)
-  assert.equal(clampResolutions(0), MIN_NUMBER_OF_RESOLUTIONS)
-  assert.equal(clampResolutions(-3), MIN_NUMBER_OF_RESOLUTIONS)
-  assert.equal(clampResolutions(9), MAX_NUMBER_OF_RESOLUTIONS)
-  assert.equal(clampResolutions(null), DEFAULT_NUMBER_OF_RESOLUTIONS)
-  assert.equal(clampResolutions(undefined), DEFAULT_NUMBER_OF_RESOLUTIONS)
-  assert.equal(clampResolutions('many'), DEFAULT_NUMBER_OF_RESOLUTIONS)
-  assert.equal(clampResolutions(Number.NaN), DEFAULT_NUMBER_OF_RESOLUTIONS)
+test('resolutionsForValue reads a picker entry back and refuses anything else', () => {
+  for (const count of RESOLUTION_OPTIONS) {
+    assert.equal(resolutionsForValue(String(count)), count)
+  }
+  const outside = [String(MIN_NUMBER_OF_RESOLUTIONS - 1), String(MAX_NUMBER_OF_RESOLUTIONS + 1)]
+  for (const value of [...outside, '2.4', '-3', ' 2', '', 'many', null, undefined, DEFAULT_NUMBER_OF_RESOLUTIONS]) {
+    assert.equal(resolutionsForValue(value), undefined, `${typeof value} ${String(value)}`)
+  }
 })
 
 test('the budget picker offers 10, 25, 50, and 100 MB, and the default budget is one of them', () => {

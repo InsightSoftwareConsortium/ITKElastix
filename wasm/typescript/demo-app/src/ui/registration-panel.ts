@@ -29,7 +29,7 @@ import {
   type AppState,
   type AppStore,
 } from '../state'
-import { RESOLUTION_OPTIONS, budgetBytesForValue, budgetEntries } from './registration-options'
+import { RESOLUTION_OPTIONS, budgetBytesForValue, budgetEntries, resolutionsForValue } from './registration-options'
 import {
   formatMatrixValue,
   summarizeRegistration,
@@ -218,7 +218,10 @@ export function createRegistrationPanel(
   // `wa-select` fires `change` on the host, with the chosen option's value,
   // for user selection only.
   bag.listen(elements.resolutions, 'change', () => {
-    store.update(resolutionsChosen(elements.resolutions.value))
+    const count = resolutionsForValue(elements.resolutions.value)
+    if (count !== undefined) {
+      store.update(resolutionsChosen(count))
+    }
   })
   bag.listen(elements.budget, 'change', () => {
     const bytes = budgetBytesForValue(elements.budget.value)
