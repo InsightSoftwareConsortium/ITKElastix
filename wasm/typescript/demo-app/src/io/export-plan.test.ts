@@ -23,7 +23,8 @@ import {
   resultFilename,
   toWriterError,
   transformFilename,
-  unsupportedTransformFormatReason,
+  transformForFormat,
+  XFM_DIMENSION,
   zipTextFiles,
 } from './export-plan.ts'
 import { imageFormatById, TRANSFORM_FORMATS, transformFormatById } from './formats.ts'
@@ -100,36 +101,69 @@ test('zipTextFiles stores each file under its name, in order, as UTF-8', () => {
   }
 })
 
-/** A stand-in stage of an elastix list; `Composite` markers use it too. */
-function stage(parameterization: string, dimension: number): Transform {
-  return { transformType: { transformParameterization: parameterization, inputDimension: dimension } } as Transform
+/** A stage of an elastix list with the given parameter values; `Composite` markers use it too. */
+function stage(parameterization: string, dimension: number, parameters: number[] = [], fixedParameters: number[] = []): Transform {
+  return {
+    transformType: { transformParameterization: parameterization, parametersValueType: 'float64', inputDimension: dimension, outputDimension: dimension },
+    numberOfParameters: parameters.length,
+    numberOfFixedParameters: fixedParameters.length,
+    name: '',
+    inputSpaceName: '',
+    outputSpaceName: '',
+    parameters: new Float64Array(parameters),
+    fixedParameters: new Float64Array(fixedParameters),
+  } as unknown as Transform
 }
 
-function elastixList(dimension: number): TransformList {
-  return [
-    stage('Composite', dimension),
-    stage('Translation', dimension),
-    stage(dimension === 2 ? 'Euler2D' : 'Euler3D', dimension),
-    stage('Affine', dimension),
-  ]
+/** elastix's list, header included: affine, rigid, translation, the last applied first. */
+function elastixList(dimension: 2 | 3): TransformList {
+  return dimension === 2
+    ? [
+        stage('Composite', 2),
+        stage('Affine', 2, [1.1, 0.2, -0.15, 0.95, 2, -3], [12, 30]),
+        stage('Euler2D', 2, [0.3, 1.5, -2.5], [40, 25]),
+        stage('Translation', 2, [5, -4]),
+      ]
+    : [
+        stage('Composite', 3),
+        stage('Affine', 3, [1, 0.1, 0, 0, 0.9, 0.2, -0.1, 0, 1.2, 1, 2, 3], [10, 20, 30]),
+        stage('Euler3D', 3, [0.1, -0.2, 0.3, 4, 5, 6], [10, 20, 30]),
+        stage('Translation', 3, [-4, 5, -6]),
+      ]
 }
 
-test('unsupportedTransformFormatReason lets every format but xfm try the multi-stage list', () => {
+test('transformForFormat hands every format but xfm the multi-stage list as it is', () => {
   for (const format of TRANSFORM_FORMATS.filter((format) => format.id !== 'xfm')) {
-    assert.equal(unsupportedTransformFormatReason(format, elastixList(2)), undefined, format.id)
-    assert.equal(unsupportedTransformFormatReason(format, elastixList(3)), undefined, format.id)
+    for (const dimension of [2, 3] as const) {
+      const list = elastixList(dimension)
+      assert.equal(transformForFormat(format, list), list, `${format.id} ${dimension}D`)
+    }
   }
 })
 
-test('unsupportedTransformFormatReason refuses xfm unless the list is one 3D transform', () => {
+test('transformForFormat multiplies the stages out into one 3D affine for xfm', () => {
   const xfm = transformFormatById('xfm')
-  assert.match(unsupportedTransformFormatReason(xfm, elastixList(3))!, /single 3D linear transform.*3 stages in 3D/)
-  assert.match(unsupportedTransformFormatReason(xfm, elastixList(2))!, /3 stages in 2D/)
-  assert.match(unsupportedTransformFormatReason(xfm, [stage('Affine', 2)])!, /a 2D transform/)
-  assert.match(unsupportedTransformFormatReason(xfm, [stage('Composite', 2), stage('Affine', 2)])!, /a 2D transform/)
-  assert.match(unsupportedTransformFormatReason(xfm, [])!, /0 stages;/)
-  assert.equal(unsupportedTransformFormatReason(xfm, [stage('Affine', 3)]), undefined)
-  assert.equal(unsupportedTransformFormatReason(xfm, [stage('Composite', 3), stage('Euler3D', 3)]), undefined)
+  for (const dimension of [2, 3] as const) {
+    const written = transformForFormat(xfm, elastixList(dimension))
+    assert.equal(written.length, 1, `${dimension}D: a single transform`)
+    const [affine] = written
+    assert.equal(affine!.transformType.transformParameterization, 'Affine', `${dimension}D`)
+    assert.equal(affine!.transformType.inputDimension, XFM_DIMENSION, `${dimension}D`)
+    assert.equal(affine!.transformType.outputDimension, XFM_DIMENSION, `${dimension}D`)
+    assert.equal(affine!.parameters.length, 12, `${dimension}D`)
+  }
+  // A 2D registration leaves z alone: the matrix's third row and column, and the offset's z, are the identity's.
+  const lifted = Array.from(transformForFormat(xfm, elastixList(2))[0]!.parameters as Float64Array)
+  assert.deepEqual([lifted[2], lifted[5], lifted[6], lifted[7], lifted[8], lifted[11]], [0, 0, 0, 0, 1, 0])
+})
+
+test('transformForFormat says why xfm cannot hold a list with a stage that is not linear', () => {
+  const xfm = transformFormatById('xfm')
+  assert.throws(
+    () => transformForFormat(xfm, [stage('Composite', 2), stage('BSpline', 2, [0, 0], [0, 0]), stage('Translation', 2, [1, 2])]),
+    /^Error: MINC XFM holds a single 3D linear transform\. An ITK BSpline transform cannot be multiplied into an affine.*; choose another format$/,
+  )
+  assert.throws(() => transformForFormat(xfm, [stage('Composite', 2)]), /MINC XFM.*empty transform list/)
 })
 
 test('progressReporter forwards the stage, message, and counts, and is inert without a callback', () => {

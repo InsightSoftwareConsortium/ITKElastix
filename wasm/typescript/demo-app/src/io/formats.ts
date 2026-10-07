@@ -294,8 +294,8 @@ export const TRANSFORM_FORMATS: readonly TransformFormat[] = [
     extension: '.xfm',
     kind: 'itk',
     description:
-      'MINC XFM, which holds a single 3D linear transform. This demo’s three-stage result cannot be written to it; ' +
-      'choose another format.',
+      'MINC XFM, which holds a single 3D linear transform: elastix’s stages multiplied out into one affine, a 2D ' +
+      'registration’s lifted into 3D with z left unchanged.',
   },
   {
     id: 'iwt.cbor',

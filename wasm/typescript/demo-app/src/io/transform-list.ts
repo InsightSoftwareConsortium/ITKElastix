@@ -231,3 +231,116 @@ export function withAffineStages(transforms: TransformList): TransformList {
 export function withoutCompositeHeader(transforms: TransformList): TransformList {
   return transforms[0]?.transformType.transformParameterization === 'Composite' ? transforms.slice(1) : transforms
 }
+
+/** The map `y = M x + o` a linear ITK transform applies, its center of rotation folded into `o`. */
+interface LinearMap {
+  matrix: Matrix
+  offset: number[]
+}
+
+function identityMatrix(dimension: number): Matrix {
+  return Array.from({ length: dimension }, (_, row) => Array.from({ length: dimension }, (_, column) => (row === column ? 1 : 0)))
+}
+
+function times(matrix: Matrix, vector: readonly number[]): number[] {
+  return matrix.map((row) => row.reduce((sum, value, k) => sum + value * vector[k]!, 0))
+}
+
+/** `y = M (x - c) + c + t` as `y = M x + o`, with `o = t + c - M c`. */
+function foldCenter({ matrix, translation, center }: MatrixOffset): LinearMap {
+  const rotatedCenter = times(matrix, center)
+  return { matrix, offset: translation.map((value, row) => value + center[row]! - rotatedCenter[row]!) }
+}
+
+/**
+ * The map one stage applies, decoded following ITK's `SetParameters` /
+ * `SetFixedParameters` layouts for `Identity`, `Translation`, `Affine`, and
+ * the parameterizations in {@link ANGLE_OR_VERSOR_PARAMETERIZATIONS}, which
+ * between them cover every linear stage elastix returns. Throws for any
+ * other parameterization, a deformation above all.
+ */
+function linearMap(transform: Transform): LinearMap {
+  const { transformParameterization, inputDimension: dimension } = transform.transformType
+  switch (transformParameterization) {
+    case 'Identity':
+      return { matrix: identityMatrix(dimension), offset: new Array<number>(dimension).fill(0) }
+    case 'Translation':
+      // [tx, ty(, tz)]; no fixed parameters
+      return { matrix: identityMatrix(dimension), offset: numbers(transform, 'parameters', dimension).slice(0, dimension) }
+    case 'Affine': {
+      // [the matrix, row by row, then tx, ty(, tz)]; fixed: [cx, cy(, cz)]
+      const p = numbers(transform, 'parameters', dimension * dimension + dimension)
+      return foldCenter({
+        matrix: Array.from({ length: dimension }, (_, row) => p.slice(row * dimension, (row + 1) * dimension)),
+        translation: p.slice(dimension * dimension, dimension * dimension + dimension),
+        center: numbers(transform, 'fixedParameters', dimension).slice(0, dimension),
+      })
+    }
+  }
+  const decoded = decodeMatrixOffset(transform)
+  if (decoded === undefined) {
+    throw new Error(
+      `An ITK ${transformParameterization} transform cannot be multiplied into an affine; only Identity, ` +
+        `Translation, Affine, and ${[...ANGLE_OR_VERSOR_PARAMETERIZATIONS].join(', ')} stages can`,
+    )
+  }
+  return foldCenter(decoded)
+}
+
+/**
+ * `transforms` multiplied out into a single ITK `Affine` transform that maps
+ * every point where the whole list does, in `dimension` dimensions (by
+ * default the stages' own).
+ *
+ * The list is cleaned up first, so elastix's own list can be passed as is
+ * (`withoutCompositeHeader`, `withTypedParameterArrays`), and every stage
+ * must then be a linear one ({@link linearMap}) of one shared dimension.
+ * With each stage written as `y = M_i x + o_i`, its center folded into the
+ * offset, the list applies its last entry first, as an ITK composite
+ * transform does, so it is the product `M_0 M_1 … M_(n-1)` with the
+ * offsets carried along. The result is centered on the origin, so its
+ * translation is that offset. In a larger `dimension` the map fills the
+ * leading block and the extra axes pass through unchanged: a 2D
+ * registration in 3D leaves z alone. The value type is the first stage's.
+ */
+export function composedAffineTransform(transforms: TransformList, dimension?: number): Transform {
+  const stages = withTypedParameterArrays(withoutCompositeHeader(transforms))
+  const first = stages[0]
+  if (first === undefined) {
+    throw new Error('An empty transform list cannot be multiplied into an affine')
+  }
+  const stageDimension = first.transformType.inputDimension
+  for (const { transformType } of stages) {
+    if (transformType.inputDimension !== stageDimension || transformType.outputDimension !== stageDimension) {
+      throw new Error(
+        `A ${transformType.inputDimension}D-to-${transformType.outputDimension}D ${transformType.transformParameterization} ` +
+          `stage cannot be multiplied into a ${stageDimension}D affine`,
+      )
+    }
+  }
+  const target = dimension ?? stageDimension
+  if (target < stageDimension) {
+    throw new Error(`A ${stageDimension}D transform cannot be written as a ${target}D affine`)
+  }
+
+  let total: LinearMap = { matrix: identityMatrix(stageDimension), offset: new Array<number>(stageDimension).fill(0) }
+  for (const stage of stages) {
+    const { matrix, offset } = linearMap(stage)
+    const carried = times(total.matrix, offset)
+    total = { matrix: multiply(total.matrix, matrix), offset: carried.map((value, row) => value + total.offset[row]!) }
+  }
+
+  const matrix = identityMatrix(target)
+  total.matrix.forEach((row, i) => row.forEach((value, j) => (matrix[i]![j] = value)))
+  const offset = Array.from({ length: target }, (_, row) => total.offset[row] ?? 0)
+  const Values = first.transformType.parametersValueType === 'float32' ? Float32Array : Float64Array
+  const affine: TransformParameterization = 'Affine'
+  return {
+    ...first,
+    transformType: { ...first.transformType, transformParameterization: affine, inputDimension: target, outputDimension: target },
+    numberOfParameters: target * target + target,
+    numberOfFixedParameters: target,
+    parameters: new Values([...matrix.flat(), ...offset]),
+    fixedParameters: new Values(target),
+  }
+}

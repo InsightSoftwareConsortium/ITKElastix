@@ -37,6 +37,7 @@ const IMAGE_OZX = 'registered.ome.zarr.ozx'
 const IMAGE_OME_TIFF = 'registered.ome.tif'
 const TRANSFORM_OZX = 'transform.ome.zarr.ozx'
 const TRANSFORM_PARAMETERS_ZIP = 'transform-parameters.zip'
+const TRANSFORM_XFM = 'transform.xfm'
 
 /** Image formats under test, with the file name each download must carry. */
 const IMAGE_DOWNLOADS: readonly { id: string; filename: string }[] = [
@@ -51,6 +52,7 @@ const TRANSFORM_DOWNLOADS: readonly { id: string; filename: string }[] = [
   { id: 'ozx-transform', filename: TRANSFORM_OZX },
   { id: 'h5', filename: 'transform.h5' },
   { id: 'tfm', filename: 'transform.tfm' },
+  { id: 'xfm', filename: TRANSFORM_XFM },
   { id: 'elastix-toml', filename: TRANSFORM_PARAMETERS_ZIP },
 ]
 
@@ -274,6 +276,29 @@ test.describe('elastix TransformParameters TOML', () => {
     for (let index = 1; index < names.length; index++) {
       expect(texts[index]).toContain(`InitialTransformParameterFileName = "${names[index - 1]}"`)
     }
+  })
+})
+
+test.describe('MINC XFM', () => {
+  test('the three stages are one linear transform, lifted into 3D with z left unchanged', ({ session }) => {
+    const bytes = session.files.get(TRANSFORM_XFM)
+    expect(bytes, `${TRANSFORM_XFM} is expected to be downloaded earlier in this file`).toBeDefined()
+    const text = (bytes ?? Buffer.alloc(0)).toString('utf8')
+    expect(text).toMatch(/^MNI Transform File/)
+    // ITK writes one Transform_Type per transform it is given.
+    expect(text.match(/^Transform_Type = .*$/gm)).toEqual(['Transform_Type = Linear;'])
+
+    // A 3x4 [matrix | offset] block of finite numbers.
+    const block = /^Linear_Transform =([^;]*);/m.exec(text)?.[1] ?? ''
+    const rows = block
+      .trim()
+      .split('\n')
+      .map((line) => line.trim().split(/\s+/).map(Number))
+    expect(rows.map((row) => row.length)).toEqual([4, 4, 4])
+    expect(rows.flat().every(Number.isFinite)).toBe(true)
+    // The 2D registration acts on x and y alone: z maps to itself and feeds neither x nor y.
+    expect(rows[2]).toEqual([0, 0, 1, 0])
+    expect([rows[0]![2], rows[1]![2]]).toEqual([0, 0])
   })
 })
 

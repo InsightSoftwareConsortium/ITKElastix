@@ -282,7 +282,9 @@ registered image's intrinsic system as its input, is what the image export
 embeds. The `itk` writer gives `@itk-wasm/transform-io`'s `writeTransform`
 the original list (typed arrays substituted), so an `.h5`, `.tfm`, `.mat`,
 or `.iwt.cbor` holds one entry per stage as ITK wrote it; MINC XFM, which
-holds one 3D linear transform, is refused before a writer is tried. The
+holds one 3D linear transform, is given the stages multiplied out into a
+single `Affine` instead (`composedAffineTransform`), a 2D registration's
+lifted into 3D with z passed through. The
 `json` writer serializes the elastix `transformParameterObject`. The
 direction of the transform, the choice of `affine` over simpler forms, the
 `scene` placement, and the list clean-up are each argued in
