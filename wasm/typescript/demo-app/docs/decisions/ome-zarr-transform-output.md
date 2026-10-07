@@ -15,7 +15,8 @@ related:
 
 The demo writes the registration result's fixed-to-moving transform as
 [OME-Zarr RFC-5](https://ngff.openmicroscopy.org/rfc/5/) coordinate-transformation
-metadata, in two places: embedded in the registered image's own OZX, and as a
+metadata, one transformation per elastix stage, in two places: embedded in
+the registered image's own OZX, and as a
 standalone transform-only OZX the transform picker offers. Both come from
 `src/io/rfc5-transform.ts`. This note records the conventions that file
 encodes, because each of them is a choice whose wrong version still writes a
@@ -67,17 +68,48 @@ the v0.6 writer checks the axis arity of `mapAxis`-like transformations but
 not of an `affine`. `assertTransformMatchesSystems` is the check that would
 otherwise be missing.
 
-## Simplification is off
+## One transformation per stage
 
-`itkTransformToNgffTransform` is called with `simplify: false`, so the result
-is always an `affine` rather than the least expressive form that happens to
-fit — `identity` for a registration that found nothing to do, `scale` or a
+elastix optimizes the demo's transform in three stages — translation, rigid,
+affine — each starting from the result of the one before. The OME-Zarr
+outputs keep those stages apart instead of writing the single affine they
+compose to: the transformation is an RFC-5 `sequence` whose
+`transformations` are the stages in the order a point passes through them.
+RFC-5 applies a sequence's first entry first, and ITK's composite list
+applies its last entry first, so the sequence is that list read backwards.
+
+Each stage carries a `name` from the ITK class elastix hands it back as —
+`translation` for `Translation`, `rigid` for `Euler2D` and `Euler3D`,
+`affine` for `Affine` — and no `input` or `output`, which RFC-5 allows for a
+transformation wrapped in a `sequence`. A reader that wants one matrix
+composes the sequence (ngff-zarr's `ngffTransformToItkTransform` does, back
+into one ITK affine); a reader that wants to know what each stage found, or
+to apply the rigid part alone, reads it off.
+
+The type of each stage follows the stage, never the values a particular run
+produced:
+
+| Stage | RFC-5 type | Why |
+| --- | --- | --- |
+| translation | `translation` | RFC-5 prefers it to the equivalent affine, and it stays a pure translation in the frame it is written in (below). |
+| rigid | `sequence` of a `rotation`, then a `translation` | RFC-5 has no rigid type, and a `rotation` carries no offset, while ITK rotates about a center: `y = R (x - c) + t + c` is `R x + b` with `b = t + c - R c`, which rotates first and translates second. RFC-5 prefers a `rotation` to the equivalent affine, and keeping it separate lets a reader see that the stage is rigid without testing the matrix. |
+| affine | `affine` | |
+
+The rigid stage's inner transformations carry neither a `name` nor `input`
+or `output`. RFC-5 requires a `rotation` to have orthonormal rows and a
+determinant of one, which the v0.6 writer does not check, so
+`assertTransformMatchesSystems` does, along with every stage's shape; the
+frame each stage is written in (below) is what keeps the determinant at one.
+
+`itkTransformToNgffTransform` is called with `simplify: false` for the rigid
+and affine stages, so neither turns into the least expressive form that happens
+to fit — `identity` for a stage that found nothing to do, `scale` or a
 `sequence` of scale and translation for an axis-aligned one, `translation`
 for a pure shift. Three reasons:
 
 1. **One shape for consumers.** The transform is the demo's output; a reader
-   that has to branch on four transformation types to find the matrix is
-   worse off than one that always reads `affine`.
+   that can rely on three stages of fixed types is better off than one that
+   has to branch on what this run happened to find.
 2. **The same object is written twice.** The embedded and standalone forms
    differ only in the name of their input system, so they must agree on
    type as well as numbers.
@@ -87,9 +119,54 @@ for a pure shift. Three reasons:
    `affine` anyway. Making that the only case where the type changes would be
    the worst of both.
 
-The matrix is the upper *M* x (*N*+1) block: the linear part with the
+Each affine is the upper *M* x (*N*+1) block: the linear part with the
 translation as its last column. For the 2D sample that is two rows of three
 values.
+
+## The frame each stage is written in
+
+An ITK transform acts on physical space, which includes the direction matrix
+RFC-4 orientation implies; an RFC-5 transformation acts on the intrinsic
+coordinate systems. Writing φ_f and φ_m for the fixed and moving images'
+intrinsic-to-physical maps (φ(p) = D (p − o) + o) and T, R, A for the three
+stages, the whole mapping is φ_m⁻¹ · A · R · T · φ_f. That splits into
+stages in more than one way. The demo writes
+
+```text
+(φ_m⁻¹ · A · φ_f) · (φ_f⁻¹ · R · φ_f) · (φ_f⁻¹ · T · φ_f)
+```
+
+so the translation and rigid stages map the fixed image's intrinsic frame
+into itself, and the affine stage, last, also carries the change into the
+moving image's. An RFC-4 direction is a signed permutation, so conjugating
+by one keeps a translation a translation — exactly, since the identity's
+entries stay 0 and 1, which is why `buildFixedToMovingTransform` can check
+the translation stage's linear part with `!==` — and a rotation a proper
+rotation, though a mirror reverses its sense. The change between two
+frames, by contrast, is a mirror whenever the two images disagree about an
+odd number of axis directions, and only an affine can hold one. Putting it
+on the first stage instead would turn the translation into a flip plus a
+shift, and putting it on the rigid stage could leave that stage's
+`rotation` with a determinant of −1, which RFC-5 does not allow.
+
+In ngff-zarr's terms, each stage goes through `itkTransformToNgffTransform`
+on its own, with `frames` set to `{ fixed, moving: fixed }` for the
+translation and rigid stages and `{ fixed, moving }` for the affine one. The
+spaces between stages are unnamed and share the fixed image's axes. The
+product is the single affine the whole list converts to, up to rounding;
+the unit tests check that for a fixed image flipped against the moving one,
+and that ngff-zarr's own reader composes the sequence back to the same ITK
+transform.
+
+A caller of `registerAffine` may pass its own parameter object, so the
+builder does not assume the demo's three stages. The change of frame goes
+on the last stage written as an affine; stages before it stay in the fixed
+image's frame and stages after it run in the moving image's, where a
+translation and a rotation keep their form just the same. A list with no
+stage written as an affine — translation and rigid only — keeps every stage
+in the fixed frame and ends on the change of frame as an `affine` of its
+own, named `change_of_frame`, unless that change is the identity, as it is
+for two images without an orientation.
 
 ## Where the standalone transform lives: `scene`, not the group root
 
@@ -111,11 +188,22 @@ the only conformant home, and the group's `zarr.json` reads:
         "coordinateSystems": [{ "name": "fixed", "axes": [] }, { "name": "moving", "axes": [] }],
         "coordinateTransformations": [
           {
-            "type": "affine",
-            "affine": [[1, 0, 0], [0, 1, 0]],
+            "type": "sequence",
             "name": "fixed_to_moving",
             "input": { "name": "fixed" },
-            "output": { "name": "moving" }
+            "output": { "name": "moving" },
+            "transformations": [
+              { "type": "translation", "name": "translation", "translation": [0, 0] },
+              {
+                "type": "sequence",
+                "name": "rigid",
+                "transformations": [
+                  { "type": "rotation", "rotation": [[1, 0], [0, 1]] },
+                  { "type": "translation", "translation": [0, 0] }
+                ]
+              },
+              { "type": "affine", "name": "affine", "affine": [[1, 0, 0], [0, 1, 0]] }
+            ]
           }
         ]
       }
@@ -138,8 +226,8 @@ ngff-zarr's `memoryStoreToZip` at version `0.6`, so the archive is an RFC-9
 back. The transform picker's `ozx-transform` entry reaches it through
 `exportRegisteredTransform` (`src/io/export-transform.ts`), which also serves
 the ITK-Wasm transform formats and the elastix parameter JSON; those two
-carry the elastix stages as they are, and only the OME-Zarr outputs hold the
-single composed affine described here.
+carry the elastix stages as ITK and elastix store them, and the OME-Zarr
+outputs carry the same stages as the RFC-5 transformations described here.
 
 ## The list is prepared before ngff-zarr sees it
 
@@ -180,9 +268,11 @@ first, all in `src/io/transform-list.ts`:
    `AdvancedEuler3DTransform` computes its matrix the same way, and the
    demo's 3D run reports `ComputeZYX = 0`.
 
-`buildFixedToMovingTransform` applies the three in that order. The ITK-format
-transform downloads are written from the original list, so an `.h5` or
-`.tfm` still carries the Euler stage as ITK wrote it.
+`buildFixedToMovingTransform` applies the first two to the list and the
+third to each stage as it converts it, naming the stage from its class
+before the rewrite, so the rigid stage is still written as `rigid`. The
+ITK-format transform downloads are written from the original list, so an
+`.h5` or `.tfm` still carries the Euler stage as ITK wrote it.
 
 ## What ngff-zarr does, so this app does not
 
@@ -194,3 +284,5 @@ argument — changes frame from ITK physical space, which includes the direction
 matrix RFC-4 orientation implies, into the two intrinsic coordinate systems.
 Passing both images is what makes the conversion exact for oriented data;
 passing neither is correct only when neither image carries an orientation.
+Passing the fixed image on both sides is what keeps the translation and
+rigid stages in the fixed image's frame (see above).

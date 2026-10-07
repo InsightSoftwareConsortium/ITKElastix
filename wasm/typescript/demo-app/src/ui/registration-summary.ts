@@ -2,10 +2,11 @@
 // panel.ts): the stages and resolutions the run used, how long it took, and
 // the fixed-to-moving affine as a matrix and offset, computed from the
 // result's `TransformList` with ngff-zarr's `itkTransformToNgffMatrix` over
-// the fixed image's axes with both images as frames, which is the same
-// conversion the OME-Zarr transform download writes (src/io/rfc5-
-// transform.ts), so the numbers on screen are the numbers in the file. Also
-// the elastix parameter JSON the card's copy button puts on the clipboard.
+// the fixed image's axes with both images as frames. That is the mapping the
+// OME-Zarr transform download writes (src/io/rfc5-transform.ts), which keeps
+// elastix's stages apart as an RFC-5 sequence; composing that sequence gives
+// the numbers on screen. Also the elastix parameter JSON the card's copy
+// button puts on the clipboard.
 // Pure functions over the result and the two inputs, free of DOM access, so
 // the node unit tests cover them.
 //
@@ -41,9 +42,10 @@ export interface RegistrationSummary {
 
 /**
  * The summary of `result`, computed from the fixed and moving inputs it was
- * registered on. The list is prepared as the OME-Zarr writer prepares it:
- * elastix's `Composite` header dropped, zero-count parameter fields typed,
- * and the rigid stage rewritten as an affine so ngff-zarr can decode it.
+ * registered on, composing every stage into one matrix and offset. The list
+ * is prepared as the OME-Zarr writer prepares it: elastix's `Composite`
+ * header dropped, zero-count parameter fields typed, and the rigid stage
+ * rewritten as an affine so ngff-zarr can decode it.
  */
 export function summarizeRegistration(
   result: RegistrationResult,

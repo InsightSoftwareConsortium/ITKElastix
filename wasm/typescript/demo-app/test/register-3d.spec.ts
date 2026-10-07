@@ -1,8 +1,8 @@
 // End-to-end 3D registration: the MNI pair from the splash at full
 // resolution, the affine run at the default settings it starts on its own, the result switch
 // swapping the result comparison's moving side, and the two default
-// OME-Zarr downloads read back in Node, the transform's affine three rows
-// deep. One long browser session,
+// OME-Zarr downloads read back in Node, the transform's stages three axes
+// wide. One long browser session,
 // so the test is marked slow and capped at ten minutes; only the chromium
 // project launches with the SwiftShader WebGL2 flags niivue needs, so it
 // skips elsewhere. Elements are found by their stable ids; the store and
@@ -30,7 +30,7 @@ import {
   volumeCount,
   volumeName,
 } from './helpers'
-import { expectAffineMatrix, parseOzx } from './ome-zarr'
+import { composeStages, expectRegistrationStages, parseOzx, type TransformationDoc } from './ome-zarr'
 import { VOLUME_GRADIENT_OPACITY } from '../src/ui/view-options'
 import { PANEL_ROLES } from '../src/viewer/comparison-options'
 
@@ -58,8 +58,8 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
   const pageErrors: string[] = []
   collectPageErrors(page, pageErrors)
   const showResult = page.locator('#show-result')
-  /** The affine the registered image's own archive embeds, to compare with the standalone transform. */
-  let imageAffine: number[][] | undefined
+  /** The stages the registered image's own archive embeds, to compare with the standalone transform. */
+  let imageStages: TransformationDoc[] | undefined
 
   await test.step('load the 3D MNI pair from the splash at full resolution', async () => {
     await page.goto('./')
@@ -131,11 +131,12 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
     for (const system of multiscales?.coordinateSystems ?? []) {
       expect(system.axes.map((axis) => axis.name), `${system.name} spans the three registered axes`).toEqual(AXES_3D)
     }
-    imageAffine = multiscales?.coordinateTransformations?.[0]?.affine
-    expectAffineMatrix(imageAffine, 3)
+    const [embedded] = multiscales?.coordinateTransformations ?? []
+    expectRegistrationStages(embedded, 3)
+    imageStages = embedded?.transformations
   })
 
-  await test.step('download the transform as OME-Zarr (.ozx): a three-row affine from fixed to moving', async () => {
+  await test.step('download the transform as OME-Zarr (.ozx): translation, rigid, and affine stages from fixed to moving', async () => {
     expect(await selectValue(page.locator('#transform-format'))).toBe('ozx-transform')
     const download = await downloadOutput(page, 'transform')
     expect(download.suggestedFilename()).toBe(TRANSFORM_OZX)
@@ -152,20 +153,20 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
       expect(system.axes.map((axis) => axis.name), `${system.name} spans the three registered axes`).toEqual(AXES_3D)
     }
     expect(scene?.coordinateTransformations).toHaveLength(1)
-    const [affine] = scene?.coordinateTransformations ?? []
-    expect(affine).toMatchObject({
-      type: 'affine',
+    const [transform] = scene?.coordinateTransformations ?? []
+    expect(transform).toMatchObject({
+      type: 'sequence',
       name: 'fixed_to_moving',
       input: { name: 'fixed' },
       output: { name: 'moving' },
     })
-    expectAffineMatrix(affine?.affine, 3)
-    // One registration, one mapping: the image archive embeds the same matrix.
-    expect(affine?.affine).toEqual(imageAffine)
-    // Both templates sit in MNI space, so the linear part is close to the
-    // identity (about 0.92, 0.99, 0.98 on the diagonal here); a transposed
-    // or garbage matrix would not be.
-    for (const [i, row] of (affine?.affine ?? []).entries()) {
+    expectRegistrationStages(transform, 3)
+    // One registration, one mapping: the image archive embeds the same stages.
+    expect(transform?.transformations).toEqual(imageStages)
+    // Both templates sit in MNI space, so the linear part the stages compose
+    // to is close to the identity (about 0.92, 0.99, 0.98 on the diagonal
+    // here); a transposed or garbage matrix would not be.
+    for (const [i, row] of composeStages(transform, 3).entries()) {
       expect(Math.abs(row[i]! - 1), `diagonal entry ${i} of ${JSON.stringify(row)}`).toBeLessThan(0.5)
     }
   })

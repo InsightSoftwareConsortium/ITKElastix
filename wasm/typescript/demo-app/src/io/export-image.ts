@@ -3,7 +3,7 @@
 //
 // - `ozx`: the image as an OME-Zarr 0.6 pyramid zipped into an RFC-9
 //   `.ozx`, with the fixed-to-moving transform embedded on its multiscales
-//   entry as an RFC-5 affine (src/io/rfc5-transform.ts).
+//   entry as an RFC-5 sequence of the elastix stages (src/io/rfc5-transform.ts).
 // - `ome-tiff`: the same pyramid written by `@fideus-labs/fiff` as a
 //   deflate-compressed OME-TIFF (a sub-resolution IFD per extra level).
 // - `itk`: `@itk-wasm/image-io`'s `writeImage`, keyed on the file
@@ -142,7 +142,7 @@ async function buildResultPyramid(
 }
 
 /**
- * The `ozx` writer. The fixed-to-moving affine is attached to the pyramid's
+ * The `ozx` writer. The fixed-to-moving transform is attached to the pyramid's
  * multiscales metadata before the store is written, so ngff-zarr's 0.6
  * writer serializes the `intrinsic` and `moving` coordinate systems and the
  * transformation between them on the `multiscales[0]` entry. The writer
