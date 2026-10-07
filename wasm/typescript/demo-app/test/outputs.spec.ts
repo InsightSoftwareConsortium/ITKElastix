@@ -31,7 +31,7 @@ import {
   volumeName,
   waitForSlot,
 } from './helpers'
-import { expectAffineMatrix, parseOzx, type OzxContents } from './ome-zarr'
+import { expectRegistrationStages, parseOzx, type OzxContents } from './ome-zarr'
 
 const IMAGE_OZX = 'registered.ome.zarr.ozx'
 const IMAGE_OME_TIFF = 'registered.ome.tif'
@@ -195,7 +195,7 @@ test.describe('transform downloads', () => {
 })
 
 test.describe('OME-Zarr RFC-5 metadata', () => {
-  test('the transform OZX holds one affine from the fixed to the moving coordinate system', ({ session }) => {
+  test('the transform OZX holds the translation, rigid, and affine stages from the fixed to the moving coordinate system', ({ session }) => {
     const { entries, root } = readOzx(session.files, TRANSFORM_OZX)
     // A transform-only store is a single group document; RFC-9 wants the
     // root zarr.json to lead the archive.
@@ -212,17 +212,17 @@ test.describe('OME-Zarr RFC-5 metadata', () => {
     }
 
     expect(scene?.coordinateTransformations).toHaveLength(1)
-    const [affine] = scene?.coordinateTransformations ?? []
-    expect(affine).toMatchObject({
-      type: 'affine',
+    const [transform] = scene?.coordinateTransformations ?? []
+    expect(transform).toMatchObject({
+      type: 'sequence',
       name: 'fixed_to_moving',
       input: { name: 'fixed' },
       output: { name: 'moving' },
     })
-    expectAffineMatrix(affine?.affine, 2)
+    expectRegistrationStages(transform, 2)
   })
 
-  test('the image OZX embeds the same affine on its multiscales entry, into the moving system', ({ session }) => {
+  test('the image OZX embeds the same stages on its multiscales entry, into the moving system', ({ session }) => {
     const { entries, root } = readOzx(session.files, IMAGE_OZX)
     expect(entries[0], 'RFC-9 wants the root zarr.json to lead the archive').toBe('zarr.json')
 
@@ -231,26 +231,26 @@ test.describe('OME-Zarr RFC-5 metadata', () => {
     expect(ome.multiscales).toHaveLength(1)
     const [multiscales] = ome.multiscales ?? []
     // The pyramid's own (intrinsic) system comes first; the moving image's
-    // is the one the affine maps into.
+    // is the one the stages map into.
     expect(multiscales?.coordinateSystems.map((system) => system.name)).toEqual(['intrinsic', 'moving'])
     for (const system of multiscales?.coordinateSystems ?? []) {
       expect(system.axes.map((axis) => axis.name), `${system.name} spans the registered axes`).toEqual(AXES_2D)
     }
 
     expect(multiscales?.coordinateTransformations).toHaveLength(1)
-    const [affine] = multiscales?.coordinateTransformations ?? []
-    expect(affine).toMatchObject({
-      type: 'affine',
+    const [transform] = multiscales?.coordinateTransformations ?? []
+    expect(transform).toMatchObject({
+      type: 'sequence',
       name: 'fixed_to_moving',
       input: { name: 'intrinsic' },
       output: { name: 'moving' },
     })
-    expectAffineMatrix(affine?.affine, 2)
+    expectRegistrationStages(transform, 2)
 
     // One registration, one mapping: the standalone transform carries the
-    // same matrix under its own input name.
+    // same stages under its own input name.
     const standalone = readOzx(session.files, TRANSFORM_OZX).root.attributes.ome.scene?.coordinateTransformations[0]
-    expect(affine?.affine).toEqual(standalone?.affine)
+    expect(transform?.transformations).toEqual(standalone?.transformations)
   })
 })
 

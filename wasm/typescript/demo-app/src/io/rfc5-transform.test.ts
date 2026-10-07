@@ -3,9 +3,10 @@
 //
 // The ITK fixtures use values that are exact in binary floating point
 // (halves and quarters), so the converted matrices can be compared with
-// deepEqual rather than a tolerance. The round-trip test, which goes back
-// through ngff-zarr's inverse converter, uses a tolerance because the change
-// of frame multiplies by direction matrices.
+// deepEqual rather than a tolerance. The tests that turn a rotation through
+// an angle or go back through ngff-zarr's inverse converter use a tolerance,
+// because a sine is rarely exact and the change of frame multiplies by
+// direction matrices.
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
@@ -14,6 +15,7 @@ import {
   createMetadata,
   createMultiscales,
   INTRINSIC_COORDINATE_SYSTEM_NAME,
+  itkTransformToNgffTransform,
   LPS,
   ngffTransformToItkTransform,
   NgffImage,
@@ -22,15 +24,21 @@ import {
   type Affine,
   type AnatomicalOrientation,
   type CoordinateSystem,
+  type Rotation,
+  type TransformSequence,
+  type Translation,
+  type V06Transform,
 } from '@fideus-labs/ngff-zarr'
 import type { Transform, TransformList } from 'itk-wasm'
 
 import { memoryStoreFromZip, ROOT_METADATA_KEY } from './ozx-store.ts'
+import { withAffineStages, withoutCompositeHeader, withTypedParameterArrays } from './transform-list.ts'
 import {
   assertTransformMatchesSystems,
   buildCoordinateSystem,
   buildFixedToMovingTransform,
   buildRfc5TransformSet,
+  CHANGE_OF_FRAME_STAGE_NAME,
   embedInMultiscales,
   FIXED_COORDINATE_SYSTEM_NAME,
   FIXED_TO_MOVING_TRANSFORM_NAME,
@@ -216,33 +224,6 @@ test('buildCoordinateSystem types the channel and time axes and refuses an unkno
   assert.throws(() => buildCoordinateSystem('bad', image, ['q']), /dimension 'q'/)
 })
 
-test('buildFixedToMovingTransform drops the Composite header and converts to Zarr axis order', async () => {
-  // ITK: y = A (p - c) + t + c, with A row-major in x, y order.
-  const matrix = [
-    [1.5, 0.25],
-    [-0.5, 0.75],
-  ]
-  const list: TransformList = [COMPOSITE_HEADER, itkAffine(matrix, [3, -4], [10, 20])]
-  const fixed = await frame2d()
-  const moving = await frame2d()
-
-  const affine = buildFixedToMovingTransform(list, fixed, moving, 'fixed', 'moving')
-
-  // RFC-5: the center folds into the offset (b = t + c - A c, so
-  // b = [13 - 20, 16 - 10] = [-7, 6] in ITK order), and the rows and columns
-  // are permuted from ITK's x, y into the dims order y, x.
-  assert.deepEqual(affine, {
-    type: 'affine',
-    affine: [
-      [0.75, -0.5, 6],
-      [0.25, 1.5, -7],
-    ],
-    name: FIXED_TO_MOVING_TRANSFORM_NAME,
-    input: { name: 'fixed' },
-    output: { name: 'moving' },
-  })
-})
-
 /** An ITK-Wasm `Euler2D` entry: `[angle, tx, ty]` with the center of rotation as fixed parameters. */
 function itkEuler2D(angle: number, translation: number[], center: number[]): Transform {
   return {
@@ -262,15 +243,161 @@ function itkEuler2D(angle: number, translation: number[], center: number[]): Tra
   } as unknown as Transform
 }
 
+/** The matrix of an `affine` stage, failing the test for any other type. */
+function stageAffine(stage: V06Transform | undefined): number[][] {
+  assert.equal(stage?.type, 'affine')
+  return (stage as Affine).affine
+}
+
+/**
+ * The rotation and translation of a rigid stage, failing the test unless it
+ * is a `sequence` of exactly those two, in that order.
+ */
+function rigidParts(stage: V06Transform | undefined): { rotation: number[][]; translation: number[] } {
+  assert.equal(stage?.type, 'sequence')
+  const parts = (stage as TransformSequence).transformations
+  assert.deepEqual(
+    parts.map((part) => part.type),
+    ['rotation', 'translation'],
+  )
+  return { rotation: (parts[0] as Rotation).rotation, translation: (parts[1] as Translation).translation }
+}
+
+function multiply(a: number[][], b: number[][]): number[][] {
+  return a.map((row) => b[0]!.map((_, column) => row.reduce((sum, value, k) => sum + value * b[k]![column]!, 0)))
+}
+
+function identity(size: number): number[][] {
+  return Array.from({ length: size }, (_, i) => Array.from({ length: size }, (_, j) => (i === j ? 1 : 0)))
+}
+
+/** `stage` as a homogeneous matrix over `dimension` axes. */
+function homogeneous(stage: V06Transform, dimension: number): number[][] {
+  if (stage.type === 'sequence') {
+    // RFC-5 applies a sequence's first entry first, so each one multiplies
+    // onto the left.
+    return stage.transformations.reduce((total, inner) => multiply(homogeneous(inner, dimension), total), identity(dimension + 1))
+  }
+  let block: number[][]
+  if (stage.type === 'translation') {
+    block = identity(dimension).map((row, i) => [...row, stage.translation[i]!])
+  } else if (stage.type === 'rotation') {
+    block = stage.rotation.map((row) => [...row, 0])
+  } else {
+    block = stageAffine(stage)
+  }
+  return [...block, [...identity(dimension)[0]!.map(() => 0), 1]]
+}
+
+/** The M x (M+1) block `sequence` composes to over `dimension` axes. */
+function composed(sequence: TransformSequence, dimension = 2): number[][] {
+  return homogeneous(sequence, dimension).slice(0, -1)
+}
+
+/**
+ * The single affine the whole list converts to, which is what the demo
+ * wrote before it kept the stages apart, and what they must compose to.
+ */
+function singleAffine(list: TransformList, fixed: TransformFrame, moving: TransformFrame): number[][] {
+  const converted = itkTransformToNgffTransform(
+    withAffineStages(withTypedParameterArrays(withoutCompositeHeader(list))),
+    registrationDims(fixed.dimension),
+    false,
+    { fixed: fixed.ngffImage, moving: moving.ngffImage },
+  )
+  return stageAffine(converted)
+}
+
+test('buildFixedToMovingTransform drops the Composite header and converts to Zarr axis order', async () => {
+  // ITK: y = A (p - c) + t + c, with A row-major in x, y order.
+  const matrix = [
+    [1.5, 0.25],
+    [-0.5, 0.75],
+  ]
+  const list: TransformList = [COMPOSITE_HEADER, itkAffine(matrix, [3, -4], [10, 20])]
+  const fixed = await frame2d()
+  const moving = await frame2d()
+
+  const sequence = buildFixedToMovingTransform(list, fixed, moving, 'fixed', 'moving')
+
+  // RFC-5: the center folds into the offset (b = t + c - A c, so
+  // b = [13 - 20, 16 - 10] = [-7, 6] in ITK order), and the rows and columns
+  // are permuted from ITK's x, y into the dims order y, x.
+  assert.deepEqual(sequence, {
+    type: 'sequence',
+    transformations: [
+      {
+        type: 'affine',
+        affine: [
+          [0.75, -0.5, 6],
+          [0.25, 1.5, -7],
+        ],
+        name: 'affine',
+      },
+    ],
+    name: FIXED_TO_MOVING_TRANSFORM_NAME,
+    input: { name: 'fixed' },
+    output: { name: 'moving' },
+  })
+})
+
+test('buildFixedToMovingTransform writes one named transformation per elastix stage, in the order a point passes through them', async () => {
+  // elastix's translation -> rigid -> affine run, in ITK composite order: the
+  // last entry is applied first.
+  const list: TransformList = [
+    COMPOSITE_HEADER,
+    itkAffine(
+      [
+        [2, 0],
+        [0, 3],
+      ],
+      [0, 0],
+    ),
+    itkEuler2D(Math.PI, [3, -4], [10, 20]),
+    itkTranslation([5, 7]),
+  ]
+  const fixed = await frame2d()
+  const moving = await frame2d()
+
+  const sequence = buildFixedToMovingTransform(list, fixed, moving, 'fixed', 'moving')
+
+  assert.equal(sequence.type, 'sequence')
+  assert.deepEqual(
+    sequence.transformations.map((stage) => stage.name),
+    ['translation', 'rigid', 'affine'],
+  )
+  const [translation, rigid, affine] = sequence.transformations
+  // Every stage in the dims order y, x. The rigid stage is a half turn about
+  // (10, 20), rotating first and translating second: b = t + c - R c =
+  // [3 + 20, -4 + 40] in ITK order.
+  assert.deepEqual(translation, { type: 'translation', translation: [7, 5], name: 'translation' })
+  const parts = rigidParts(rigid)
+  assertClose(
+    parts.rotation,
+    [
+      [-1, 0],
+      [0, -1],
+    ],
+    'rigid rotation',
+  )
+  assertClose([parts.translation], [[36, 23]], 'rigid translation')
+  assert.deepEqual(stageAffine(affine), [
+    [3, 0, 0],
+    [0, 2, 0],
+  ])
+  assertClose(composed(sequence), singleAffine(list, fixed, moving), 'the stages compose to the whole list')
+})
+
 test('buildFixedToMovingTransform accepts the Euler2D rigid stage elastix returns', async () => {
   // elastix's rigid stage stores an angle, which ngff-zarr refuses; the
-  // builder rewrites it as the equivalent affine first, so a half turn about
-  // (10, 20) with a translation must match the same transform given as an
-  // Affine entry outright.
+  // builder rewrites it as the equivalent affine first, so a turn about
+  // (10, 20) with a translation must map points where the same transform
+  // given as an Affine entry outright does, while still being written as the
+  // rigid stage it came from.
   const fixed = await frame2d()
   const moving = await frame2d()
   const fromEuler = buildFixedToMovingTransform(
-    [COMPOSITE_HEADER, itkEuler2D(Math.PI, [3, -4], [10, 20])],
+    [COMPOSITE_HEADER, itkEuler2D(Math.PI / 2, [3, -4], [10, 20])],
     fixed,
     moving,
     'fixed',
@@ -281,8 +408,8 @@ test('buildFixedToMovingTransform accepts the Euler2D rigid stage elastix return
       COMPOSITE_HEADER,
       itkAffine(
         [
-          [-1, 0],
           [0, -1],
+          [1, 0],
         ],
         [3, -4],
         [10, 20],
@@ -294,17 +421,11 @@ test('buildFixedToMovingTransform accepts the Euler2D rigid stage elastix return
     'moving',
   )
 
-  assert.equal(fromEuler.type, 'affine')
-  assertClose(fromEuler.affine, fromAffine.affine, 'Euler2D vs Affine')
-  // b = t + c - R c with R = -I: [3 + 20, -4 + 40] in ITK order, permuted to y, x.
-  assertClose(
-    fromEuler.affine,
-    [
-      [-1, 0, 36],
-      [0, -1, 23],
-    ],
-    'half turn',
-  )
+  const [rigid] = fromEuler.transformations
+  assert.equal(rigid?.name, 'rigid')
+  rigidParts(rigid)
+  assert.equal(fromAffine.transformations[0]?.name, 'affine')
+  assertClose(composed(fromEuler), composed(fromAffine), 'Euler2D vs Affine')
 })
 
 test('buildFixedToMovingTransform tolerates the placeholder string of a zero-count parameter field', async () => {
@@ -312,15 +433,12 @@ test('buildFixedToMovingTransform tolerates the placeholder string of a zero-cou
   // count is zero (the Translation stage has no fixed parameters), and
   // ngff-zarr would count the string's characters as fixed parameters.
   const translation = { ...itkTranslation([5, 7]), fixedParameters: PLACEHOLDER } as unknown as Transform
-  const affine = buildFixedToMovingTransform([COMPOSITE_HEADER, translation], await frame2d(), await frame2d(), 'fixed', 'moving')
+  const sequence = buildFixedToMovingTransform([COMPOSITE_HEADER, translation], await frame2d(), await frame2d(), 'fixed', 'moving')
 
-  assert.deepEqual(affine.affine, [
-    [1, 0, 7],
-    [0, 1, 5],
-  ])
+  assert.deepEqual(sequence.transformations, [{ type: 'translation', translation: [7, 5], name: 'translation' }])
 })
 
-test('buildFixedToMovingTransform composes the stages in the order ITK applies them', async () => {
+test('buildFixedToMovingTransform puts the stages in the order ITK applies them', async () => {
   // An ITK composite applies its last entry first, so the scale is applied
   // to the already-translated point: p -> S (p + d).
   const scale = itkAffine(
@@ -331,14 +449,25 @@ test('buildFixedToMovingTransform composes the stages in the order ITK applies t
     [0, 0],
   )
   const list: TransformList = [COMPOSITE_HEADER, scale, itkTranslation([5, 7])]
-  const fixed = await frame2d()
 
-  const affine = buildFixedToMovingTransform(list, fixed, await frame2d(), 'fixed', 'moving')
+  const sequence = buildFixedToMovingTransform(list, await frame2d(), await frame2d(), 'fixed', 'moving')
 
+  // An RFC-5 sequence applies its first entry first, so the translation leads.
+  assert.deepEqual(sequence.transformations, [
+    { type: 'translation', translation: [7, 5], name: 'translation' },
+    {
+      type: 'affine',
+      affine: [
+        [3, 0, 0],
+        [0, 2, 0],
+      ],
+      name: 'affine',
+    },
+  ])
   // ITK order: matrix diag(2, 3), offset [10, 21]. In y, x order that is
   // diag(3, 2) with offset [21, 10]; the other composition order would put
   // the untouched [5, 7] there.
-  assert.deepEqual(affine.affine, [
+  assert.deepEqual(composed(sequence), [
     [3, 0, 21],
     [0, 2, 10],
   ])
@@ -352,12 +481,19 @@ test('buildFixedToMovingTransform refuses a list whose dimension is not the regi
   )
 })
 
+test('buildFixedToMovingTransform refuses a list with no stages', async () => {
+  await assert.rejects(
+    async () => buildFixedToMovingTransform([COMPOSITE_HEADER], await frame2d(), await frame2d(), 'fixed', 'moving'),
+    /no transform stages/,
+  )
+})
+
 test('LPS orientations and non-zero origins leave the mapping alone, because their direction is the identity', async () => {
   const matrix = [
     [1.5, 0.25],
     [-0.5, 0.75],
   ]
-  const list: TransformList = [COMPOSITE_HEADER, itkAffine(matrix, [3, -4], [10, 20])]
+  const list: TransformList = [COMPOSITE_HEADER, itkAffine(matrix, [3, -4], [10, 20]), itkTranslation([5, 7])]
   const plain = buildFixedToMovingTransform(list, await frame2d(), await frame2d(), 'fixed', 'moving')
 
   const oriented = buildFixedToMovingTransform(
@@ -368,32 +504,147 @@ test('LPS orientations and non-zero origins leave the mapping alone, because the
     'moving',
   )
 
-  assert.deepEqual(oriented.affine, plain.affine)
+  assert.deepEqual(oriented, plain)
 })
 
-test('a flipped fixed image changes the frame, and the conversion round trips back to ITK', async () => {
+// RAS on x: the image's x axis runs opposite to ITK's LPS x.
+const FLIPPED_X: Record<string, AnatomicalOrientation> = { x: RAS.x!, y: LPS.y! }
+
+test('a flipped fixed image changes the frame, and the sequence round trips back to ITK', async () => {
   const matrix = [
     [1.5, 0.25],
     [-0.5, 0.75],
   ]
   const translation = [3, -4]
-  const list: TransformList = [COMPOSITE_HEADER, itkAffine(matrix, translation, [0, 0])]
-  // RAS on x: the fixed image's x axis runs opposite to ITK's LPS x.
-  const flipped: Record<string, AnatomicalOrientation> = { x: RAS.x!, y: LPS.y! }
-  const fixed = await frame2d({ dims: ['y', 'x'], translation: { y: -12, x: 7 }, axesOrientations: flipped })
+  const list: TransformList = [COMPOSITE_HEADER, itkAffine(matrix, translation, [0, 0]), itkTranslation([5, 7])]
+  const fixed = await frame2d({ dims: ['y', 'x'], translation: { y: -12, x: 7 }, axesOrientations: FLIPPED_X })
   const moving = await frame2d({ dims: ['y', 'x'], translation: { y: 3.5, x: -2 }, axesOrientations: LPS_2D })
 
-  const affine = buildFixedToMovingTransform(list, fixed, moving, 'fixed', 'moving')
+  const sequence = buildFixedToMovingTransform(list, fixed, moving, 'fixed', 'moving')
   const plain = buildFixedToMovingTransform(list, await frame2d(), await frame2d(), 'fixed', 'moving')
-  assert.notDeepEqual(affine.affine, plain.affine, 'the change of frame must show up in the matrix')
+  assert.notDeepEqual(composed(sequence), composed(plain), 'the change of frame must show up in the mapping')
+  assertClose(composed(sequence), singleAffine(list, fixed, moving), 'the stages compose to the whole list')
 
-  const [recovered] = ngffTransformToItkTransform(affine, registrationDims(2), {
+  // ngff-zarr's inverse composes the sequence and changes frame back into
+  // ITK physical space, where the two stages are y = M (p + d) + t.
+  const [recovered] = ngffTransformToItkTransform(sequence, registrationDims(2), {
     fixed: fixed.ngffImage,
     moving: moving.ngffImage,
   })
   const parameters = Array.from(recovered!.parameters as Float64Array)
   assertClose([parameters.slice(0, 2), parameters.slice(2, 4)], matrix, 'round-tripped ITK matrix')
-  assertClose([parameters.slice(4, 6)], [translation], 'round-tripped ITK translation')
+  // M d + t = [7.5 + 1.75 + 3, -2.5 + 5.25 - 4]
+  assertClose([parameters.slice(4, 6)], [[12.25, -1.25]], 'round-tripped ITK translation')
+})
+
+test('a flipped fixed image leaves the translation a translation and the rigid stage a rotation', async () => {
+  const list: TransformList = [
+    COMPOSITE_HEADER,
+    itkAffine(
+      [
+        [1.5, 0.25],
+        [-0.5, 0.75],
+      ],
+      [3, -4],
+      [1, 2],
+    ),
+    itkEuler2D(Math.PI / 6, [2, -1], [10, 20]),
+    itkTranslation([5, 7]),
+  ]
+  const fixed = await frame2d({ dims: ['y', 'x'], translation: { y: -12, x: 7 }, axesOrientations: FLIPPED_X })
+  const moving = await frame2d({ dims: ['y', 'x'], translation: { y: 3.5, x: -2 }, axesOrientations: LPS_2D })
+
+  const sequence = buildFixedToMovingTransform(list, fixed, moving, 'fixed', 'moving')
+  const plain = buildFixedToMovingTransform(list, await frame2d(), await frame2d(), 'fixed', 'moving')
+
+  // Only the last stage carries the change into the moving frame. The
+  // translation and rigid stages run from the fixed frame back into it, so
+  // the flip negates the translation's x component...
+  const [translation, rigid] = sequence.transformations
+  assert.deepEqual(translation, { type: 'translation', translation: [7, -5], name: 'translation' })
+  // ...and reverses the sense of the rotation, which stays a rotation.
+  const { rotation } = rigidParts(rigid)
+  const plainRotation = rigidParts(plain.transformations[1]).rotation
+  assertClose(rotation, [plainRotation.map((row) => row[0]!), plainRotation.map((row) => row[1]!)], 'reversed rotation')
+  assertClose(multiply(rotation, [rotation.map((row) => row[0]!), rotation.map((row) => row[1]!)]), [[1, 0], [0, 1]], 'R Rᵀ')
+  assert.ok(Math.abs(rotation[0]![0]! * rotation[1]![1]! - rotation[0]![1]! * rotation[1]![0]! - 1) < 1e-12, 'det R = 1')
+
+  assertClose(composed(sequence), singleAffine(list, fixed, moving), 'the stages compose to the whole list')
+  // ngff-zarr's own inverse reads the nested rigid sequence and its rotation
+  // back into the same ITK transform.
+  const frames = { fixed: fixed.ngffImage, moving: moving.ngffImage }
+  const [fromStages] = ngffTransformToItkTransform(sequence, registrationDims(2), frames)
+  const [fromSingle] = ngffTransformToItkTransform(
+    { type: 'affine', affine: singleAffine(list, fixed, moving) },
+    registrationDims(2),
+    frames,
+  )
+  assertClose(
+    [Array.from(fromStages!.parameters as Float64Array)],
+    [Array.from(fromSingle!.parameters as Float64Array)],
+    'ITK parameters read back',
+  )
+})
+
+test('stages after the last affine one run in the moving frame, so a translation there stays a translation', async () => {
+  // Applied in the order translation, affine, translation: ITK lists them
+  // backwards.
+  const list: TransformList = [
+    COMPOSITE_HEADER,
+    itkTranslation([-1, 2]),
+    itkAffine(
+      [
+        [1.5, 0.25],
+        [-0.5, 0.75],
+      ],
+      [3, -4],
+    ),
+    itkTranslation([5, 7]),
+  ]
+  const fixed = await frame2d({ dims: ['y', 'x'], translation: { y: -12, x: 7 }, axesOrientations: FLIPPED_X })
+  const moving = await frame2d({ dims: ['y', 'x'], translation: { y: 3.5, x: -2 }, axesOrientations: LPS_2D })
+
+  const sequence = buildFixedToMovingTransform(list, fixed, moving, 'fixed', 'moving')
+
+  // The first translation is conjugated by the flipped fixed frame, the last
+  // by the moving frame, whose direction is the identity.
+  assert.deepEqual(sequence.transformations[0], { type: 'translation', translation: [7, -5], name: 'translation' })
+  assert.deepEqual(sequence.transformations[2], { type: 'translation', translation: [2, -1], name: 'translation' })
+  assertClose(composed(sequence), singleAffine(list, fixed, moving), 'the stages compose to the whole list')
+})
+
+test('a list with no affine stage ends on the change of frame when the two frames differ', async () => {
+  const list: TransformList = [COMPOSITE_HEADER, itkEuler2D(Math.PI / 6, [2, -1], [10, 20]), itkTranslation([5, 7])]
+  // The flip makes the change of frame a mirror, which neither a translation
+  // nor a rotation can hold.
+  const fixed = await frame2d({ dims: ['y', 'x'], translation: { y: -12, x: 7 }, axesOrientations: FLIPPED_X })
+  const moving = await frame2d({ dims: ['y', 'x'], translation: { y: 3.5, x: -2 }, axesOrientations: LPS_2D })
+
+  const set = buildRfc5TransformSet(list, fixed, moving)
+
+  assert.deepEqual(
+    set.standalone.transformations.map((stage) => [stage.name, stage.type]),
+    [
+      ['translation', 'translation'],
+      ['rigid', 'sequence'],
+      [CHANGE_OF_FRAME_STAGE_NAME, 'affine'],
+    ],
+  )
+  assertClose(composed(set.standalone), singleAffine(list, fixed, moving), 'the stages compose to the whole list')
+})
+
+test('a list with no affine stage ends on its last stage when the two frames agree', async () => {
+  const list: TransformList = [COMPOSITE_HEADER, itkEuler2D(Math.PI / 6, [2, -1], [10, 20]), itkTranslation([5, 7])]
+  const fixed = await frame2d()
+  const moving = await frame2d()
+
+  const sequence = buildFixedToMovingTransform(list, fixed, moving, 'fixed', 'moving')
+
+  assert.deepEqual(
+    sequence.transformations.map((stage) => stage.name),
+    ['translation', 'rigid'],
+  )
+  assertClose(composed(sequence), singleAffine(list, fixed, moving), 'the stages compose to the whole list')
 })
 
 const SYSTEM_2D: CoordinateSystem = {
@@ -405,31 +656,105 @@ const SYSTEM_2D: CoordinateSystem = {
 }
 const MOVING_2D: CoordinateSystem = { ...SYSTEM_2D, name: 'moving' }
 
-function affine2d(rows: number[][] = [[1, 0, 0], [0, 1, 0]]): Affine {
-  return { type: 'affine', affine: rows, name: FIXED_TO_MOVING_TRANSFORM_NAME, input: { name: 'fixed' }, output: { name: 'moving' } }
+/** A rigid stage the way the builder writes one: a rotation, then a translation. */
+function rigid2d(rotation: number[][] = [[0, -1], [1, 0]], translation: number[] = [0, 0]): TransformSequence {
+  return {
+    type: 'sequence',
+    name: 'rigid',
+    transformations: [
+      { type: 'rotation', rotation },
+      { type: 'translation', translation },
+    ],
+  }
 }
 
-test('assertTransformMatchesSystems accepts a matching affine', () => {
-  assert.doesNotThrow(() => assertTransformMatchesSystems(affine2d(), SYSTEM_2D, MOVING_2D))
+function sequence2d(
+  transformations: V06Transform[] = [
+    { type: 'translation', translation: [0, 0], name: 'translation' },
+    rigid2d(),
+    { type: 'affine', affine: [[1, 0, 0], [0, 1, 0]], name: 'affine' },
+  ],
+): TransformSequence {
+  return {
+    type: 'sequence',
+    name: FIXED_TO_MOVING_TRANSFORM_NAME,
+    input: { name: 'fixed' },
+    output: { name: 'moving' },
+    transformations,
+  }
+}
+
+test('assertTransformMatchesSystems accepts a matching sequence', () => {
+  assert.doesNotThrow(() => assertTransformMatchesSystems(sequence2d(), SYSTEM_2D, MOVING_2D))
 })
 
-test('assertTransformMatchesSystems rejects a matrix sized for other coordinate systems', () => {
+test('assertTransformMatchesSystems rejects a stage sized for other coordinate systems', () => {
+  assert.throws(
+    () => assertTransformMatchesSystems(sequence2d([{ type: 'affine', affine: [[1, 0], [0, 1]], name: 'affine' }]), SYSTEM_2D, MOVING_2D),
+    /Stage 'affine' .* must be 2x3/,
+  )
+  assert.throws(
+    () => assertTransformMatchesSystems(sequence2d([{ type: 'translation', translation: [1, 2, 3] }]), SYSTEM_2D, MOVING_2D),
+    /Stage 'translation' .* translates 3 axes/,
+  )
+  assert.throws(
+    () => assertTransformMatchesSystems(sequence2d([rigid2d([[1, 0, 0], [0, 1, 0]])]), SYSTEM_2D, MOVING_2D),
+    /Stage 'rigid\/rotation' .* must be 2x2/,
+  )
+})
+
+test('assertTransformMatchesSystems rejects systems with different numbers of axes', () => {
   const threeD: CoordinateSystem = { name: 'moving', axes: [...MOVING_2D.axes, { name: 'z', type: 'space', unit: undefined }] }
-  assert.throws(() => assertTransformMatchesSystems(affine2d(), SYSTEM_2D, threeD), /must be 3x3/)
-  assert.throws(() => assertTransformMatchesSystems(affine2d([[1, 0], [0, 1]]), SYSTEM_2D, MOVING_2D), /must be 2x3/)
+  assert.throws(() => assertTransformMatchesSystems(sequence2d(), SYSTEM_2D, threeD), /\(2 axes\) to 'moving' \(3 axes\)/)
 })
 
 test('assertTransformMatchesSystems rejects a non-finite value, which OME-Zarr would store as null', () => {
   assert.throws(
-    () => assertTransformMatchesSystems(affine2d([[Number.NaN, 0, 0], [0, 1, 0]]), SYSTEM_2D, MOVING_2D),
-    /non-finite/,
+    () => assertTransformMatchesSystems(sequence2d([{ type: 'affine', affine: [[Number.NaN, 0, 0], [0, 1, 0]], name: 'affine' }]), SYSTEM_2D, MOVING_2D),
+    /Stage 'affine' .* non-finite/,
+  )
+  assert.throws(
+    () => assertTransformMatchesSystems(sequence2d([rigid2d(undefined, [Infinity, 0])]), SYSTEM_2D, MOVING_2D),
+    /Stage 'rigid\/translation' .* non-finite/,
   )
 })
 
-test('assertTransformMatchesSystems rejects an affine naming a system that is not being written', () => {
-  const wrong: Affine = { ...affine2d(), output: { name: 'elsewhere' } }
+test('assertTransformMatchesSystems rejects a rotation RFC-5 would not accept', () => {
+  // A mirror is orthonormal with determinant -1; a shear can have determinant
+  // 1 without being orthonormal.
+  for (const rotation of [
+    [
+      [-1, 0],
+      [0, 1],
+    ],
+    [
+      [1, 0.5],
+      [0, 1],
+    ],
+  ]) {
+    assert.throws(
+      () => assertTransformMatchesSystems(sequence2d([rigid2d(rotation)]), SYSTEM_2D, MOVING_2D),
+      /Stage 'rigid\/rotation' .* is not a proper rotation/,
+    )
+  }
+})
+
+test('assertTransformMatchesSystems rejects a stage type it does not write, and an empty sequence', () => {
+  assert.throws(
+    () => assertTransformMatchesSystems(sequence2d([{ type: 'scale', scale: [1, 1] }]), SYSTEM_2D, MOVING_2D),
+    /is a 'scale'/,
+  )
+  assert.throws(() => assertTransformMatchesSystems(sequence2d([]), SYSTEM_2D, MOVING_2D), /at least one stage/)
+  assert.throws(
+    () => assertTransformMatchesSystems(sequence2d([{ type: 'sequence', name: 'rigid', transformations: [] }]), SYSTEM_2D, MOVING_2D),
+    /Stage 'rigid' .* is an empty sequence/,
+  )
+})
+
+test('assertTransformMatchesSystems rejects a sequence naming a system that is not being written', () => {
+  const wrong: TransformSequence = { ...sequence2d(), output: { name: 'elsewhere' } }
   assert.throws(() => assertTransformMatchesSystems(wrong, SYSTEM_2D, MOVING_2D), /names 'elsewhere' as its output/)
-  assert.throws(() => assertTransformMatchesSystems({ ...affine2d(), input: undefined }, SYSTEM_2D, MOVING_2D), /\(none\)/)
+  assert.throws(() => assertTransformMatchesSystems({ ...sequence2d(), input: undefined }, SYSTEM_2D, MOVING_2D), /\(none\)/)
 })
 
 /** A single-level pyramid the way `toMultiscales` leaves one, with the intrinsic system. */
@@ -444,11 +769,11 @@ async function multiscales2d() {
   return createMultiscales([image], metadata)
 }
 
-test('embedInMultiscales lists the intrinsic and moving systems and the affine between them', async () => {
+test('embedInMultiscales lists the intrinsic and moving systems and the sequence between them', async () => {
   const multiscales = await multiscales2d()
-  const affine: Affine = { ...affine2d(), input: { name: INTRINSIC_COORDINATE_SYSTEM_NAME } }
+  const sequence: TransformSequence = { ...sequence2d(), input: { name: INTRINSIC_COORDINATE_SYSTEM_NAME } }
 
-  const embedded = embedInMultiscales(multiscales, affine, MOVING_2D)
+  const embedded = embedInMultiscales(multiscales, sequence, MOVING_2D)
 
   assert.equal(embedded, multiscales, 'the pyramid is mutated in place')
   assert.deepEqual(
@@ -456,25 +781,26 @@ test('embedInMultiscales lists the intrinsic and moving systems and the affine b
     [INTRINSIC_COORDINATE_SYSTEM_NAME, 'moving'],
   )
   assert.deepEqual(embedded.metadata.coordinateSystems?.[0]?.axes, embedded.metadata.axes)
-  assert.deepEqual(embedded.metadata.coordinateTransformations, [affine])
+  assert.deepEqual(embedded.metadata.coordinateTransformations, [sequence])
 })
 
-test('embedInMultiscales refuses an affine that does not name the intrinsic system', async () => {
+test('embedInMultiscales refuses a sequence that does not name the intrinsic system', async () => {
   const multiscales = await multiscales2d()
   await assert.rejects(
-    async () => embedInMultiscales(multiscales, affine2d(), MOVING_2D),
+    async () => embedInMultiscales(multiscales, sequence2d(), MOVING_2D),
     /names 'fixed' as its input/,
   )
   assert.equal(multiscales.metadata.coordinateTransformations, undefined, 'nothing is written on a refusal')
 })
 
 test('transformOnlyOzx writes an RFC-9 archive holding one RFC-5 scene group', () => {
-  const affine = affine2d([
-    [0.75, -0.5, 6],
-    [0.25, 1.5, -7],
-  ])
+  const stages: V06Transform[] = [
+    { type: 'translation', translation: [7, 5], name: 'translation' },
+    rigid2d([[-1, 0], [0, -1]], [36, 23]),
+    { type: 'affine', affine: [[0.75, -0.5, 6], [0.25, 1.5, -7]], name: 'affine' },
+  ]
 
-  const zip = transformOnlyOzx(affine, SYSTEM_2D, MOVING_2D)
+  const zip = transformOnlyOzx(sequence2d(stages), SYSTEM_2D, MOVING_2D)
 
   assert.equal(readOzxVersion(zip), TRANSFORM_OME_ZARR_VERSION)
   const store = memoryStoreFromZip(zip)
@@ -492,11 +818,8 @@ test('transformOnlyOzx writes an RFC-9 archive holding one RFC-5 scene group', (
   ])
   assert.deepEqual(coordinateTransformations, [
     {
-      type: 'affine',
-      affine: [
-        [0.75, -0.5, 6],
-        [0.25, 1.5, -7],
-      ],
+      type: 'sequence',
+      transformations: stages,
       name: FIXED_TO_MOVING_TRANSFORM_NAME,
       input: { name: 'fixed' },
       output: { name: 'moving' },
@@ -512,7 +835,7 @@ test('transformOnlyOzx serializes the axis unit and orientation', () => {
       { name: 'x', type: 'space', unit: 'millimeter', orientation: LPS_2D.x },
     ],
   }
-  const zip = transformOnlyOzx(affine2d(), oriented, MOVING_2D)
+  const zip = transformOnlyOzx(sequence2d(), oriented, MOVING_2D)
   const group = JSON.parse(new TextDecoder().decode(memoryStoreFromZip(zip).get(ROOT_METADATA_KEY)!))
 
   assert.deepEqual(group.attributes.ome.scene.coordinateSystems[0].axes[0], {
@@ -524,7 +847,12 @@ test('transformOnlyOzx serializes the axis unit and orientation', () => {
 })
 
 test('buildRfc5TransformSet names the standalone and embedded inputs differently', async () => {
-  const list: TransformList = [COMPOSITE_HEADER, itkAffine([[1.5, 0.25], [-0.5, 0.75]], [3, -4], [10, 20])]
+  const list: TransformList = [
+    COMPOSITE_HEADER,
+    itkAffine([[1.5, 0.25], [-0.5, 0.75]], [3, -4], [10, 20]),
+    itkEuler2D(Math.PI / 6, [2, -1], [10, 20]),
+    itkTranslation([5, 7]),
+  ]
   const fixed = await frame2d({ dims: ['y', 'x'], axesUnits: { y: 'millimeter', x: 'millimeter' } })
   const moving = await frame2d()
 
@@ -536,7 +864,11 @@ test('buildRfc5TransformSet names the standalone and embedded inputs differently
   assert.deepEqual(set.movingSystem.axes.map((axis) => axis.unit), [undefined, undefined])
   assert.deepEqual(set.standalone.input, { name: FIXED_COORDINATE_SYSTEM_NAME })
   assert.deepEqual(set.embedded.input, { name: INTRINSIC_COORDINATE_SYSTEM_NAME })
-  assert.deepEqual(set.embedded.affine, set.standalone.affine, 'the same mapping, written twice')
+  assert.deepEqual(set.embedded.transformations, set.standalone.transformations, 'the same mapping, written twice')
+  assert.deepEqual(
+    set.standalone.transformations.map((stage) => stage.name),
+    ['translation', 'rigid', 'affine'],
+  )
   assert.deepEqual(set.embedded.output, { name: MOVING_COORDINATE_SYSTEM_NAME })
 
   // Both forms are writable: the standalone one against its own systems, the
@@ -556,6 +888,7 @@ test('buildRfc5TransformSet builds the reduced space for a source with a channel
 
   assert.deepEqual(set.fixedSystem.axes.map((axis) => axis.name), ['y', 'x'])
   assert.deepEqual(set.movingSystem.axes.map((axis) => axis.name), ['y', 'x'])
-  assert.equal(set.standalone.affine.length, 2)
-  assert.deepEqual(set.standalone.affine[0]?.length, 3)
+  const [stage] = set.standalone.transformations
+  assert.equal(stageAffine(stage).length, 2)
+  assert.equal(stageAffine(stage)[0]?.length, 3)
 })

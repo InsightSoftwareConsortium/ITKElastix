@@ -1,7 +1,8 @@
 // The registration result as OME-Zarr RFC-5 metadata: the named coordinate
-// systems of the two inputs, the fixed-to-moving affine between them, and the
-// two places it is written — embedded in the registered image's multiscales
-// and as a standalone transform-only store.
+// systems of the two inputs, the fixed-to-moving transform between them as a
+// `sequence` holding one transformation per elastix stage (translation,
+// rigid, affine), and the two places it is written — embedded in the
+// registered image's multiscales and as a standalone transform-only store.
 //
 // ngff-zarr does the arithmetic (`itkTransformToNgffTransform` decodes the
 // ITK parameters, folds the center of rotation into the offset, changes frame
@@ -22,6 +23,7 @@ import {
   createAxis,
   createCoordinateSystem,
   INTRINSIC_COORDINATE_SYSTEM_NAME,
+  itkTransformToNgffMatrix,
   itkTransformToNgffTransform,
   memoryStoreToZip,
   type Affine,
@@ -30,12 +32,15 @@ import {
   type Multiscales,
   type NgffImage,
   type SupportedDims,
+  type TransformSequence,
+  type Translation,
+  type V06Transform,
 } from '@fideus-labs/ngff-zarr'
-import type { TransformList } from 'itk-wasm'
+import type { Transform, TransformList } from 'itk-wasm'
 
 import type { LoadedImage } from './load-image.ts'
 import { ROOT_METADATA_KEY, type MemoryStore } from './ozx-store.ts'
-import { withAffineStages, withoutCompositeHeader, withTypedParameterArrays } from './transform-list.ts'
+import { toAffineTransform, withoutCompositeHeader, withTypedParameterArrays } from './transform-list.ts'
 
 /** OME-Zarr version the RFC-5 transform metadata is written at. */
 export const TRANSFORM_OME_ZARR_VERSION = '0.6'
@@ -48,6 +53,27 @@ export const MOVING_COORDINATE_SYSTEM_NAME = 'moving'
 
 /** `name` of the transformation, in both stores. */
 export const FIXED_TO_MOVING_TRANSFORM_NAME = 'fixed_to_moving'
+
+/**
+ * `name` of each stage inside the sequence, by the ITK class elastix hands
+ * the stage back as; any other class is named after itself, lower-cased.
+ */
+const STAGE_NAMES: Readonly<Record<string, string>> = {
+  Translation: 'translation',
+  Euler2D: 'rigid',
+  Rigid2D: 'rigid',
+  Euler3D: 'rigid',
+  VersorRigid3D: 'rigid',
+  Similarity2D: 'similarity',
+  Similarity3D: 'similarity',
+  Affine: 'affine',
+}
+
+/**
+ * `name` of the stage a list with no stage written as an affine ends on,
+ * when the fixed and moving images' frames differ.
+ */
+export const CHANGE_OF_FRAME_STAGE_NAME = 'change_of_frame'
 
 /**
  * Spatial axis names in Zarr (slowest-first) order. `itkImageToNgffImage`
@@ -116,18 +142,149 @@ export function buildCoordinateSystem(
   return createCoordinateSystem(name, axes)
 }
 
+function stageName(stage: Transform): string {
+  const parameterization = String(stage.transformType.transformParameterization)
+  return STAGE_NAMES[parameterization] ?? parameterization.toLowerCase()
+}
+
+/** How {@link stageTransformation} writes a stage. */
+type StageForm = 'translation' | 'rigid' | 'affine'
+
+function stageForm(stage: Transform): StageForm {
+  if (stage.transformType.transformParameterization === 'Translation') {
+    return 'translation'
+  }
+  return stageName(stage) === 'rigid' ? 'rigid' : 'affine'
+}
+
+/** Whether the M x M `matrix` is the identity, compared exactly. */
+function isIdentityMatrix(matrix: number[][]): boolean {
+  return matrix.every((row, i) => row.every((value, j) => value === (i === j ? 1 : 0)))
+}
+
 /**
- * The fixed-to-moving mapping elastix produced, as an RFC-5 `affine` from
- * the coordinate system named `inputName` to the one named `outputName`.
+ * One elastix stage as an RFC-5 transformation over `dims`, named for the
+ * stage. The type follows the stage, not the values it holds, so a run whose
+ * rigid stage found no rotation still writes the same shape:
  *
- * `frames` hands ngff-zarr both images so it can change from ITK physical
- * space (which folds in the direction matrix RFC-4 orientation implies) into
- * the two intrinsic systems exactly; without them the conversion is only
- * correct for images that carry no orientation.
+ * - the translation stage is a `translation`;
+ * - the rigid stage is a `sequence` of a `rotation` and then a
+ *   `translation`, since RFC-5 has no rigid type and a `rotation` carries
+ *   no offset (`y = R x + b` rotates first and translates second);
+ * - every other stage is an `affine`.
  *
- * `simplify` is off, so the result is always an `affine` rather than
- * whichever of `identity`/`translation`/`scale`/`sequence` happens to
- * represent this particular registration — see the decision note.
+ * `frames` is the change of frame on each side of this stage, as ngff-zarr's
+ * `itkTransformToNgffTransform` takes it. A translation stage must be given
+ * the same frame on both sides, and a rigid stage two frames that agree on
+ * orientation, or it comes out as something else; see
+ * {@link buildFixedToMovingTransform}.
+ */
+function stageTransformation(
+  stage: Transform,
+  dims: SupportedDims[],
+  frames: { fixed: NgffImage; moving: NgffImage },
+): Translation | Affine | TransformSequence {
+  const name = stageName(stage)
+  const form = stageForm(stage)
+  if (form === 'translation') {
+    const { matrix, offset } = itkTransformToNgffMatrix(stage, dims, frames)
+    // An RFC-4 direction is a signed permutation, so conjugating the
+    // identity by one is exact.
+    if (!isIdentityMatrix(matrix)) {
+      throw new Error(
+        `The translation stage converted to the linear part ${JSON.stringify(matrix)} rather than the identity; ` +
+          'its frames on both sides should agree on orientation, so this is a bug',
+      )
+    }
+    return { type: 'translation', name, translation: offset }
+  }
+  const converted = itkTransformToNgffTransform(toAffineTransform(stage), dims, false, frames)
+  if (converted.type !== 'affine') {
+    throw new Error(
+      `Expected an RFC-5 affine for the ${name} stage, got '${converted.type}'; simplification is disabled, so this is a bug`,
+    )
+  }
+  if (form === 'affine') {
+    return { type: 'affine', name, affine: converted.affine }
+  }
+  return {
+    type: 'sequence',
+    name,
+    transformations: [
+      { type: 'rotation', rotation: converted.affine.map((row) => row.slice(0, -1)) },
+      { type: 'translation', translation: converted.affine.map((row) => row.at(-1)!) },
+    ],
+  }
+}
+
+/**
+ * The change from the fixed image's intrinsic frame into the moving image's
+ * as an `affine` stage named {@link CHANGE_OF_FRAME_STAGE_NAME}, or
+ * undefined when it is the identity, as it is for two images without an
+ * orientation. Only a list with no stage written as an affine needs it; see
+ * {@link buildFixedToMovingTransform}.
+ */
+function changeOfFrameStage(fixed: TransformFrame, moving: TransformFrame, dims: SupportedDims[]): Affine | undefined {
+  const identity: Transform = {
+    transformType: {
+      transformParameterization: 'Identity',
+      parametersValueType: 'float64',
+      inputDimension: dims.length,
+      outputDimension: dims.length,
+    },
+    numberOfParameters: 0,
+    numberOfFixedParameters: 0,
+    name: '',
+    inputSpaceName: '',
+    outputSpaceName: '',
+    parameters: new Float64Array(0),
+    fixedParameters: new Float64Array(0),
+  }
+  const { matrix, offset } = itkTransformToNgffMatrix(identity, dims, {
+    fixed: fixed.ngffImage,
+    moving: moving.ngffImage,
+  })
+  if (isIdentityMatrix(matrix) && offset.every((value) => value === 0)) {
+    return undefined
+  }
+  return { type: 'affine', name: CHANGE_OF_FRAME_STAGE_NAME, affine: matrix.map((row, i) => [...row, offset[i]!]) }
+}
+
+/**
+ * The fixed-to-moving mapping elastix produced, as an RFC-5 `sequence` from
+ * the coordinate system named `inputName` to the one named `outputName`,
+ * holding one transformation per elastix stage in the order a point passes
+ * through them: translation, rigid, then affine for the demo's run. ITK's
+ * composite applies its last entry first, so that is the list read
+ * backwards.
+ *
+ * Each stage is converted on its own, with ngff-zarr changing frame from
+ * ITK physical space (which folds in the direction matrix RFC-4 orientation
+ * implies) into the intrinsic systems. Writing `phi_f` and `phi_m` for the
+ * fixed and moving images' intrinsic-to-physical maps, the mapping is
+ * `phi_m^-1 . A . R . T . phi_f`, and it is split as
+ *
+ *     (phi_m^-1 . A . phi_f) . (phi_f^-1 . R . phi_f) . (phi_f^-1 . T . phi_f)
+ *
+ * so the translation and rigid stages run from the fixed image's intrinsic
+ * frame back into it, and the affine stage also carries the change to the
+ * moving image's. An RFC-4 direction is a signed permutation, so the
+ * translation stays a translation and the rotation a proper rotation even
+ * when the two images disagree about an axis direction — a change of frame
+ * between two such images can be a mirror, which only an affine can hold.
+ * The sequence composes, up to rounding, to the single affine the whole
+ * list would convert to. Without both images the conversion would be
+ * correct only for images that carry no orientation.
+ *
+ * For a list other than the demo's, the change of frame goes on the last
+ * stage written as an affine; the stages before it stay in the fixed
+ * image's frame and the ones after it run in the moving image's. A list
+ * with no such stage keeps every stage in the fixed frame and ends on the
+ * change of frame as an `affine` of its own ({@link changeOfFrameStage}),
+ * unless that is the identity.
+ *
+ * `simplify` is off for the affine stages, so their type never depends on
+ * the values a particular registration produced — see the decision note.
  *
  * The list is prepared first (src/io/transform-list.ts): elastix's
  * `Composite` header is dropped (`withoutCompositeHeader`); the zero-count
@@ -135,8 +292,9 @@ export function buildCoordinateSystem(
  * typed arrays (`withTypedParameterArrays`), or ngff-zarr counts the
  * string's characters as fixed parameters; and the rigid stage, which ITK
  * hands back as an `Euler2D` or `Euler3D` transform storing angles, is
- * rewritten as the equivalent `Affine` (`withAffineStages`), since
- * ngff-zarr decodes only matrix-storing parameterizations.
+ * rewritten as the equivalent `Affine` (`toAffineTransform`), since
+ * ngff-zarr decodes only matrix-storing parameterizations. Its name comes
+ * from the original class, so it is still written as the `rigid` stage.
  */
 export function buildFixedToMovingTransform(
   transform: TransformList,
@@ -144,31 +302,52 @@ export function buildFixedToMovingTransform(
   moving: TransformFrame,
   inputName: string,
   outputName: string,
-): Affine {
-  const converted = itkTransformToNgffTransform(
-    withAffineStages(withTypedParameterArrays(withoutCompositeHeader(transform))),
-    registrationDims(fixed.dimension),
-    false,
-    { fixed: fixed.ngffImage, moving: moving.ngffImage },
-  )
-  if (converted.type !== 'affine') {
-    throw new Error(
-      `Expected an RFC-5 affine for the fixed-to-moving transform, got '${converted.type}'; simplification is disabled, so this is a bug`,
-    )
+): TransformSequence {
+  const dims = registrationDims(fixed.dimension)
+  const stages = withTypedParameterArrays(withoutCompositeHeader(transform)).toReversed()
+  if (stages.length === 0) {
+    throw new Error('The registration returned no transform stages, so there is no fixed-to-moving transform to write')
   }
+  const pivot = stages.map(stageForm).lastIndexOf('affine')
+  const transformations: V06Transform[] = stages.map((stage, index) =>
+    stageTransformation(stage, dims, {
+      fixed: (pivot === -1 || index <= pivot ? fixed : moving).ngffImage,
+      moving: (pivot === -1 || index < pivot ? fixed : moving).ngffImage,
+    }),
+  )
+  const changeOfFrame = pivot === -1 ? changeOfFrameStage(fixed, moving, dims) : undefined
+  if (changeOfFrame !== undefined) {
+    transformations.push(changeOfFrame)
+  }
+  // Keys in the order ngff-zarr's writer serializes them, so the standalone
+  // store reads like the embedded one.
   return {
-    ...converted,
+    type: 'sequence',
     name: FIXED_TO_MOVING_TRANSFORM_NAME,
     input: { name: inputName },
     output: { name: outputName },
+    transformations,
   }
 }
 
+/** How far a `rotation`'s rows may be from orthonormal and still be written. */
+const ROTATION_TOLERANCE = 1e-9
+
+function determinant(matrix: number[][]): number {
+  if (matrix.length === 1) {
+    return matrix[0]![0]!
+  }
+  const minor = (column: number) => matrix.slice(1).map((row) => row.filter((_, k) => k !== column))
+  return matrix[0]!.reduce((sum, value, column) => sum + (column % 2 === 0 ? 1 : -1) * value * determinant(minor(column)), 0)
+}
+
 /**
- * Throw unless `affine` is a well-formed RFC-5 affine between the two named
- * systems: an `output.axes.length` x `input.axes.length + 1` block (the
- * matrix with the translation as its last column) of finite numbers, naming
- * `input` and `output` as its endpoints.
+ * Throw unless `transform` is a well-formed fixed-to-moving sequence between
+ * the two named systems: it names `input` and `output` as its endpoints, the
+ * two have the same number of axes (a registration maps a space onto one of
+ * its own dimension, and the intermediate spaces between stages are that
+ * dimension too), and it holds at least one stage, each of them well formed
+ * over that many axes ({@link assertStage}).
  *
  * Worth doing explicitly. ngff-zarr's zod `CoordinateTransformationSchema`
  * is not reachable — it is exported by neither `mod` nor `browser-mod`, and
@@ -176,44 +355,107 @@ export function buildFixedToMovingTransform(
  * `input`/`output` as bare strings, where the writer, the reader, and RFC-5
  * itself all use `{ name }` objects, so it would reject what must be
  * written. Nor does the v0.6 writer check an `affine`'s arity against the
- * systems it names: a wrong-sized matrix is serialized without complaint,
- * and a NaN becomes a JSON `null`.
+ * systems it names or a `rotation`'s determinant: a wrong-sized matrix or a
+ * mirror is serialized without complaint, and a NaN becomes a JSON `null`.
  */
 export function assertTransformMatchesSystems(
-  affine: Affine,
+  transform: TransformSequence,
   input: CoordinateSystem,
   output: CoordinateSystem,
 ): void {
-  const rows = output.axes.length
-  const columns = input.axes.length + 1
-  const shape = `${affine.affine.length}x${affine.affine.map((row) => row.length).join('/')}`
-  if (affine.affine.length !== rows || affine.affine.some((row) => row.length !== columns)) {
-    throw new Error(
-      `The fixed-to-moving affine is ${shape}, but a transform from '${input.name}' (${input.axes.length} axes) ` +
-        `to '${output.name}' (${output.axes.length} axes) must be ${rows}x${columns}`,
-    )
-  }
-  if (affine.affine.some((row) => row.some((value) => !Number.isFinite(value)))) {
-    throw new Error(
-      `The fixed-to-moving affine holds a non-finite value: ${JSON.stringify(affine.affine)}. ` +
-        'OME-Zarr would store it as null, so the transform is refused instead.',
-    )
-  }
   for (const [side, identifier, system] of [
-    ['input', affine.input, input],
-    ['output', affine.output, output],
+    ['input', transform.input, input],
+    ['output', transform.output, output],
   ] as const) {
     if (identifier?.name !== system.name) {
       throw new Error(
-        `The fixed-to-moving affine names '${identifier?.name ?? '(none)'}' as its ${side} coordinate system, ` +
+        `The fixed-to-moving transform names '${identifier?.name ?? '(none)'}' as its ${side} coordinate system, ` +
           `but '${system.name}' is the one being written`,
+      )
+    }
+  }
+  const dimension = input.axes.length
+  if (output.axes.length !== dimension) {
+    throw new Error(
+      `The fixed-to-moving transform runs from '${input.name}' (${dimension} axes) to '${output.name}' ` +
+        `(${output.axes.length} axes), but a registration maps between spaces with the same axes`,
+    )
+  }
+  if (transform.type !== 'sequence' || transform.transformations.length === 0) {
+    throw new Error('The fixed-to-moving transform must be a sequence holding at least one stage')
+  }
+  for (const stage of transform.transformations) {
+    assertStage(stage, dimension, stage.name ?? stage.type)
+  }
+}
+
+/**
+ * Throw unless `stage`, found at `path` inside the fixed-to-moving sequence,
+ * is one of the transformations this module writes, over `dimension` axes
+ * and holding finite numbers: a `translation` of that length; an `affine` of
+ * that many rows by one more column (the matrix with the translation as its
+ * last column); a square `rotation` with orthonormal rows and a determinant
+ * of one, as RFC-5 requires; or a non-empty `sequence` of those.
+ */
+function assertStage(stage: V06Transform, dimension: number, path: string): void {
+  const label = `Stage '${path}' of the fixed-to-moving transform`
+  let values: number[]
+  switch (stage.type) {
+    case 'translation':
+      if (stage.translation.length !== dimension) {
+        throw new Error(`${label} translates ${stage.translation.length} axes, but the coordinate systems have ${dimension}`)
+      }
+      values = stage.translation
+      break
+    case 'affine':
+    case 'rotation': {
+      const matrix = stage.type === 'affine' ? stage.affine : stage.rotation
+      const columns = stage.type === 'affine' ? dimension + 1 : dimension
+      if (matrix.length !== dimension || matrix.some((row) => row.length !== columns)) {
+        const shape = `${matrix.length}x${matrix.map((row) => row.length).join('/')}`
+        throw new Error(
+          `${label} is a ${shape} ${stage.type}, but one over ${dimension} axes must be ${dimension}x${columns}`,
+        )
+      }
+      values = matrix.flat()
+      break
+    }
+    case 'sequence':
+      if (stage.transformations.length === 0) {
+        throw new Error(`${label} is an empty sequence`)
+      }
+      for (const inner of stage.transformations) {
+        assertStage(inner, dimension, `${path}/${inner.name ?? inner.type}`)
+      }
+      return
+    default:
+      throw new Error(`${label} is a '${stage.type}'; only translation, rotation, affine, and sequence stages are written`)
+  }
+  if (values.some((value) => !Number.isFinite(value))) {
+    throw new Error(
+      `${label} holds a non-finite value: ${JSON.stringify(values)}. ` +
+        'OME-Zarr would store it as null, so the transform is refused instead.',
+    )
+  }
+  if (stage.type === 'rotation') {
+    const { rotation } = stage
+    const orthonormal = rotation.every((row, i) =>
+      rotation.every((other, j) => {
+        const dot = row.reduce((sum, value, k) => sum + value * other[k]!, 0)
+        return Math.abs(dot - (i === j ? 1 : 0)) <= ROTATION_TOLERANCE
+      }),
+    )
+    if (!orthonormal || determinant(rotation) < 0) {
+      throw new Error(
+        `${label} is not a proper rotation: RFC-5 requires orthonormal rows and a determinant of one, ` +
+          `and ${JSON.stringify(rotation)} has determinant ${determinant(rotation)}`,
       )
     }
   }
 }
 
 /**
- * Attach `affine` to the registered image's multiscales so the v0.6 writer
+ * Attach `transform` to the registered image's multiscales so the v0.6 writer
  * serializes it on the `multiscales[0]` entry.
  *
  * The registered image sits on the fixed image's grid, so its own intrinsic
@@ -230,15 +472,15 @@ export function assertTransformMatchesSystems(
  */
 export function embedInMultiscales(
   multiscales: Multiscales,
-  affine: Affine,
+  transform: TransformSequence,
   movingSystem: CoordinateSystem,
 ): Multiscales {
   const { metadata } = multiscales
   const intrinsicName = metadata.coordinateSystems?.[0]?.name ?? INTRINSIC_COORDINATE_SYSTEM_NAME
   const intrinsicSystem = createCoordinateSystem(intrinsicName, metadata.axes)
-  assertTransformMatchesSystems(affine, intrinsicSystem, movingSystem)
+  assertTransformMatchesSystems(transform, intrinsicSystem, movingSystem)
   metadata.coordinateSystems = [intrinsicSystem, movingSystem]
-  metadata.coordinateTransformations = [affine]
+  metadata.coordinateTransformations = [transform]
   return multiscales
 }
 
@@ -264,8 +506,8 @@ function serializeCoordinateSystem(system: CoordinateSystem): Record<string, unk
 
 /**
  * The transform on its own, as a zipped OME-Zarr (RFC-9 `.ozx`) holding a
- * single group: no arrays, just the two coordinate systems and the affine
- * between them.
+ * single group: no arrays, just the two coordinate systems and the staged
+ * transform between them.
  *
  * RFC-5 puts a transformation between two images in a `scene` dictionary —
  * "Transformations between two or more images MUST be stored in the
@@ -275,11 +517,11 @@ function serializeCoordinateSystem(system: CoordinateSystem): Record<string, unk
  * home the RFC offers, and this store has no image to hang one on.
  */
 export function transformOnlyOzx(
-  affine: Affine,
+  transform: TransformSequence,
   fixedSystem: CoordinateSystem,
   movingSystem: CoordinateSystem,
 ): Uint8Array {
-  assertTransformMatchesSystems(affine, fixedSystem, movingSystem)
+  assertTransformMatchesSystems(transform, fixedSystem, movingSystem)
   const group = {
     zarr_format: 3,
     node_type: 'group',
@@ -288,7 +530,7 @@ export function transformOnlyOzx(
         version: TRANSFORM_OME_ZARR_VERSION,
         scene: {
           coordinateSystems: [fixedSystem, movingSystem].map(serializeCoordinateSystem),
-          coordinateTransformations: [affine],
+          coordinateTransformations: [transform],
         },
       },
     },
@@ -298,15 +540,15 @@ export function transformOnlyOzx(
 }
 
 /**
- * Everything the two writers need from one registration: the affine, the
- * intrinsic-named form for the registered image's own store, and the named
- * systems of both inputs.
+ * Everything the two writers need from one registration: the staged
+ * transform, its intrinsic-named form for the registered image's own store,
+ * and the named systems of both inputs.
  */
 export interface Rfc5TransformSet {
   /** From the fixed image's `"fixed"` system to the moving image's. */
-  standalone: Affine
+  standalone: TransformSequence
   /** The same mapping, from the registered image's intrinsic system. */
-  embedded: Affine
+  embedded: TransformSequence
   /** The fixed image's axes, named `"fixed"`. */
   fixedSystem: CoordinateSystem
   /** The moving image's axes, named `"moving"`. */
@@ -315,7 +557,7 @@ export interface Rfc5TransformSet {
 
 /**
  * Build both forms of the fixed-to-moving transform for one registration.
- * The matrix is converted once; only the coordinate system the input names
+ * The stages are converted once; only the coordinate system the input names
  * differs, because the standalone store has to name the fixed image's system
  * explicitly while the embedded one is the registered image's own intrinsic
  * system.

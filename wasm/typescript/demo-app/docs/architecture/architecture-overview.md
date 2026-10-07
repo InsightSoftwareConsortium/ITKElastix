@@ -241,7 +241,7 @@ in `export-plan.ts`.
 ```mermaid
 flowchart TD
   R["RegistrationResult with the fixed and moving LoadedImages"] --> IMG{"image format kind"}
-  IMG -->|ozx| P["registered image → NgffImage on the fixed grid → pyramid → embed the RFC-5 affine → toOmeZarrOzx"]
+  IMG -->|ozx| P["registered image → NgffImage on the fixed grid → pyramid → embed the RFC-5 stage sequence → toOmeZarrOzx"]
   IMG -->|ome-tiff| T["same NgffImage → pyramid shrunk in x and y only → fiff toOmeTiff, deflate"]
   IMG -->|itk| W["writeImage in a worker, keyed on the extension; iwi.cbor encoded in JavaScript"]
   R --> TR{"transform format kind"}
@@ -257,7 +257,8 @@ the fixed image. Its pyramid is built the way ingest builds one, with the
 budget-driven factors capped at four levels; since the result lives on the
 fixed image's registration grid, which was chosen to fit the budget, that is
 a single full-resolution level in practice. The `ozx` writer attaches the
-fixed-to-moving affine to the multiscales metadata (`embedInMultiscales`)
+fixed-to-moving transform, an RFC-5 `sequence` of the translation, rigid,
+and affine stages, to the multiscales metadata (`embedInMultiscales`)
 and hands the pyramid to ngff-zarr's 0.6 writer, reporting chunk progress.
 The `ome-tiff` writer builds an XY-only pyramid for a volume (an OME-TIFF
 cannot hold a z-downsampled level) and hands it to fiff's `toOmeTiff`, with
@@ -269,25 +270,27 @@ JavaScript encoder handles for the reason given under rendering.
 **Transform** (`export-transform.ts`). The `ozx` writer builds the RFC-5
 transform set (`rfc5-transform.ts`): the two coordinate systems named
 `fixed` and `moving`, each carrying the axis units and orientations of its
-image over the axes the registration ran in, and the affine between them
-converted by ngff-zarr's `itkTransformToNgffTransform` with both images as
-frames so the change from ITK physical space to the intrinsic systems is
-exact. Before ngff-zarr sees elastix's list, `transform-list.ts` drops the
-`Composite` header, replaces the zero-count parameter fields itk-wasm leaves
-as placeholder strings with empty typed arrays, and rewrites the Euler stage
-as an equivalent `Affine`, since ngff-zarr decodes only matrix-storing
-parameterizations. The standalone store is a single group whose `scene`
-holds the systems and the affine, zipped as RFC-9. The same affine, with the
-registered image's intrinsic system as its input, is what the image export
-embeds. The `itk` writer gives `@itk-wasm/transform-io`'s `writeTransform`
+image over the axes the registration ran in, and between them a `sequence`
+holding one transformation per elastix stage — a `translation`, the rigid
+stage as a nested `sequence` of a `rotation` and a `translation`, and the
+`affine` stage — each converted by ngff-zarr's
+`itkTransformToNgffTransform` with the images as frames so the change from
+ITK physical space to the intrinsic systems is exact. Before ngff-zarr sees
+elastix's list, `transform-list.ts` drops the `Composite` header, replaces
+the zero-count parameter fields itk-wasm leaves as placeholder strings with
+empty typed arrays, and rewrites the Euler stage as an equivalent `Affine`,
+since ngff-zarr decodes only matrix-storing parameterizations. The
+standalone store is a single group whose `scene` holds the systems and the
+sequence, zipped as RFC-9. The same sequence, with the registered image's
+intrinsic system as its input, is what the image export embeds. The `itk` writer gives `@itk-wasm/transform-io`'s `writeTransform`
 the original list (typed arrays substituted), so an `.h5`, `.tfm`, `.mat`,
 or `.iwt.cbor` holds one entry per stage as ITK wrote it; MINC XFM, which
 holds one 3D linear transform, is given the stages multiplied out into a
 single `Affine` instead (`composedAffineTransform`), a 2D registration's
 lifted into 3D with z passed through. The
 `json` writer serializes the elastix `transformParameterObject`. The
-direction of the transform, the choice of `affine` over simpler forms, the
-`scene` placement, and the list clean-up are each argued in
+direction of the transform, the stage sequence and the frame each stage is
+expressed in, the `scene` placement, and the list clean-up are each argued in
 [[ome-zarr-transform-output]].
 
 ## Cross-cutting concerns

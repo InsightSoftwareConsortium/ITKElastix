@@ -35,7 +35,8 @@ in WebAssembly and web workers; nothing is uploaded.
   comparison.
 - **Outputs:** the registered image as OME-Zarr OZX (the default, with the
   transform embedded as an [RFC-5](https://ngff.openmicroscopy.org/rfc/5/)
-  affine), OME-TIFF, or any of 17 ITK formats; the transform as a standalone
+  sequence of the translation, rigid, and affine stages), OME-TIFF, or any
+  of 17 ITK formats; the transform as a standalone
   RFC-5 OME-Zarr transform, an ITK transform file, or elastix's own
   TransformParameters JSON.
 - Light and dark themes, a responsive layout that stacks the panels on a
@@ -297,7 +298,7 @@ Both download buttons have a format picker filled from the registry in
 
 | Picker entry                  | File                     | Notes                                                                                                                                  |
 | ----------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| OME-Zarr (default)            | `registered.ome.zarr.ozx` | An OME-Zarr 0.6 pyramid zipped as RFC-9, with the fixed-to-moving affine embedded as an RFC-5 transformation between the image's intrinsic and the moving coordinate systems. |
+| OME-Zarr (default)            | `registered.ome.zarr.ozx` | An OME-Zarr 0.6 pyramid zipped as RFC-9, with the fixed-to-moving transform embedded as an RFC-5 `sequence` of the translation, rigid, and affine stages between the image's intrinsic and the moving coordinate systems. |
 | OME-TIFF                      | `registered.ome.tif`     | Deflate-compressed, one plane per IFD, sub-resolution levels as SubIFDs; a volume's pyramid shrinks in x and y only.                     |
 | NRRD, NIfTI, NIfTI compressed, MetaImage, VTK, HDF5, MGH, MINC, MRC, GIPL, BioRad PIC, Scanco AIM, Varian FDF, BMP, JPEG, PNG | `registered.<ext>` | Written by `@itk-wasm/image-io`. BMP and JPEG hold 2D 8-bit pixels only and PNG 2D unsigned 8- or 16-bit, so the 16-bit tailbud result as BMP or JPEG, a signed 16-bit slice as PNG, or a volume is refused with a message. |
 | ITK-Wasm image                | `registered.iwi.cbor`    | Encoded in JavaScript so multi-byte pixels keep their byte order.                                                                       |
@@ -306,15 +307,16 @@ Both download buttons have a format picker filled from the registry in
 
 | Picker entry                       | File                        | Notes                                                                                                                           |
 | ---------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| OME-Zarr transform (default)       | `transform.ome.zarr.ozx`    | A transform-only OME-Zarr 0.6 group holding the single RFC-5 affine from the `fixed` to the `moving` coordinate system, in a `scene`. |
+| OME-Zarr transform (default)       | `transform.ome.zarr.ozx`    | A transform-only OME-Zarr 0.6 group holding the RFC-5 `sequence` of the translation, rigid, and affine stages from the `fixed` to the `moving` coordinate system, in a `scene`. |
 | ITK HDF5 (`.h5`, `.hdf5`), ITK text (`.tfm`, `.txt`), MATLAB (`.mat`), ITK-Wasm transform (`.iwt.cbor`) | `transform.<ext>` | Written by `@itk-wasm/transform-io`, one entry per elastix stage (affine, rigid, translation; the last applied first).          |
 | MINC XFM                           | `transform.xfm`             | Holds one 3D linear transform, so the three stages are multiplied out into a single affine; a 2D registration's is lifted into 3D with z left unchanged. |
 | elastix TransformParameters (TOML) | `transform-parameters.zip`  | elastix's own parameter files in the TOML format, `TransformParameters.0.toml` to `.2.toml`, one per stage, written by `writeParameterFiles`. Each names the one before as its `InitialTransformParameterFileName`, so transformix given the last one applies every stage. |
 
-The two OME-Zarr outputs carry the same affine; only the name of its input
+The two OME-Zarr outputs carry the same stages; only the name of the input
 coordinate system differs. Why the transform points from fixed to moving, why
-it is always an `affine`, why it lives in a `scene`, and what has to be done
-to elastix's transform list first are recorded in
+each stage is written as its own transformation and in which frame, why it
+lives in a `scene`, and what has to be done to elastix's transform list first
+are recorded in
 [`docs/decisions/ome-zarr-transform-output.md`](docs/decisions/ome-zarr-transform-output.md).
 
 ## The 50 MB pixel budget

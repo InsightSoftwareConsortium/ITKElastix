@@ -1,8 +1,9 @@
 // Write the fixed-to-moving transform in the format the picker chose. Three
 // writers, dispatched on the registry's `kind` (src/io/formats.ts):
 //
-// - `ozx`: the RFC-5 affine between the `fixed` and `moving` coordinate
-//   systems, alone in an OME-Zarr 0.6 group zipped into an RFC-9 `.ozx`
+// - `ozx`: the RFC-5 transform between the `fixed` and `moving` coordinate
+//   systems, a sequence of the translation, rigid, and affine stages, alone
+//   in an OME-Zarr 0.6 group zipped into an RFC-9 `.ozx`
 //   (src/io/rfc5-transform.ts). It is the same mapping the registered
 //   image's own OZX embeds, only with the fixed image's system named
 //   explicitly since there is no image here for it to be intrinsic to.
