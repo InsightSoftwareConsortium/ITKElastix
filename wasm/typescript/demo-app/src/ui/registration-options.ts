@@ -2,37 +2,33 @@
 // registration panel (src/ui/registration-panel.ts): the range the
 // resolutions picker offers, the pixel budgets the budget picker lists, how
 // a picker value becomes a state value, and how a budget is labelled. Pure
-// functions free of DOM access, so the node unit tests can cover them;
-// src/state.ts takes `clampResolutions` from here, so this module must not
-// import the store.
+// functions free of DOM access, so the node unit tests can cover them.
 import { formatBytes } from '../format.ts'
 import { PIXEL_BUDGET_BYTES } from '../io/scale-select.ts'
-import { DEFAULT_NUMBER_OF_RESOLUTIONS } from '../registration/types.ts'
 
 /** Fewest pyramid levels a stage may be optimized over. */
-export const MIN_NUMBER_OF_RESOLUTIONS = 2
+export const MIN_NUMBER_OF_RESOLUTIONS = 1
 
 /** Most pyramid levels a stage may be optimized over. */
 export const MAX_NUMBER_OF_RESOLUTIONS = 5
 
-/** The resolutions picker's entries, ascending: 2, 3, 4, 5. */
+/** The resolutions picker's entries, ascending: 1, 2, 3, 4, 5. */
 export const RESOLUTION_OPTIONS: readonly number[] = Array.from(
   { length: MAX_NUMBER_OF_RESOLUTIONS - MIN_NUMBER_OF_RESOLUTIONS + 1 },
   (_, index) => MIN_NUMBER_OF_RESOLUTIONS + index,
 )
 
 /**
- * The number of resolutions a picker value stands for: rounded to a whole
- * number and clamped to the picker's range, with anything that is not a
- * finite number (an unset `wa-select` reports null, a user picks a string)
- * falling back to the default.
+ * The number of resolutions a picker value stands for, or undefined for a
+ * value that is not one of {@link RESOLUTION_OPTIONS} (the picker is filled
+ * from them, so anything else is a bug rather than user input).
  */
-export function clampResolutions(value: unknown): number {
-  const number = typeof value === 'string' ? Number.parseFloat(value) : value
-  if (typeof number !== 'number' || !Number.isFinite(number)) {
-    return DEFAULT_NUMBER_OF_RESOLUTIONS
+export function resolutionsForValue(value: unknown): number | undefined {
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+    return undefined
   }
-  return Math.min(MAX_NUMBER_OF_RESOLUTIONS, Math.max(MIN_NUMBER_OF_RESOLUTIONS, Math.round(number)))
+  const count = Number.parseInt(value, 10)
+  return RESOLUTION_OPTIONS.includes(count) ? count : undefined
 }
 
 /** Pixel budgets the budget picker offers, in mebibytes, ascending. */

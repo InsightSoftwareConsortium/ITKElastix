@@ -158,14 +158,14 @@ test('registers each pair on load, exposes the options, summarizes each run, and
     expect(await selectValue(page.locator('#pixel-budget'))).toBe(String(DEFAULT_BUDGET))
     expect(await isDisabled(page.locator('#pixel-budget'))).toBe(false)
     await expect(page.locator('#pixel-budget wa-option')).toHaveText(['10 MB', '25 MB', '50 MB', '100 MB'])
-    await expect(page.locator('#resolutions wa-option')).toHaveText(['2', '3', '4', '5'])
+    await expect(page.locator('#resolutions wa-option')).toHaveText(['1', '2', '3', '4', '5'])
   })
 
-  await test.step('choosing 2 resolutions reaches the store, and Register runs again with them', async () => {
-    await pick(page, 'resolutions', '2')
-    await expect.poll(async () => (await registrationFacts(page))?.numberOfResolutions).toBe(2)
+  await test.step('choosing 1 resolution reaches the store, and Register runs again with it', async () => {
+    await pick(page, 'resolutions', '1')
+    await expect.poll(async () => (await registrationFacts(page))?.numberOfResolutions).toBe(1)
     await register.click()
-    await resultAt(page, 2)
+    await resultAt(page, 1)
   })
 
   await test.step('the summary card shows the stages, resolutions, time, and a 2×3 matrix with finite entries', async () => {
@@ -174,7 +174,7 @@ test('registers each pair on load, exposes the options, summarizes each run, and
     const rows = await summaryRows(page)
     expect(rows).toMatchObject({
       stages: 'translation → rigid → affine',
-      resolutions: '2',
+      resolutions: '1',
       axes: 'y, x',
     })
     expect(rows.elapsed).toMatch(/^\d+\.\d s$/)

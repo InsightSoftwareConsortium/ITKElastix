@@ -153,7 +153,7 @@ whole of the elastix integration:
    reused), so the UI thread never blocks.
 2. `buildAffineParameterObject` calls `defaultParameterMap` for
    `translation`, `rigid`, and `affine`, in that order, each with the chosen
-   `NumberOfResolutions` (default 3, picker range 2 to 5), and returns the
+   `NumberOfResolutions` (default 3, picker range 1 to 5), and returns the
    three maps as one parameter object.
 3. `elastix(parameterObject, { fixed, moving, webWorker })` runs the three
    stages. itk-wasm posts copies of the pixel buffers, so the inputs stay
