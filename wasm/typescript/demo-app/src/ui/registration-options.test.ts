@@ -18,10 +18,10 @@ import {
 
 const MIB = 1024 * 1024
 
-test('the resolutions picker offers 2 to 5 with 3 as the default', () => {
-  assert.equal(MIN_NUMBER_OF_RESOLUTIONS, 2)
+test('the resolutions picker offers 1 to 5 with 3 as the default', () => {
+  assert.equal(MIN_NUMBER_OF_RESOLUTIONS, 1)
   assert.equal(MAX_NUMBER_OF_RESOLUTIONS, 5)
-  assert.deepEqual(RESOLUTION_OPTIONS, [2, 3, 4, 5])
+  assert.deepEqual(RESOLUTION_OPTIONS, [1, 2, 3, 4, 5])
   assert.ok(RESOLUTION_OPTIONS.includes(DEFAULT_NUMBER_OF_RESOLUTIONS))
 })
 
@@ -29,7 +29,10 @@ test('clampResolutions rounds, clamps, parses picker strings, and falls back to 
   assert.equal(clampResolutions(4), 4)
   assert.equal(clampResolutions('4'), 4)
   assert.equal(clampResolutions(2.4), 2)
-  assert.equal(clampResolutions(1), MIN_NUMBER_OF_RESOLUTIONS)
+  assert.equal(clampResolutions(1), 1)
+  assert.equal(clampResolutions('1'), 1)
+  assert.equal(clampResolutions(0), MIN_NUMBER_OF_RESOLUTIONS)
+  assert.equal(clampResolutions(-3), MIN_NUMBER_OF_RESOLUTIONS)
   assert.equal(clampResolutions(9), MAX_NUMBER_OF_RESOLUTIONS)
   assert.equal(clampResolutions(null), DEFAULT_NUMBER_OF_RESOLUTIONS)
   assert.equal(clampResolutions(undefined), DEFAULT_NUMBER_OF_RESOLUTIONS)

@@ -10,12 +10,12 @@ import { PIXEL_BUDGET_BYTES } from '../io/scale-select.ts'
 import { DEFAULT_NUMBER_OF_RESOLUTIONS } from '../registration/types.ts'
 
 /** Fewest pyramid levels a stage may be optimized over. */
-export const MIN_NUMBER_OF_RESOLUTIONS = 2
+export const MIN_NUMBER_OF_RESOLUTIONS = 1
 
 /** Most pyramid levels a stage may be optimized over. */
 export const MAX_NUMBER_OF_RESOLUTIONS = 5
 
-/** The resolutions picker's entries, ascending: 2, 3, 4, 5. */
+/** The resolutions picker's entries, ascending: 1, 2, 3, 4, 5. */
 export const RESOLUTION_OPTIONS: readonly number[] = Array.from(
   { length: MAX_NUMBER_OF_RESOLUTIONS - MIN_NUMBER_OF_RESOLUTIONS + 1 },
   (_, index) => MIN_NUMBER_OF_RESOLUTIONS + index,
