@@ -31,7 +31,7 @@ import {
   volumeName,
   waitForSlot,
 } from './helpers'
-import { expectRegistrationStages, parseOzx, type OzxContents } from './ome-zarr'
+import { expectRegistrationStages, parseOzx, withInlineMatrices, type OzxContents } from './ome-zarr'
 
 const IMAGE_OZX = 'registered.ome.zarr.ozx'
 const IMAGE_OME_TIFF = 'registered.ome.tif'
@@ -223,7 +223,8 @@ test.describe('OME-Zarr RFC-5 metadata', () => {
   })
 
   test('the image OZX embeds the same stages on its multiscales entry, into the moving system', ({ session }) => {
-    const { entries, root } = readOzx(session.files, IMAGE_OZX)
+    const image = readOzx(session.files, IMAGE_OZX)
+    const { entries, root } = image
     expect(entries[0], 'RFC-9 wants the root zarr.json to lead the archive').toBe('zarr.json')
 
     const { ome } = root.attributes
@@ -238,13 +239,19 @@ test.describe('OME-Zarr RFC-5 metadata', () => {
     }
 
     expect(multiscales?.coordinateTransformations).toHaveLength(1)
-    const [transform] = multiscales?.coordinateTransformations ?? []
-    expect(transform).toMatchObject({
+    const [stored] = multiscales?.coordinateTransformations ?? []
+    expect(stored).toMatchObject({
       type: 'sequence',
       name: 'fixed_to_moving',
       input: { name: 'intrinsic' },
       output: { name: 'moving' },
     })
+    // ngff-zarr stores the rotation and affine matrices of a multiscales
+    // entry as Zarr arrays, named by path rather than written inline.
+    const [, rigid, affine] = stored?.transformations ?? []
+    expect(rigid?.transformations?.[0]).toEqual({ type: 'rotation', path: 'coordinateTransformations/rotation' })
+    expect(affine).toEqual({ type: 'affine', name: 'affine', path: 'coordinateTransformations/affine' })
+    const transform = withInlineMatrices(stored, image)
     expectRegistrationStages(transform, 2)
 
     // One registration, one mapping: the standalone transform carries the

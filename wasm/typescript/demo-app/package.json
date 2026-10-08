@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "@awesome.me/webawesome": "^3.14.0",
-    "@fideus-labs/fiff": "^0.8.0",
-    "@fideus-labs/ngff-zarr": "^0.34.0",
+    "@fideus-labs/fiff": "^0.8.1",
+    "@fideus-labs/ngff-zarr": "^0.38.0",
     "@fideus-labs/worker-pool": "^2.1.0",
     "@itk-wasm/downsample": "^2.0.2",
     "@itk-wasm/elastix": "2.1.0",

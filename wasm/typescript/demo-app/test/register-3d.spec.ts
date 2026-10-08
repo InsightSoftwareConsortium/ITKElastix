@@ -30,7 +30,13 @@ import {
   volumeCount,
   volumeName,
 } from './helpers'
-import { composeStages, expectRegistrationStages, parseOzx, type TransformationDoc } from './ome-zarr'
+import {
+  composeStages,
+  expectRegistrationStages,
+  parseOzx,
+  withInlineMatrices,
+  type TransformationDoc,
+} from './ome-zarr'
 import { VOLUME_GRADIENT_OPACITY } from '../src/ui/view-options'
 import { PANEL_ROLES } from '../src/viewer/comparison-options'
 
@@ -124,14 +130,16 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
     expect(bytes.byteLength, `${IMAGE_OZX} should not be empty`).toBeGreaterThan(0)
     await expect(page.locator('#status-message')).toContainText(`Downloaded ${IMAGE_OZX} (`)
 
-    const { entries, root } = parseOzx(bytes, IMAGE_OZX)
+    const image = parseOzx(bytes, IMAGE_OZX)
+    const { entries, root } = image
     expect(entries[0], 'RFC-9 wants the root zarr.json to lead the archive').toBe('zarr.json')
     const [multiscales] = root.attributes.ome.multiscales ?? []
     expect(multiscales?.coordinateSystems.map((system) => system.name)).toEqual(['intrinsic', 'moving'])
     for (const system of multiscales?.coordinateSystems ?? []) {
       expect(system.axes.map((axis) => axis.name), `${system.name} spans the three registered axes`).toEqual(AXES_3D)
     }
-    const [embedded] = multiscales?.coordinateTransformations ?? []
+    // ngff-zarr stores the matrices of a multiscales entry as Zarr arrays.
+    const embedded = withInlineMatrices(multiscales?.coordinateTransformations?.[0], image)
     expectRegistrationStages(embedded, 3)
     imageStages = embedded?.transformations
   })
