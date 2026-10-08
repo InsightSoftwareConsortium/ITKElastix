@@ -22,7 +22,8 @@ export interface ExportedFile {
  * OME-Zarr array (`convert`), the pyramid being built (`downsample`), the
  * file being written (`package`, the only phase that reports counts), and
  * the bytes being ready (`done`). An ITK-Wasm format skips straight to
- * `package`.
+ * `package`; the OME-Zarr scene runs `convert` and `downsample` for each of
+ * its images before packaging the archive, counting chunks across both.
  */
 export type ExportStage = 'convert' | 'downsample' | 'package' | 'done'
 

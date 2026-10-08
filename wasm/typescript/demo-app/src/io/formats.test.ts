@@ -69,10 +69,10 @@ test('every ITK image format is keyed by the extension the itk-wasm writer selec
   }
 })
 
-test('TRANSFORM_FORMATS lists the RFC-5 OZX first, the ITK-Wasm formats, then elastix TOML', () => {
+test('TRANSFORM_FORMATS lists the RFC-5 OZX first, the scene OZX second, the ITK-Wasm formats, then elastix TOML', () => {
   assert.deepEqual(
     TRANSFORM_FORMATS.map((format) => format.id),
-    ['ozx-transform', 'h5', 'hdf5', 'tfm', 'txt', 'mat', 'xfm', 'iwt.cbor', 'elastix-toml'],
+    ['ozx-transform', 'ozx-scene', 'h5', 'hdf5', 'tfm', 'txt', 'mat', 'xfm', 'iwt.cbor', 'elastix-toml'],
   )
   assert.deepEqual(entry(TRANSFORM_FORMATS[0]), {
     id: 'ozx-transform',
@@ -80,13 +80,19 @@ test('TRANSFORM_FORMATS lists the RFC-5 OZX first, the ITK-Wasm formats, then el
     extension: '.ome.zarr.ozx',
     kind: 'ozx',
   })
+  assert.deepEqual(entry(TRANSFORM_FORMATS[1]), {
+    id: 'ozx-scene',
+    label: 'OME-Zarr scene (.ome.zarr.ozx)',
+    extension: '.ome.zarr.ozx',
+    kind: 'scene',
+  })
   assert.deepEqual(entry(TRANSFORM_FORMATS.at(-1)!), {
     id: 'elastix-toml',
     label: 'elastix TransformParameters TOML (.zip)',
     extension: '.zip',
     kind: 'toml',
   })
-  for (const format of TRANSFORM_FORMATS.slice(1, -1)) {
+  for (const format of TRANSFORM_FORMATS.slice(2, -1)) {
     assert.equal(format.kind, 'itk', format.id)
     assert.equal(format.extension, `.${format.id}`, format.id)
   }

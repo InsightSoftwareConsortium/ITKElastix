@@ -117,21 +117,23 @@ async function resultToNgffImage({ fixed, result }: RegistrationOutputs, report:
 
 /**
  * The pyramid for `base` with `scaleFactors`, built as ingest builds one:
- * Gaussian smoothing and uncompressed intermediate arrays, since the OZX
- * writer re-encodes every chunk with its own codecs and the OME-TIFF writer
+ * Gaussian smoothing and uncompressed intermediate arrays, since the OME-Zarr
+ * writers re-encode every chunk with their own codecs and the OME-TIFF writer
  * deflates every tile, so compressing here would be wasted work. An empty
  * `scaleFactors` yields the single-level pyramid holding `base` itself.
+ * `subject` names the image in the progress message.
  */
-async function buildResultPyramid(
+export async function buildExportPyramid(
   base: NgffImage,
   scaleFactors: (number | Record<string, number>)[],
   report: Reporter,
+  subject = 'the registered image',
 ): Promise<Multiscales> {
   report(
     'downsample',
     scaleFactors.length === 0
-      ? 'Writing the registered image at full resolution only'
-      : `Downsampling ${scaleFactors.length} level${scaleFactors.length === 1 ? '' : 's'}…`,
+      ? `Writing ${subject} at full resolution only`
+      : `Downsampling ${subject}: ${scaleFactors.length} level${scaleFactors.length === 1 ? '' : 's'}…`,
   )
   return toMultiscales(base, {
     scaleFactors,
@@ -153,7 +155,7 @@ async function buildResultPyramid(
 async function writeOzx(outputs: RegistrationOutputs, report: Reporter): Promise<Uint8Array> {
   const { fixed, moving, result } = outputs
   const base = await resultToNgffImage(outputs, report)
-  const multiscales = await buildResultPyramid(base, exportScaleFactors(base, fixed.budgetBytes), report)
+  const multiscales = await buildExportPyramid(base, exportScaleFactors(base, fixed.budgetBytes), report)
 
   const transforms = buildRfc5TransformSet(result.transform, fixed, moving)
   embedInMultiscales(multiscales, transforms.embedded, transforms.movingSystem)
@@ -180,7 +182,7 @@ async function writeOmeTiff(outputs: RegistrationOutputs, report: Reporter): Pro
   const { fixed } = outputs
   const base = await resultToNgffImage(outputs, report)
   const factors = exportScaleFactors(base, fixed.budgetBytes)
-  const multiscales = await buildResultPyramid(
+  const multiscales = await buildExportPyramid(
     base,
     base.dims.includes('z') ? inPlaneScaleFactors(factors, base.dims) : factors,
     report,

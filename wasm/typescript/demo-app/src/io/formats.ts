@@ -11,7 +11,7 @@
 export type ImageFormatKind = 'ozx' | 'ome-tiff' | 'itk'
 
 /** Writer a transform format is routed to. */
-export type TransformFormatKind = 'ozx' | 'itk' | 'toml'
+export type TransformFormatKind = 'ozx' | 'scene' | 'itk' | 'toml'
 
 /** Identifiers of the image formats, in the order the picker lists them. */
 export type ImageFormatId =
@@ -38,6 +38,7 @@ export type ImageFormatId =
 /** Identifiers of the transform formats, in the order the picker lists them. */
 export type TransformFormatId =
   | 'ozx-transform'
+  | 'ozx-scene'
   | 'h5'
   | 'hdf5'
   | 'tfm'
@@ -231,7 +232,9 @@ export const IMAGE_FORMATS: readonly ImageFormat[] = [
 
 /**
  * Transform formats in picker order: the OME-Zarr RFC-5 transform-only OZX
- * (the default), the `@itk-wasm/transform-io` formats, and elastix's own
+ * (the default), the OME-Zarr scene OZX that holds the transform together
+ * with the two images it maps between, the `@itk-wasm/transform-io` formats,
+ * and elastix's own
  * TransformParameters files in the TOML format, zipped since elastix keeps
  * one parameter map per file. `tfm` is absent from transform-io's
  * extension table, so `writeTransform` probes each writer for it; ITK's text
@@ -246,6 +249,15 @@ export const TRANSFORM_FORMATS: readonly TransformFormat[] = [
     description:
       'An OME-Zarr 0.6 group holding only the RFC-5 affine from the fixed to the moving coordinate system, zipped ' +
       'into one file (RFC-9). The same mapping the registered image’s OME-Zarr embeds.',
+  },
+  {
+    id: 'ozx-scene',
+    label: 'OME-Zarr scene (.ome.zarr.ozx)',
+    extension: '.ome.zarr.ozx',
+    kind: 'scene',
+    description:
+      'An OME-Zarr 0.6 scene zipped into one file (RFC-9): the fixed and moving images as elastix registered them, ' +
+      'each an image of its own, with the RFC-5 transform between them. Read by ngff-zarr as a scene.',
   },
   {
     id: 'h5',

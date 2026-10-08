@@ -1,7 +1,8 @@
 // End-to-end tests for the output side of the demo: the format pickers and
 // download buttons for the formats named in the Phase 03 playbook, the
-// RFC-5 metadata of the two OME-Zarr archives and the elastix TOML files
-// (read in Node from the downloaded bytes), and the OZX and OME-TIFF round trips back through the
+// RFC-5 metadata of the three OME-Zarr archives (the scene also read back by
+// ngff-zarr) and the elastix TOML files (read in Node from the downloaded
+// bytes), and the OZX and OME-TIFF round trips back through the
 // fixed file picker. One registration of the 2D tailbud sample serves the whole
 // file: the tests run serially on a page a worker fixture prepares once,
 // and every download's bytes are kept for the tests after it. The file
@@ -12,6 +13,7 @@ import { readFile } from 'node:fs/promises'
 import { expect, test as base, type Page } from '@playwright/test'
 import { strFromU8, unzipSync } from 'fflate'
 
+import { stripImageExtension } from '../src/io/formats'
 import type { LoadedImage } from '../src/io/load-image'
 import type { OutputKind } from '../src/state'
 import {
@@ -19,23 +21,32 @@ import {
   REGISTRATION_TIMEOUT,
   TAILBUD_2D_MOVING,
   TAILBUD_2D_SAMPLE_BUTTON,
+  chooseFormat,
   collectPageErrors,
   downloadOutput,
   holdRegistration,
   imageFacts,
   isRegistering,
   loadSample,
+  recordStatus,
   splashDialog,
   start,
   toasts,
   volumeName,
   waitForSlot,
 } from './helpers'
-import { expectRegistrationStages, parseOzx, type OzxContents } from './ome-zarr'
+import {
+  expectRegistrationStages,
+  parseOzx,
+  readSceneWithNgffZarr,
+  withInlineMatrices,
+  type OzxContents,
+} from './ome-zarr'
 
 const IMAGE_OZX = 'registered.ome.zarr.ozx'
 const IMAGE_OME_TIFF = 'registered.ome.tif'
 const TRANSFORM_OZX = 'transform.ome.zarr.ozx'
+const SCENE_OZX = 'scene.ome.zarr.ozx'
 const TRANSFORM_PARAMETERS_ZIP = 'transform-parameters.zip'
 const TRANSFORM_XFM = 'transform.xfm'
 
@@ -50,6 +61,7 @@ const IMAGE_DOWNLOADS: readonly { id: string; filename: string }[] = [
 /** Transform formats under test, with the file name each download must carry. */
 const TRANSFORM_DOWNLOADS: readonly { id: string; filename: string }[] = [
   { id: 'ozx-transform', filename: TRANSFORM_OZX },
+  { id: 'ozx-scene', filename: SCENE_OZX },
   { id: 'h5', filename: 'transform.h5' },
   { id: 'tfm', filename: 'transform.tfm' },
   { id: 'xfm', filename: TRANSFORM_XFM },
@@ -130,22 +142,6 @@ test.afterEach(({ session }) => {
   expect(session.errors.splice(0), 'the page should not throw').toEqual([])
 })
 
-/** The format id the store holds for `kind`. */
-function selectedFormat(page: Page, kind: OutputKind): Promise<string | undefined> {
-  return page.evaluate((kind) => {
-    const state = window.__demo?.state?.state
-    return kind === 'image' ? state?.imageFormat : state?.transformFormat
-  }, kind)
-}
-
-/** Choose `id` in the `kind` picker as the user would and wait for the store to take it. */
-async function chooseFormat(page: Page, kind: OutputKind, id: string): Promise<void> {
-  const picker = page.locator(`#${kind}-format`)
-  await picker.click()
-  await picker.locator(`wa-option[value="${id}"]`).click()
-  await expect.poll(() => selectedFormat(page, kind), { message: `the ${kind} picker should take ${id}` }).toBe(id)
-}
-
 /** Choose `id`, download it, check the file, and keep its bytes for the tests that follow. */
 async function downloadAs(session: Session, kind: OutputKind, id: string, filename: string): Promise<void> {
   const { page, files } = session
@@ -194,6 +190,41 @@ test.describe('transform downloads', () => {
   }
 })
 
+test.describe('scene progress', () => {
+  test('the scene download converts both images, then counts its chunks across them', async ({ session }) => {
+    const { page } = session
+    await chooseFormat(page, 'transform', 'ozx-scene')
+    const stopRecording = await recordStatus(page)
+    await downloadOutput(page, 'transform')
+    await expect(page.locator('#status-message')).toContainText(`Downloaded ${SCENE_OZX} (`)
+    const records = await stopRecording()
+    const messages = records.map((record) => record.message)
+
+    // Each image is converted before the archive is written.
+    const phases = [
+      'Converting the fixed image to OME-Zarr…',
+      'Converting the moving image to OME-Zarr…',
+      'Writing the OME-Zarr scene…',
+    ].map((phase) => messages.indexOf(phase))
+    expect(phases.every((index) => index >= 0), `the phases in ${JSON.stringify(messages)}`).toBe(true)
+    expect(phases).toEqual([...phases].sort((a, b) => a - b))
+
+    // ngff-zarr counts the chunks of both images toward one total, which the
+    // progress bar follows to the end.
+    const chunks = records.flatMap(({ message, counting }) => {
+      const match = /^Writing OME-Zarr scene chunk (\d+) of (\d+)…$/.exec(message)
+      return match ? [{ written: Number(match[1]), total: Number(match[2]), counting }] : []
+    })
+    expect(chunks.length, 'the scene reports its chunks').toBeGreaterThan(0)
+    const firstChunk = messages.findIndex((message) => message.startsWith('Writing OME-Zarr scene chunk'))
+    expect(phases.at(-1), 'the chunks are counted once the scene is being written').toBeLessThan(firstChunk)
+    const [{ total }] = chunks
+    expect(chunks.every((chunk) => chunk.total === total && chunk.counting)).toBe(true)
+    expect(chunks.map((chunk) => chunk.written)).toEqual(chunks.map((chunk) => chunk.written).sort((a, b) => a - b))
+    expect(chunks.at(-1)?.written).toBe(total)
+  })
+})
+
 test.describe('OME-Zarr RFC-5 metadata', () => {
   test('the transform OZX holds the translation, rigid, and affine stages from the fixed to the moving coordinate system', ({ session }) => {
     const { entries, root } = readOzx(session.files, TRANSFORM_OZX)
@@ -223,7 +254,8 @@ test.describe('OME-Zarr RFC-5 metadata', () => {
   })
 
   test('the image OZX embeds the same stages on its multiscales entry, into the moving system', ({ session }) => {
-    const { entries, root } = readOzx(session.files, IMAGE_OZX)
+    const image = readOzx(session.files, IMAGE_OZX)
+    const { entries, root } = image
     expect(entries[0], 'RFC-9 wants the root zarr.json to lead the archive').toBe('zarr.json')
 
     const { ome } = root.attributes
@@ -238,19 +270,93 @@ test.describe('OME-Zarr RFC-5 metadata', () => {
     }
 
     expect(multiscales?.coordinateTransformations).toHaveLength(1)
-    const [transform] = multiscales?.coordinateTransformations ?? []
-    expect(transform).toMatchObject({
+    const [stored] = multiscales?.coordinateTransformations ?? []
+    expect(stored).toMatchObject({
       type: 'sequence',
       name: 'fixed_to_moving',
       input: { name: 'intrinsic' },
       output: { name: 'moving' },
     })
+    // ngff-zarr stores the rotation and affine matrices of a multiscales
+    // entry as Zarr arrays, named by path rather than written inline.
+    const [, rigid, affine] = stored?.transformations ?? []
+    expect(rigid?.transformations?.[0]).toEqual({ type: 'rotation', path: 'coordinateTransformations/rotation' })
+    expect(affine).toEqual({ type: 'affine', name: 'affine', path: 'coordinateTransformations/affine' })
+    const transform = withInlineMatrices(stored, image)
     expectRegistrationStages(transform, 2)
 
     // One registration, one mapping: the standalone transform carries the
     // same stages under its own input name.
     const standalone = readOzx(session.files, TRANSFORM_OZX).root.attributes.ome.scene?.coordinateTransformations[0]
     expect(transform?.transformations).toEqual(standalone?.transformations)
+  })
+
+  test('the scene OZX holds the fixed and moving images and the same stages between their intrinsic systems', async ({ session }) => {
+    const { page, files, registered } = session
+    const { entries, root, files: archive } = readOzx(files, SCENE_OZX)
+    expect(entries.slice(0, 3), 'RFC-9 wants the zarr.json documents first, the root leading').toEqual([
+      'zarr.json',
+      'fixed/zarr.json',
+      'moving/zarr.json',
+    ])
+    expect(root).toMatchObject({ zarr_format: 3, node_type: 'group' })
+
+    const { ome } = root.attributes
+    expect(ome.version).toBe('0.6')
+    expect(ome.multiscales, 'the scene group is not an image itself').toBeUndefined()
+    expect(ome.scene?.coordinateTransformations).toHaveLength(1)
+    const [transform] = ome.scene?.coordinateTransformations ?? []
+    expect(transform).toMatchObject({
+      type: 'sequence',
+      name: 'fixed_to_moving',
+      input: { path: 'fixed', name: 'intrinsic' },
+      output: { path: 'moving', name: 'intrinsic' },
+    })
+    expectRegistrationStages(transform, 2)
+    const standalone = readOzx(files, TRANSFORM_OZX).root.attributes.ome.scene?.coordinateTransformations[0]
+    expect(transform?.transformations).toEqual(standalone?.transformations)
+
+    // ngff-zarr writes each image as it writes the registered image's OZX,
+    // sharded, and lists every array in the archive root's consolidated block.
+    const consolidated = Object.keys(
+      (root as { consolidated_metadata?: { metadata: object } }).consolidated_metadata?.metadata ?? {},
+    )
+    for (const role of ['fixed', 'moving']) {
+      const arrays = entries.filter(
+        (entry) => entry.startsWith(`${role}/`) && entry.endsWith('/zarr.json') && entry !== `${role}/zarr.json`,
+      )
+      expect(arrays.length, `the ${role} image holds an array`).toBeGreaterThan(0)
+      for (const entry of arrays) {
+        const node = entry.slice(0, -'/zarr.json'.length)
+        expect(consolidated).toContain(node)
+        const array = JSON.parse(strFromU8(archive[entry] ?? new Uint8Array())) as { codecs: { name: string }[] }
+        expect(array.codecs[0]?.name, `${node} is sharded`).toBe('sharding_indexed')
+      }
+    }
+
+    // ngff-zarr reads the archive back as a scene, and its checks pass: both
+    // ends resolve to a system of an image, and the stages fit those systems.
+    const scene = await readSceneWithNgffZarr(files.get(SCENE_OZX) ?? Buffer.alloc(0))
+    expect(Object.keys(scene.images).sort()).toEqual(['fixed', 'moving'])
+    expect(scene.coordinateTransformations[0]).toMatchObject({
+      input: { path: 'fixed', name: 'intrinsic' },
+      output: { path: 'moving', name: 'intrinsic' },
+    })
+    for (const role of ['fixed', 'moving'] as const) {
+      // Each image is the level elastix registered, in Zarr axis order and
+      // with the axis units of the source it was cut from.
+      const facts = await imageFacts(page, 'store', role)
+      const units = await page.evaluate((role) => window.__demo?.state?.state[role]?.ngffImage.axesUnits, role)
+      const image = scene.images[role]
+      expect(image?.metadata.name).toBe(stripImageExtension(facts?.name ?? ''))
+      expect(image?.metadata.axes.map((axis) => axis.name)).toEqual(AXES_2D)
+      expect(image?.metadata.axes.map((axis) => axis.unit)).toEqual(AXES_2D.map((axis) => units?.[axis]))
+      expect(image?.images[0]?.data.shape, `the ${role} image is the one elastix registered`).toEqual(
+        [...(facts?.size ?? [])].reverse(),
+      )
+    }
+    // The registered image lives on the fixed image's grid.
+    expect(scene.images.fixed?.images[0]?.data.shape).toEqual([...registered.size].reverse())
   })
 })
 

@@ -19,6 +19,7 @@ import {
   LPS,
   ngffTransformToItkTransform,
   NgffImage,
+  NgffScene,
   RAS,
   readOzxVersion,
   type Affine,
@@ -38,12 +39,14 @@ import {
   buildCoordinateSystem,
   buildFixedToMovingTransform,
   buildRfc5TransformSet,
+  buildScene,
   CHANGE_OF_FRAME_STAGE_NAME,
   embedInMultiscales,
   FIXED_COORDINATE_SYSTEM_NAME,
   FIXED_TO_MOVING_TRANSFORM_NAME,
   MOVING_COORDINATE_SYSTEM_NAME,
   registrationDims,
+  SCENE_IMAGE_PATHS,
   transformOnlyOzx,
   TRANSFORM_OME_ZARR_VERSION,
   type TransformFrame,
@@ -870,12 +873,18 @@ test('buildRfc5TransformSet names the standalone and embedded inputs differently
     ['translation', 'rigid', 'affine'],
   )
   assert.deepEqual(set.embedded.output, { name: MOVING_COORDINATE_SYSTEM_NAME })
+  assert.deepEqual(set.scene.input, { path: SCENE_IMAGE_PATHS.fixed, name: INTRINSIC_COORDINATE_SYSTEM_NAME })
+  assert.deepEqual(set.scene.output, { path: SCENE_IMAGE_PATHS.moving, name: INTRINSIC_COORDINATE_SYSTEM_NAME })
+  assert.deepEqual(set.scene.transformations, set.standalone.transformations, 'the same mapping, written a third time')
 
   // Both forms are writable: the standalone one against its own systems, the
   // embedded one against the registered image's intrinsic system.
   assert.doesNotThrow(() => transformOnlyOzx(set.standalone, set.fixedSystem, set.movingSystem))
   const multiscales = await multiscales2d()
   assert.doesNotThrow(() => embedInMultiscales(multiscales, set.embedded, set.movingSystem))
+  // And the scene form between two images over the registered axes.
+  const images = { fixed: await multiscales2d(), moving: await multiscales2d() }
+  assert.doesNotThrow(() => buildScene(set.scene, images))
 })
 
 test('buildRfc5TransformSet builds the reduced space for a source with a channel axis', async () => {
@@ -891,4 +900,76 @@ test('buildRfc5TransformSet builds the reduced space for a source with a channel
   const [stage] = set.standalone.transformations
   assert.equal(stageAffine(stage).length, 2)
   assert.equal(stageAffine(stage)[0]?.length, 3)
+})
+
+/** The demo's three stages between the intrinsic systems of the scene's two images. */
+function sceneSequence(transformations?: V06Transform[]): TransformSequence {
+  return {
+    ...sequence2d(transformations),
+    input: { path: SCENE_IMAGE_PATHS.fixed, name: INTRINSIC_COORDINATE_SYSTEM_NAME },
+    output: { path: SCENE_IMAGE_PATHS.moving, name: INTRINSIC_COORDINATE_SYSTEM_NAME },
+  }
+}
+
+/** A single-level pyramid over `dims` with no coordinate system of its own, as `createMultiscales` leaves one. */
+async function bareMultiscales(dims: string[]) {
+  const image = await ngffImage({ dims })
+  const axes = dims.map((name) => ({ name, type: 'space', unit: undefined }))
+  return createMultiscales([image], createMetadata(axes, [{ path: 'scale0', coordinateTransformations: [] }], 'image', '0.6'))
+}
+
+test('buildScene keeps each image at its path and the transform between their intrinsic systems', async () => {
+  const fixed = await multiscales2d()
+  const moving = await multiscales2d()
+  const transform = sceneSequence()
+
+  const scene = buildScene(transform, { fixed, moving })
+
+  assert.ok(scene instanceof NgffScene)
+  assert.deepEqual(Object.keys(scene.images), [SCENE_IMAGE_PATHS.fixed, SCENE_IMAGE_PATHS.moving])
+  assert.equal(scene.images[SCENE_IMAGE_PATHS.fixed], fixed)
+  assert.equal(scene.images[SCENE_IMAGE_PATHS.moving], moving)
+  assert.deepEqual(scene.coordinateTransformations, [transform])
+  // The registration relates the two images directly; the scene declares no system of its own.
+  assert.equal(scene.coordinateSystems, undefined)
+})
+
+test('buildScene resolves an image without systems of its own to the intrinsic one the writer declares', async () => {
+  const fixed = await bareMultiscales(['y', 'x'])
+  const moving = await multiscales2d()
+  assert.equal(fixed.metadata.coordinateSystems, undefined)
+  assert.doesNotThrow(() => buildScene(sceneSequence(), { fixed, moving }))
+})
+
+test('buildScene refuses an end that does not point at the image the scene keeps on that side', async () => {
+  const images = { fixed: await multiscales2d(), moving: await multiscales2d() }
+  assert.throws(
+    () => buildScene({ ...sceneSequence(), input: { name: INTRINSIC_COORDINATE_SYSTEM_NAME } }, images),
+    /input points at '\(no path\)', but the scene keeps the fixed image at 'fixed'/,
+  )
+  assert.throws(
+    () => buildScene({ ...sceneSequence(), output: { path: 'fixed', name: INTRINSIC_COORDINATE_SYSTEM_NAME } }, images),
+    /output points at 'fixed', but the scene keeps the moving image at 'moving'/,
+  )
+})
+
+test('buildScene refuses an end naming a coordinate system its image does not declare', async () => {
+  const images = { fixed: await multiscales2d(), moving: await multiscales2d() }
+  assert.throws(
+    () => buildScene({ ...sceneSequence(), output: { path: 'moving', name: 'moving' } }, images),
+    /output names the coordinate system 'moving' of the moving image, which declares \["intrinsic"\]/,
+  )
+})
+
+test('buildScene refuses a transform sized for axes other than its images have', async () => {
+  const volume = await bareMultiscales(['z', 'y', 'x'])
+  const plane = await multiscales2d()
+  assert.throws(
+    () => buildScene(sceneSequence(), { fixed: volume, moving: volume }),
+    /Stage 'translation' .* translates 2 axes, but the coordinate systems have 3/,
+  )
+  assert.throws(
+    () => buildScene(sceneSequence(), { fixed: plane, moving: volume }),
+    /\(2 axes\) to 'intrinsic' \(3 axes\)/,
+  )
 })

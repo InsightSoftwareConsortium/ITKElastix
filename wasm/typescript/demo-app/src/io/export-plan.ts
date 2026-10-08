@@ -2,8 +2,9 @@
 // `exportRegisteredTransform` (src/io/export-transform.ts), kept apart from
 // them so the Node unit tests can exercise them: which parts of the app
 // state an export needs, the file it is named, whether the registered
-// image's anatomical orientation can be trusted, how far its pyramid
-// extends, how the OME-TIFF writer's progress is counted, whether fiff's
+// image's anatomical orientation can be trusted, which axis metadata the
+// OME-Zarr scene's images borrow from their inputs, how far a written
+// pyramid extends, how the OME-TIFF writer's progress is counted, whether fiff's
 // deflate workers can be used on this page, the elastix parameter JSON the
 // copy button takes, the names and zip of the elastix TransformParameters
 // TOML files, and the transform list each transform writer is given.
@@ -65,15 +66,23 @@ export const TRANSFORM_STEM = 'transform'
 /** Stem of the zip holding the elastix TransformParameters TOML files. */
 export const TRANSFORM_PARAMETERS_STEM = 'transform-parameters'
 
+/** Stem of the OME-Zarr scene holding the transform with the two images. */
+export const SCENE_STEM = 'scene'
+
 /**
  * File name the fixed-to-moving transform is downloaded as in `format`:
- * {@link TRANSFORM_STEM} plus the format's extension, except the elastix
- * parameter files, which are named for what they hold since `transform.zip`
- * would suggest a serialized transform rather than elastix's own
- * TransformParameters files.
+ * {@link TRANSFORM_STEM} plus the format's extension, except where the file
+ * holds more than a serialized transform and is named for what it holds:
+ * elastix's own TransformParameters files, since `transform.zip` would
+ * suggest a serialized transform, and the OME-Zarr scene, whose extension
+ * the transform-only OZX shares.
  */
 export function transformFilename(format: TransformFormat): string {
-  return outputFilename(format.kind === 'toml' ? TRANSFORM_PARAMETERS_STEM : TRANSFORM_STEM, format)
+  const stems: Partial<Record<TransformFormat['kind'], string>> = {
+    toml: TRANSFORM_PARAMETERS_STEM,
+    scene: SCENE_STEM,
+  }
+  return outputFilename(stems[format.kind] ?? TRANSFORM_STEM, format)
 }
 
 /**
@@ -167,6 +176,31 @@ export type OrientationSource = {
  */
 export function resultAddsAnatomicalOrientation(fixed: OrientationSource, resultDimension: number): boolean {
   return resultDimension === 3 && (fixed.ngffImage.axesOrientations !== undefined || hasOrientationExtension(fixed.name))
+}
+
+/** The axis metadata an input lends to its image in the OME-Zarr scene. */
+export type AxisMetadata = Pick<NgffImage, 'axesUnits' | 'axesOrientations'>
+
+/** The entries of `record` for `dims`, in that order, or undefined when none is left. */
+function pickDims<Value>(record: Record<string, Value> | undefined, dims: readonly string[]) {
+  const entries = dims.flatMap((dim) => (record?.[dim] === undefined ? [] : [[dim, record[dim]] as const]))
+  return entries.length === 0 ? undefined : Object.fromEntries(entries)
+}
+
+/**
+ * The axis units and RFC-4 orientations `image` carries for `dims`, the axes
+ * the registration ran in. An input's image in the OME-Zarr scene is the
+ * scalar 2D or 3D image elastix registered, over `dims`, and borrows these
+ * from the level it was cut from, since an ITK-Wasm image carries no units
+ * and its direction matrix is what the orientations were folded into. A
+ * source's 'c' or 't' axis, or a single-slice axis squeezed away, has no
+ * entry; a record the level does not carry stays undefined. They are the
+ * units and orientations the RFC-5 transform was built against
+ * (src/io/rfc5-transform.ts), so the scene's images sit in the frames its
+ * transform maps between.
+ */
+export function axisMetadataFor(image: AxisMetadata, dims: readonly string[]): AxisMetadata {
+  return { axesUnits: pickDims(image.axesUnits, dims), axesOrientations: pickDims(image.axesOrientations, dims) }
 }
 
 /**

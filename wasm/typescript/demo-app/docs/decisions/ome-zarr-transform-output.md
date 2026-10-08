@@ -15,9 +15,11 @@ related:
 
 The demo writes the registration result's fixed-to-moving transform as
 [OME-Zarr RFC-5](https://ngff.openmicroscopy.org/rfc/5/) coordinate-transformation
-metadata, one transformation per elastix stage, in two places: embedded in
-the registered image's own OZX, and as a
-standalone transform-only OZX the transform picker offers. Both come from
+metadata, one transformation per elastix stage, in three places: embedded in
+the registered image's own OZX, as a
+standalone transform-only OZX the transform picker offers, and in an
+OME-Zarr scene the transform picker also offers, between the fixed and
+moving images themselves. All three come from
 `src/io/rfc5-transform.ts`. This note records the conventions that file
 encodes, because each of them is a choice whose wrong version still writes a
 file that looks valid. Part of [[architecture-overview]].
@@ -42,6 +44,7 @@ registered image's own intrinsic system.
 | --- | --- | --- |
 | Registered image OZX (`multiscales[0]`) | `intrinsic` | `moving` |
 | Transform-only OZX (`scene`) | `fixed` | `moving` |
+| Scene OZX (`scene`) | `intrinsic` of the image at `fixed` | `intrinsic` of the image at `moving` |
 
 `intrinsic` is not a name this app picks: it is ngff-zarr's
 `INTRINSIC_COORDINATE_SYSTEM_NAME`, the implicit system `toMultiscales`
@@ -49,7 +52,9 @@ generates for a pyramid and that every dataset's scale-and-translation
 sequence maps into. RFC-5 requires a transformation on a `multiscales` entry
 to name that system as its input, so the embedded form has no other choice.
 The standalone store has no image and therefore no intrinsic system, so it
-names the fixed image's system explicitly.
+names the fixed image's system explicitly. The scene holds both images, so
+each end names an image by its `path` and that image's own intrinsic
+system; see [the scene](#the-scene-both-images-and-the-transform-between-them).
 
 Both systems carry the axis units and RFC-4 anatomical orientations of the
 image they describe, so a reader can tell that, say, the moving image's `x`
@@ -228,6 +233,77 @@ back. The transform picker's `ozx-transform` entry reaches it through
 the ITK-Wasm transform formats and the elastix parameter JSON; those two
 carry the elastix stages as ITK and elastix store them, and the OME-Zarr
 outputs carry the same stages as the RFC-5 transformations described here.
+
+## The scene: both images and the transform between them
+
+The `ozx-scene` entry of the transform picker writes what RFC-5 calls a
+scene: a group whose `ome.scene` holds the transformations between images
+stored below it. The demo's has two images, at the paths `fixed` and
+`moving`, and one transformation, the same staged sequence the other two
+stores hold:
+
+```text
+scene.ome.zarr.ozx
+├── zarr.json   ome.scene: fixed_to_moving, {path: fixed, name: intrinsic} -> {path: moving, name: intrinsic}
+├── fixed/      the fixed image, an OME-Zarr 0.6 multiscales
+└── moving/     the moving image, an OME-Zarr 0.6 multiscales
+```
+
+**Each image is the level elastix registered, not the source.** The stages
+were converted with each input's registration level as its frame
+([above](#the-frame-each-stage-is-written-in)): its origin is the centre the
+change of frame turns about, and its axes are the registration axes, with
+any `c` or `t` axis and a squeezed single slice already gone. A scene image
+built from the source pyramid would put the transform's input on a system
+with other axes, or about another origin, and the transform would no longer
+be exact. So each image is the scalar 2D or 3D ITK-Wasm image elastix was
+given, converted back with `itkImageToNgffImage`, with the axis units and
+RFC-4 orientations of the level it was cut from (`axisMetadataFor` in
+`src/io/export-plan.ts`; the ITK-Wasm image carries neither units nor
+orientations, only the direction matrix the orientations were folded into).
+Its pyramid follows the registered image's rule, which in practice is the
+one full-resolution level, since that level fit the input's budget. The
+fixed image therefore shares its grid with the registered image. When the
+scene was added, resampling its moving image through its transform onto
+its fixed image's grid reproduced elastix's registered image to a
+correlation above 0.999 for both the 2D sample and the 3D pair, whose
+volumes are oriented and have non-zero origins.
+
+**No scene coordinate system.** A scene may declare systems of its own, such
+as a common `world` system its images map into, and a viewer displays the
+first one by default. The registration relates the two images directly, so
+the scene declares none and its graph is the one transformation; adding a
+system would mean an identity transformation to make it reachable.
+
+**ngff-zarr writes the archive.** `src/io/export-transform.ts` builds the
+two pyramids, `buildScene` (`src/io/rfc5-transform.ts`) puts them in an
+`NgffScene` at `fixed` and `moving` with the transform between them, and
+ngff-zarr's `toOmeZarrOzx` (0.38 and later) writes and zips it at version
+0.6. The images are laid out as the registered image's OZX is, sharded two
+chunks a shard, the archive's root consolidates every node below it, and
+the write reports its chunks across both images, which the download's
+progress bar counts. ngff-zarr checks the scene against the spec before it
+writes anything; `buildScene` checks first what that does not, resolving
+the transform's two ends against the systems the images declare, as a
+scene reader would, and checking the transform against them
+(`assertTransformMatchesSystems`). ngff-zarr reads the archive back as a
+scene with its checks on, which the Playwright specs do from the same
+in-memory store the demo's own OZX reader uses, and so does the Python
+package.
+
+## Matrices on a multiscales entry are Zarr arrays
+
+ngff-zarr 0.35 and later write each `rotation` and `affine` matrix of a
+`multiscales` entry's transformations as a single-chunk, uncompressed
+float64 Zarr array, which the transformation names by `path` instead of
+holding the matrix inline. RFC-5 allows either form, and an array keeps
+every value bit for bit where JSON text depends on the tools that
+re-serialize it. The registered image's OZX therefore carries its rigid
+stage's `rotation` at `coordinateTransformations/rotation` and its affine
+stage at `coordinateTransformations/affine`, and its readers load them back.
+The transform-only and scene stores keep their matrices inline, as
+ngff-zarr's own transformation and scene writers do; the numbers are the
+same, up to the sign of a zero, which JSON drops.
 
 ## The list is prepared before ngff-zarr sees it
 

@@ -438,6 +438,66 @@ export async function downloadOutput(page: Page, kind: OutputKind): Promise<Down
   return download
 }
 
+/** The format id the store holds for `kind`. */
+export function selectedFormat(page: Page, kind: OutputKind): Promise<string | undefined> {
+  return page.evaluate((kind) => {
+    const state = window.__demo?.state?.state
+    return kind === 'image' ? state?.imageFormat : state?.transformFormat
+  }, kind)
+}
+
+/** Choose `id` in the `kind` picker as the user would and wait for the store to take it. */
+export async function chooseFormat(page: Page, kind: OutputKind, id: string): Promise<void> {
+  const picker = page.locator(`#${kind}-format`)
+  await picker.click()
+  await picker.locator(`wa-option[value="${id}"]`).click()
+  await expect.poll(() => selectedFormat(page, kind), { message: `the ${kind} picker should take ${id}` }).toBe(id)
+}
+
+/** One message the status line showed, and whether the progress bar under it was counting. */
+export interface StatusRecord {
+  message: string
+  counting: boolean
+}
+
+/** Where {@link recordStatus} keeps its observer and records in the page. */
+type StatusRecorderGlobal = typeof globalThis & {
+  __statusRecorder?: { observer: MutationObserver; records: StatusRecord[] }
+}
+
+/**
+ * Start recording every message the status line shows, with whether the
+ * progress bar was determinate at the time, which a download writing
+ * counted chunks makes it. The messages of a write change faster than a
+ * poll would see them, so a `MutationObserver` collects them in the page.
+ * Resolves to the function that stops the recording and returns them.
+ */
+export async function recordStatus(page: Page): Promise<() => Promise<StatusRecord[]>> {
+  await page.evaluate(() => {
+    const message = document.querySelector('#status-message')
+    const bar = document.querySelector('#status-progress') as (Element & { indeterminate: boolean }) | null
+    if (!message || !bar) {
+      throw new Error('the status line is not on the page')
+    }
+    const records: StatusRecord[] = []
+    const observer = new MutationObserver(() => {
+      records.push({ message: message.textContent ?? '', counting: !bar.indeterminate })
+    })
+    observer.observe(message, { childList: true, characterData: true, subtree: true })
+    ;(globalThis as StatusRecorderGlobal).__statusRecorder = { observer, records }
+  })
+  return () =>
+    page.evaluate(() => {
+      const recorder = (globalThis as StatusRecorderGlobal).__statusRecorder
+      if (!recorder) {
+        throw new Error('the status line is not being recorded')
+      }
+      recorder.observer.disconnect()
+      delete (globalThis as StatusRecorderGlobal).__statusRecorder
+      return recorder.records
+    })
+}
+
 /** The text of the status line under the header. */
 export async function statusText(page: Page): Promise<string> {
   return (await page.locator('#status-message').textContent())?.trim() ?? ''

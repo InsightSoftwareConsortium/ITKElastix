@@ -37,8 +37,9 @@ in WebAssembly and web workers; nothing is uploaded.
   transform embedded as an [RFC-5](https://ngff.openmicroscopy.org/rfc/5/)
   sequence of the translation, rigid, and affine stages), OME-TIFF, or any
   of 17 ITK formats; the transform as a standalone
-  RFC-5 OME-Zarr transform, an ITK transform file, or elastix's own
-  TransformParameters JSON.
+  RFC-5 OME-Zarr transform, an OME-Zarr scene holding it together with the
+  fixed and moving images, an ITK transform file, or elastix's own
+  TransformParameters files.
 - Light and dark themes, a responsive layout that stacks the panels on a
   narrow window, and toast notifications for every outcome.
 
@@ -200,7 +201,7 @@ specs, all under `test/`:
 | ----------------------- | --------------------------------------------------------------------------------------------------------- |
 | `smoke.spec.ts`         | Load the 2D tailbud pair, which registers on its own, toggle the result, download both outputs in their default OME-Zarr formats. |
 | `inputs.spec.ts`        | The 3D NIfTI sample under the default and a forced budget, the 3D OME-Zarr sample, the URL fields, the file pickers, the pair check and swap. |
-| `outputs.spec.ts`       | Every image and transform format, the RFC-5 metadata of the two OME-Zarr archives, OZX and OME-TIFF round trips. |
+| `outputs.spec.ts`       | Every image and transform format, the RFC-5 metadata of the three OME-Zarr archives, the scene read back by ngff-zarr, OZX and OME-TIFF round trips. |
 | `registration.spec.ts`  | The run each loaded or reloaded pair starts, the options pickers, the summary card, and cancelling a run. |
 | `viewer.spec.ts`        | Linked navigation, colormaps, slice layouts, the comparison dividers and what each side shows.            |
 | `layout.spec.ts`        | The narrow-window layout, the theme toggle, the footer links.                                             |
@@ -308,15 +309,16 @@ Both download buttons have a format picker filled from the registry in
 | Picker entry                       | File                        | Notes                                                                                                                           |
 | ---------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | OME-Zarr transform (default)       | `transform.ome.zarr.ozx`    | A transform-only OME-Zarr 0.6 group holding the RFC-5 `sequence` of the translation, rigid, and affine stages from the `fixed` to the `moving` coordinate system, in a `scene`. |
+| OME-Zarr scene                     | `scene.ome.zarr.ozx`        | An OME-Zarr 0.6 scene written by ngff-zarr's `toOmeZarrOzx`: the fixed and moving images as elastix registered them, at `fixed/` and `moving/`, and the same `sequence` from the fixed image's intrinsic coordinate system to the moving image's. ngff-zarr reads it as a scene. |
 | ITK HDF5 (`.h5`, `.hdf5`), ITK text (`.tfm`, `.txt`), MATLAB (`.mat`), ITK-Wasm transform (`.iwt.cbor`) | `transform.<ext>` | Written by `@itk-wasm/transform-io`, one entry per elastix stage (affine, rigid, translation; the last applied first).          |
 | MINC XFM                           | `transform.xfm`             | Holds one 3D linear transform, so the three stages are multiplied out into a single affine; a 2D registration's is lifted into 3D with z left unchanged. |
 | elastix TransformParameters (TOML) | `transform-parameters.zip`  | elastix's own parameter files in the TOML format, `TransformParameters.0.toml` to `.2.toml`, one per stage, written by `writeParameterFiles`. Each names the one before as its `InitialTransformParameterFileName`, so transformix given the last one applies every stage. |
 
-The two OME-Zarr outputs carry the same stages; only the name of the input
-coordinate system differs. Why the transform points from fixed to moving, why
+The three OME-Zarr outputs carry the same stages; only the coordinate
+systems the ends name differ. Why the transform points from fixed to moving, why
 each stage is written as its own transformation and in which frame, why it
-lives in a `scene`, and what has to be done to elastix's transform list first
-are recorded in
+lives in a `scene`, which images the OME-Zarr scene holds, and what has to be
+done to elastix's transform list first are recorded in
 [`docs/decisions/ome-zarr-transform-output.md`](docs/decisions/ome-zarr-transform-output.md).
 
 ## The 50 MB pixel budget
