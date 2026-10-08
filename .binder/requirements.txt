@@ -11,5 +11,6 @@ monai>=1.3.0
 matplotlib>=3.5.0
 voila
 tqdm
+itkwasm-mesh-io>=1.7.1
 napari[optional,pyqt5]
 itk-napari-conversion
