@@ -282,7 +282,9 @@ empty typed arrays, and rewrites the Euler stage as an equivalent `Affine`,
 since ngff-zarr decodes only matrix-storing parameterizations. The
 standalone store is a single group whose `scene` holds the systems and the
 sequence, zipped as RFC-9. The same sequence, with the registered image's
-intrinsic system as its input, is what the image export embeds. The `itk` writer gives `@itk-wasm/transform-io`'s `writeTransform`
+intrinsic system as its input, is what the image export embeds; ngff-zarr's
+writer stores its rotation and affine matrices as Zarr arrays named by
+`path`. The `itk` writer gives `@itk-wasm/transform-io`'s `writeTransform`
 the original list (typed arrays substituted), so an `.h5`, `.tfm`, `.mat`,
 or `.iwt.cbor` holds one entry per stage as ITK wrote it; MINC XFM, which
 holds one 3D linear transform, is given the stages multiplied out into a

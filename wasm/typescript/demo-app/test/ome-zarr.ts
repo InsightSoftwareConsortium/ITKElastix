@@ -1,8 +1,9 @@
 // Readers for the OME-Zarr archives the demo downloads, shared by the
 // output and 3D specs: unzip an `.ozx` in Node, parse its root `zarr.json`,
-// and check the shape of the staged RFC-5 transform. No browser involved, so these
-// take the download's bytes rather than a page. Not a spec: Playwright
-// collects only `*.spec.ts`.
+// read back the matrices ngff-zarr stores as Zarr arrays, and check the shape
+// of the staged RFC-5 transform. No browser involved, so these take the
+// download's bytes rather than a page. Not a spec: Playwright collects only
+// `*.spec.ts`.
 import { expect } from '@playwright/test'
 import { strFromU8, unzipSync } from 'fflate'
 
@@ -21,6 +22,8 @@ export interface TransformationDoc {
   translation?: number[]
   rotation?: number[][]
   affine?: number[][]
+  /** Where a `rotation` or `affine` keeps its matrix when it is not inline: a Zarr array. */
+  path?: string
   /** A `sequence`'s stages, the first applied first. */
   transformations?: TransformationDoc[]
 }
@@ -40,9 +43,10 @@ export interface OzxRootDoc {
   }
 }
 
-/** An unzipped OZX: its entry names in archive order and the parsed root `zarr.json`. */
+/** An unzipped OZX: its entry names in archive order, their bytes, and the parsed root `zarr.json`. */
 export interface OzxContents {
   entries: string[]
+  files: Record<string, Uint8Array>
   root: OzxRootDoc
 }
 
@@ -54,7 +58,69 @@ export function parseOzx(bytes: Uint8Array, filename: string): OzxContents {
   if (!rootBytes) {
     throw new Error(`${filename} has no root zarr.json; its entries are ${entries.join(', ')}`)
   }
-  return { entries, root: JSON.parse(strFromU8(rootBytes)) as OzxRootDoc }
+  return { entries, files: unzipped, root: JSON.parse(strFromU8(rootBytes)) as OzxRootDoc }
+}
+
+/**
+ * The matrix of the Zarr array at `path` in `files`: a 2D float64 array in
+ * one uncompressed, little-endian chunk, the layout ngff-zarr's writer gives
+ * a `rotation` or `affine` it stores as an array.
+ */
+function readMatrixArray(files: Record<string, Uint8Array>, path: string): number[][] {
+  const metadata = files[`${path}/zarr.json`]
+  expect(metadata, `the matrix array ${path} should be in the archive`).toBeDefined()
+  const array = JSON.parse(strFromU8(metadata ?? new Uint8Array())) as {
+    shape: [number, number]
+    chunk_key_encoding: { name: string; configuration?: { separator?: string } }
+  }
+  expect(array).toMatchObject({
+    node_type: 'array',
+    data_type: 'float64',
+    chunk_grid: { configuration: { chunk_shape: array.shape } },
+    codecs: [{ name: 'bytes', configuration: { endian: 'little' } }],
+  })
+  expect(array.chunk_key_encoding.configuration?.separator ?? '/').toBe('/')
+  const chunk = files[`${path}/c/0/0`]
+  expect(chunk, `the chunk of the matrix array ${path} should be in the archive`).toBeDefined()
+  // A standalone copy, since a Float64Array cannot start at an odd offset of the archive.
+  const values = new Float64Array((chunk ?? new Uint8Array()).slice().buffer)
+  const [rows, columns] = array.shape
+  expect(values).toHaveLength(rows * columns)
+  // `+ 0` turns -0 into 0, as JSON.stringify writes it: the array keeps the
+  // sign of a zero that an inline matrix loses, and toEqual tells them apart.
+  return Array.from({ length: rows }, (_, row) =>
+    Array.from(values.subarray(row * columns, (row + 1) * columns), (value) => value + 0),
+  )
+}
+
+/**
+ * `transform` as it would read with every matrix inline: each `rotation` or
+ * `affine` that names its Zarr array by `path` gets the matrix read from
+ * that array in `contents`, and loses the `path`. ngff-zarr's 0.6 writer
+ * stores the matrices of a `multiscales` entry's transformations that way,
+ * relative to the multiscales group, the archive root here; the
+ * transform-only store keeps them inline, as ngff-zarr's own scene and
+ * transformation writers do. A transform with nothing to resolve comes back
+ * equal to itself.
+ */
+export function withInlineMatrices(
+  transform: TransformationDoc | undefined,
+  contents: OzxContents,
+): TransformationDoc | undefined {
+  if (transform === undefined) {
+    return undefined
+  }
+  const { path, ...rest } = transform
+  const resolved: TransformationDoc = { ...rest }
+  if (path !== undefined && (transform.type === 'rotation' || transform.type === 'affine')) {
+    resolved[transform.type] = readMatrixArray(contents.files, path)
+  } else if (path !== undefined) {
+    resolved.path = path
+  }
+  if (transform.transformations !== undefined) {
+    resolved.transformations = transform.transformations.map((inner) => withInlineMatrices(inner, contents)!)
+  }
+  return resolved
 }
 
 /** `matrix` is the M x (M+1) block of an RFC-5 affine over `dimension` axes, with finite entries. */

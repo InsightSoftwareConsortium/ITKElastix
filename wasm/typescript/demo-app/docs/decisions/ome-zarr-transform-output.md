@@ -229,6 +229,31 @@ the ITK-Wasm transform formats and the elastix parameter JSON; those two
 carry the elastix stages as ITK and elastix store them, and the OME-Zarr
 outputs carry the same stages as the RFC-5 transformations described here.
 
+## Matrices on a multiscales entry are Zarr arrays
+
+ngff-zarr 0.35 and later write each `rotation` and `affine` matrix of a
+`multiscales` entry's transformations as a single-chunk, uncompressed
+float64 Zarr array, which the transformation names by `path` instead of
+holding the matrix inline. RFC-5 allows either form, and an array keeps
+every value bit for bit where JSON text depends on the tools that
+re-serialize it. ngff-zarr names each array after its transformation, under
+`coordinateTransformations/`, and after its type when it has no name, so
+the registered image's OZX carries its rigid stage's `rotation` at
+`coordinateTransformations/rotation` and its affine stage at
+`coordinateTransformations/affine`:
+
+```json
+{ "type": "affine", "name": "affine", "path": "coordinateTransformations/affine" }
+```
+
+ngff-zarr 0.35 is also the first release that reads a matrix stored only as
+an array, and the demo relies on that to open its own registered image again
+through the fixed image picker. The transform-only store keeps its matrices
+inline. ngff-zarr writes the matrices of a scene or a standalone
+transformation inline too, and its scene reader reads only inline ones. The
+numbers in the two stores are the same, up to the sign of a zero, which JSON
+drops.
+
 ## The list is prepared before ngff-zarr sees it
 
 elastix returns its transform as an itk-wasm `TransformList` that, for the
