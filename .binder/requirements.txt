@@ -1,3 +1,5 @@
+# MyBinder has no GPUs, so install the CPU-only PyTorch wheels.
+--extra-index-url https://download.pytorch.org/whl/cpu
 itk-elastix>=0.25.1
 itkwidgets>=0.32.0
 jupyterlab>=2.2.0
