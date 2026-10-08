@@ -1,8 +1,8 @@
 // End-to-end 3D registration: the MNI pair from the splash at full
 // resolution, the affine run at the default settings it starts on its own, the result switch
-// swapping the result comparison's moving side, and the two default
-// OME-Zarr downloads read back in Node, the transform's stages three axes
-// wide. One long browser session,
+// swapping the result comparison's moving side, the two default
+// OME-Zarr downloads and the OME-Zarr scene read back in Node, the
+// transform's stages three axes wide. One long browser session,
 // so the test is marked slow and capped at ten minutes; only the chromium
 // project launches with the SwiftShader WebGL2 flags niivue needs, so it
 // skips elsewhere. Elements are found by their stable ids; the store and
@@ -12,12 +12,14 @@ import { readFile } from 'node:fs/promises'
 
 import { expect, test } from '@playwright/test'
 
+import { stripImageExtension } from '../src/io/formats'
 import {
   LOAD_TIMEOUT_3D,
   MNI_FIXED,
   MNI_MOVING,
   MNI_SAMPLE_BUTTON,
   REGISTRATION_TIMEOUT_3D,
+  chooseFormat,
   collectPageErrors,
   downloadOutput,
   gradientOpacity,
@@ -30,7 +32,14 @@ import {
   volumeCount,
   volumeName,
 } from './helpers'
-import { composeStages, expectRegistrationStages, parseOzx, type TransformationDoc } from './ome-zarr'
+import {
+  composeStages,
+  expectRegistrationStages,
+  parseOzx,
+  readSceneWithNgffZarr,
+  withInlineMatrices,
+  type TransformationDoc,
+} from './ome-zarr'
 import { VOLUME_GRADIENT_OPACITY } from '../src/ui/view-options'
 import { PANEL_ROLES } from '../src/viewer/comparison-options'
 
@@ -43,11 +52,13 @@ const TEST_TIMEOUT_3D = 600_000
 /** The default formats of the two pickers (see src/io/formats.ts) and the files they write. */
 const IMAGE_OZX = 'registered.ome.zarr.ozx'
 const TRANSFORM_OZX = 'transform.ome.zarr.ozx'
+/** The OME-Zarr scene the transform picker also offers. */
+const SCENE_OZX = 'scene.ome.zarr.ozx'
 
 /** Axes of the coordinate systems a 3D registration is written over, in Zarr order (see src/io/rfc5-transform.ts). */
 const AXES_3D = ['z', 'y', 'x']
 
-test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and transform', async ({
+test('registers the 3D MNI pair end to end and downloads the OME-Zarr image, transform, and scene', async ({
   page,
   browserName,
 }) => {
@@ -124,14 +135,16 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
     expect(bytes.byteLength, `${IMAGE_OZX} should not be empty`).toBeGreaterThan(0)
     await expect(page.locator('#status-message')).toContainText(`Downloaded ${IMAGE_OZX} (`)
 
-    const { entries, root } = parseOzx(bytes, IMAGE_OZX)
+    const image = parseOzx(bytes, IMAGE_OZX)
+    const { entries, root } = image
     expect(entries[0], 'RFC-9 wants the root zarr.json to lead the archive').toBe('zarr.json')
     const [multiscales] = root.attributes.ome.multiscales ?? []
     expect(multiscales?.coordinateSystems.map((system) => system.name)).toEqual(['intrinsic', 'moving'])
     for (const system of multiscales?.coordinateSystems ?? []) {
       expect(system.axes.map((axis) => axis.name), `${system.name} spans the three registered axes`).toEqual(AXES_3D)
     }
-    const [embedded] = multiscales?.coordinateTransformations ?? []
+    // ngff-zarr stores the matrices of a multiscales entry as Zarr arrays.
+    const embedded = withInlineMatrices(multiscales?.coordinateTransformations?.[0], image)
     expectRegistrationStages(embedded, 3)
     imageStages = embedded?.transformations
   })
@@ -168,6 +181,45 @@ test('registers the 3D MNI pair end to end and downloads the OME-Zarr image and 
     // here); a transposed or garbage matrix would not be.
     for (const [i, row] of composeStages(transform, 3).entries()) {
       expect(Math.abs(row[i]! - 1), `diagonal entry ${i} of ${JSON.stringify(row)}`).toBeLessThan(0.5)
+    }
+  })
+
+  await test.step('download the transform as an OME-Zarr scene: both oriented volumes and the stages between them', async () => {
+    await chooseFormat(page, 'transform', 'ozx-scene')
+    const download = await downloadOutput(page, 'transform')
+    expect(download.suggestedFilename()).toBe(SCENE_OZX)
+    expect(await download.failure()).toBeNull()
+    const bytes = await readFile(await download.path())
+    await expect(page.locator('#status-message')).toContainText(`Downloaded ${SCENE_OZX} (`)
+
+    const { root } = parseOzx(bytes, SCENE_OZX)
+    const [transform] = root.attributes.ome.scene?.coordinateTransformations ?? []
+    expect(transform).toMatchObject({
+      type: 'sequence',
+      name: 'fixed_to_moving',
+      input: { path: 'fixed', name: 'intrinsic' },
+      output: { path: 'moving', name: 'intrinsic' },
+    })
+    expect(transform?.transformations).toEqual(imageStages)
+
+    // ngff-zarr reads it back as a scene, its checks passing.
+    const scene = await readSceneWithNgffZarr(bytes)
+    for (const role of ['fixed', 'moving'] as const) {
+      const facts = await imageFacts(page, 'store', role)
+      const orientations = await page.evaluate(
+        (role) => window.__demo?.state?.state[role]?.ngffImage.axesOrientations,
+        role,
+      )
+      const image = scene.images[role]
+      expect(image?.metadata.name).toBe(stripImageExtension(facts?.name ?? ''))
+      expect(image?.images[0]?.data.shape, `the ${role} image is the volume elastix registered`).toEqual(
+        [...(facts?.size ?? [])].reverse(),
+      )
+      // Each volume keeps the RFC-4 orientation of its NIfTI, which is
+      // what the stages were converted against.
+      expect(orientations, `the ${role} NIfTI is read with an orientation`).toBeDefined()
+      expect(image?.metadata.axes.map((axis) => axis.name)).toEqual(AXES_3D)
+      expect(image?.metadata.axes.map((axis) => axis.orientation)).toEqual(AXES_3D.map((axis) => orientations?.[axis]))
     }
   })
 

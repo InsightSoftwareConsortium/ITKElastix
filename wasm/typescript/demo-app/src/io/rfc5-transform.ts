@@ -1,8 +1,9 @@
 // The registration result as OME-Zarr RFC-5 metadata: the named coordinate
 // systems of the two inputs, the fixed-to-moving transform between them as a
 // `sequence` holding one transformation per elastix stage (translation,
-// rigid, affine), and the two places it is written — embedded in the
-// registered image's multiscales and as a standalone transform-only store.
+// rigid, affine), and the three places it is written — embedded in the
+// registered image's multiscales, as a standalone transform-only store, and
+// in an OME-Zarr scene between the fixed and moving images themselves.
 //
 // ngff-zarr does the arithmetic (`itkTransformToNgffTransform` decodes the
 // ITK parameters, folds the center of rotation into the offset, changes frame
@@ -26,6 +27,7 @@ import {
   itkTransformToNgffMatrix,
   itkTransformToNgffTransform,
   memoryStoreToZip,
+  NgffScene,
   type Affine,
   type Axis,
   type CoordinateSystem,
@@ -51,8 +53,20 @@ export const FIXED_COORDINATE_SYSTEM_NAME = 'fixed'
 /** Coordinate system of the moving image, in both stores. */
 export const MOVING_COORDINATE_SYSTEM_NAME = 'moving'
 
-/** `name` of the transformation, in both stores. */
+/** `name` of the transformation, in every store. */
 export const FIXED_TO_MOVING_TRANSFORM_NAME = 'fixed_to_moving'
+
+/**
+ * Path of each input's image below the group of the OME-Zarr scene, named
+ * for the part the image played in the registration.
+ */
+export const SCENE_IMAGE_PATHS = { fixed: 'fixed', moving: 'moving' } as const
+
+/** An input's part in the registration, which names its image in the scene. */
+export type SceneRole = keyof typeof SCENE_IMAGE_PATHS
+
+/** The scene's two images, by the part each played in the registration. */
+export type SceneImages = Readonly<Record<SceneRole, Multiscales>>
 
 /**
  * `name` of each stage inside the sequence, by the ITK class elastix hands
@@ -540,15 +554,81 @@ export function transformOnlyOzx(
 }
 
 /**
- * Everything the two writers need from one registration: the staged
+ * The coordinate system that the end of `transform` on `role`'s side names,
+ * as `images[role]` declares it: what ngff-zarr's scene writer and reader
+ * resolve that end to. An image declaring no system of its own is written
+ * with the intrinsic one, over its axes, as ngff-zarr's 0.6 writer does.
+ * Throws when the end does not point at the image's path in the scene, or
+ * when the image declares no system of that name.
+ */
+function sceneImageSystem(transform: TransformSequence, images: SceneImages, role: SceneRole): CoordinateSystem {
+  const side = role === 'fixed' ? 'input' : 'output'
+  const identifier = transform[side]
+  const path = SCENE_IMAGE_PATHS[role]
+  if (identifier?.path !== path) {
+    throw new Error(
+      `The fixed-to-moving transform's ${side} points at '${identifier?.path ?? '(no path)'}', ` +
+        `but the scene keeps the ${role} image at '${path}'`,
+    )
+  }
+  const { metadata } = images[role]
+  const systems = metadata.coordinateSystems?.length
+    ? metadata.coordinateSystems
+    : [createCoordinateSystem(INTRINSIC_COORDINATE_SYSTEM_NAME, metadata.axes)]
+  const system = systems.find((candidate) => candidate.name === identifier.name)
+  if (system === undefined) {
+    throw new Error(
+      `The fixed-to-moving transform's ${side} names the coordinate system '${identifier.name ?? '(none)'}' ` +
+        `of the ${role} image, which declares ${JSON.stringify(systems.map((candidate) => candidate.name))}`,
+    )
+  }
+  return system
+}
+
+/**
+ * The OME-Zarr scene of one registration: the fixed and moving images at
+ * their {@link SCENE_IMAGE_PATHS} entries and the staged transform between
+ * their intrinsic systems, for ngff-zarr's `toOmeZarrOzx` to write as
+ *
+ *     zarr.json      ome.scene: fixed_to_moving, fixed -> moving
+ *     fixed/         the fixed image's multiscales
+ *     moving/        the moving image's multiscales
+ *
+ * ngff-zarr checks a scene against the spec before it writes anything: that
+ * both ends resolve, that the images and the transformation form one
+ * connected graph, and that its reader accepts the transformation. This
+ * checks first what that does not ({@link assertTransformMatchesSystems}),
+ * against the systems the images declare, so an affine sized for other axes,
+ * a rotation that is not proper, or a non-finite value is refused rather
+ * than written.
+ */
+export function buildScene(transform: TransformSequence, images: SceneImages): NgffScene {
+  assertTransformMatchesSystems(
+    transform,
+    sceneImageSystem(transform, images, 'fixed'),
+    sceneImageSystem(transform, images, 'moving'),
+  )
+  return new NgffScene({
+    images: { [SCENE_IMAGE_PATHS.fixed]: images.fixed, [SCENE_IMAGE_PATHS.moving]: images.moving },
+    coordinateTransformations: [transform],
+  })
+}
+/**
+ * Everything the three writers need from one registration: the staged
  * transform, its intrinsic-named form for the registered image's own store,
- * and the named systems of both inputs.
+ * its form between the images of the scene, and the named systems of both
+ * inputs.
  */
 export interface Rfc5TransformSet {
   /** From the fixed image's `"fixed"` system to the moving image's. */
   standalone: TransformSequence
   /** The same mapping, from the registered image's intrinsic system. */
   embedded: TransformSequence
+  /**
+   * The same mapping, from the intrinsic system of the scene's fixed image
+   * to that of its moving image, each end naming the image by its path.
+   */
+  scene: TransformSequence
   /** The fixed image's axes, named `"fixed"`. */
   fixedSystem: CoordinateSystem
   /** The moving image's axes, named `"moving"`. */
@@ -556,11 +636,13 @@ export interface Rfc5TransformSet {
 }
 
 /**
- * Build both forms of the fixed-to-moving transform for one registration.
- * The stages are converted once; only the coordinate system the input names
- * differs, because the standalone store has to name the fixed image's system
- * explicitly while the embedded one is the registered image's own intrinsic
- * system.
+ * Build every form of the fixed-to-moving transform for one registration.
+ * The stages are converted once; only the coordinate systems the ends name
+ * differ. The standalone store has to name the fixed image's system
+ * explicitly, the embedded one starts from the registered image's own
+ * intrinsic system, and the scene's runs between the intrinsic systems of
+ * its two images, which hold the levels elastix registered and therefore
+ * sit in the frames the stages were converted for.
  */
 export function buildRfc5TransformSet(
   transform: TransformList,
@@ -581,6 +663,11 @@ export function buildRfc5TransformSet(
   return {
     standalone,
     embedded: { ...standalone, input: { name: INTRINSIC_COORDINATE_SYSTEM_NAME } },
+    scene: {
+      ...standalone,
+      input: { path: SCENE_IMAGE_PATHS.fixed, name: INTRINSIC_COORDINATE_SYSTEM_NAME },
+      output: { path: SCENE_IMAGE_PATHS.moving, name: INTRINSIC_COORDINATE_SYSTEM_NAME },
+    },
     fixedSystem,
     movingSystem,
   }

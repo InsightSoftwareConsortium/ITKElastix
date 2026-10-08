@@ -49,11 +49,11 @@ importers:
         specifier: ^3.14.0
         version: 3.14.0(@floating-ui/utils@0.2.12)(@types/node@22.20.4)(@types/react@19.3.0)
       '@fideus-labs/fiff':
-        specifier: ^0.8.0
-        version: 0.8.0(@fideus-labs/ngff-zarr@0.34.0)(@fideus-labs/worker-pool@2.1.0)
+        specifier: ^0.8.1
+        version: 0.8.1(@fideus-labs/ngff-zarr@0.38.0)(@fideus-labs/worker-pool@2.1.0)
       '@fideus-labs/ngff-zarr':
-        specifier: ^0.34.0
-        version: 0.34.0
+        specifier: ^0.38.0
+        version: 0.38.0
       '@fideus-labs/worker-pool':
         specifier: ^2.1.0
         version: 2.1.0
@@ -307,10 +307,10 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@fideus-labs/fiff@0.8.0':
-    resolution: {integrity: sha512-JOuk2wCKlqcxfBABd2MeD0BI6ePWqBxbx0zVpGVtAsYRLMSu1rqc7KgSW6l0ty2bnhjVQFDD/SXFAjmTemnf2w==}
+  '@fideus-labs/fiff@0.8.1':
+    resolution: {integrity: sha512-FyiJEyl3zuZguAVmvm+qlebPdxnot0imww5PUifNpfDhfwiZ36Fo4Lj8ndVroXVZNyfxCmyKuPYy0J4ETvtFig==}
     peerDependencies:
-      '@fideus-labs/ngff-zarr': ^0.34.0
+      '@fideus-labs/ngff-zarr': ^0.38.0
       '@fideus-labs/worker-pool': ^2.1.0
     peerDependenciesMeta:
       '@fideus-labs/ngff-zarr':
@@ -323,8 +323,8 @@ packages:
     peerDependencies:
       zarrita: ^0.7.0
 
-  '@fideus-labs/ngff-zarr@0.34.0':
-    resolution: {integrity: sha512-U/h/UcFkR3nZZmHBHwBdd+L5JOkRWDC95YQtafIvpbRokM9uiqJ+U+sUNfrbgfaRqPE7SByF9c5Pyd2c0YbPRg==}
+  '@fideus-labs/ngff-zarr@0.38.0':
+    resolution: {integrity: sha512-9yCmil9sV+9durQQ1ozEldkZWnkkkQMfvGa/JU0kLOUsoO7T8ZwPh5E9c+jCZKzq3YR1CHbOEMr6NT/CD7kwQw==}
 
   '@fideus-labs/worker-pool@2.1.0':
     resolution: {integrity: sha512-X/rmGDKS8HbTvWVrUxUn5dUrtolaJYNXM477CxStNupFMOGBEZcUD3CRqE1kVVNiQhN/W6+K/lwIKN/bsGKThw==}
@@ -2449,13 +2449,13 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@fideus-labs/fiff@0.8.0(@fideus-labs/ngff-zarr@0.34.0)(@fideus-labs/worker-pool@2.1.0)':
+  '@fideus-labs/fiff@0.8.1(@fideus-labs/ngff-zarr@0.38.0)(@fideus-labs/worker-pool@2.1.0)':
     dependencies:
       fflate: 0.8.3
       geotiff: 3.0.5
       zarrita: 0.7.5
     optionalDependencies:
-      '@fideus-labs/ngff-zarr': 0.34.0
+      '@fideus-labs/ngff-zarr': 0.38.0
       '@fideus-labs/worker-pool': 2.1.0
 
   '@fideus-labs/fizarrita@3.0.0(zarrita@0.7.5)':
@@ -2463,7 +2463,7 @@ snapshots:
       '@fideus-labs/worker-pool': 2.1.0
       zarrita: 0.7.5
 
-  '@fideus-labs/ngff-zarr@0.34.0':
+  '@fideus-labs/ngff-zarr@0.38.0':
     dependencies:
       '@fideus-labs/fizarrita': 3.0.0(zarrita@0.7.5)
       '@fideus-labs/worker-pool': 2.1.0

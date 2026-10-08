@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
+import { LPS } from '@fideus-labs/ngff-zarr'
 import { strFromU8, unzipSync } from 'fflate'
 
 import type { Transform, TransformList } from 'itk-wasm'
@@ -19,6 +20,7 @@ import {
   omeTiffPlaneCount,
   progressReporter,
   registrationOutputs,
+  axisMetadataFor,
   resultAddsAnatomicalOrientation,
   resultFilename,
   toWriterError,
@@ -26,6 +28,7 @@ import {
   transformForFormat,
   XFM_DIMENSION,
   zipTextFiles,
+  type AxisMetadata,
 } from './export-plan.ts'
 import { imageFormatById, TRANSFORM_FORMATS, transformFormatById } from './formats.ts'
 import type { ImageShapeInfo } from './scale-select.ts'
@@ -64,6 +67,7 @@ test('resultFilename names the file after the result in the format extension', (
 
 test('transformFilename names the transform files after their stem in the format extension', () => {
   assert.equal(transformFilename(transformFormatById('ozx-transform')), 'transform.ome.zarr.ozx')
+  assert.equal(transformFilename(transformFormatById('ozx-scene')), 'scene.ome.zarr.ozx')
   assert.equal(transformFilename(transformFormatById('h5')), 'transform.h5')
   assert.equal(transformFilename(transformFormatById('tfm')), 'transform.tfm')
   assert.equal(transformFilename(transformFormatById('iwt.cbor')), 'transform.iwt.cbor')
@@ -71,6 +75,9 @@ test('transformFilename names the transform files after their stem in the format
   for (const format of TRANSFORM_FORMATS) {
     assert.ok(transformFilename(format).endsWith(format.extension), `${format.id} keeps its extension`)
   }
+  // The two OME-Zarr outputs share an extension, so only the stem tells their downloads apart.
+  const ozxNames = TRANSFORM_FORMATS.filter((format) => format.extension === '.ome.zarr.ozx').map(transformFilename)
+  assert.equal(new Set(ozxNames).size, ozxNames.length)
 })
 
 test('elastixParametersText is the pretty-printed JSON the copy button puts on the clipboard', () => {
@@ -199,6 +206,38 @@ test('resultAddsAnatomicalOrientation trusts the orientation an OME-Zarr or OME-
   assert.equal(resultAddsAnatomicalOrientation(loaded('brain.ome.tif', { x: {}, y: {}, z: {} }), 3), true)
   assert.equal(resultAddsAnatomicalOrientation(loaded('brain.ome.zarr.ozx'), 3), false)
   assert.equal(resultAddsAnatomicalOrientation(loaded('brain.ome.tif'), 3), false)
+})
+
+test('axisMetadataFor keeps the units and orientations of the registered axes, in their order', () => {
+  const [lr, pa, is] = [LPS.x!, LPS.y!, LPS.z!]
+  const image: AxisMetadata = {
+    axesUnits: { t: 'second', z: 'micrometer', y: 'micrometer', x: 'micrometer' },
+    axesOrientations: { x: lr, y: pa, z: is },
+  }
+
+  const metadata = axisMetadataFor(image, ['z', 'y', 'x'])
+  assert.deepEqual(metadata, {
+    axesUnits: { z: 'micrometer', y: 'micrometer', x: 'micrometer' },
+    axesOrientations: { z: is, y: pa, x: lr },
+  })
+  assert.deepEqual(Object.keys(metadata.axesOrientations!), ['z', 'y', 'x'])
+  // A single slice squeezed away leaves its axis out.
+  assert.deepEqual(axisMetadataFor(image, ['y', 'x']), {
+    axesUnits: { y: 'micrometer', x: 'micrometer' },
+    axesOrientations: { y: pa, x: lr },
+  })
+})
+
+test('axisMetadataFor leaves out what the level does not carry for the registered axes', () => {
+  assert.deepEqual(axisMetadataFor({ axesUnits: undefined, axesOrientations: undefined }, ['y', 'x']), {
+    axesUnits: undefined,
+    axesOrientations: undefined,
+  })
+  // Only the channel axis has a unit, and it is not registered.
+  assert.deepEqual(axisMetadataFor({ axesUnits: { c: 'micrometer' }, axesOrientations: undefined }, ['y', 'x']), {
+    axesUnits: undefined,
+    axesOrientations: undefined,
+  })
 })
 
 test('exportScaleFactors is empty for an image that fits the budget', () => {

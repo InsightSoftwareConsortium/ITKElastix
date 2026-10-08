@@ -246,6 +246,7 @@ flowchart TD
   IMG -->|itk| W["writeImage in a worker, keyed on the extension; iwi.cbor encoded in JavaScript"]
   R --> TR{"transform format kind"}
   TR -->|ozx| S["buildRfc5TransformSet → transformOnlyOzx: a scene with the fixed and moving systems"]
+  TR -->|scene| SC["each input's registration level → pyramid → buildScene: an NgffScene with the fixed and moving images → toOmeZarrOzx"]
   TR -->|itk| WT["withTypedParameterArrays → writeTransform, one entry per stage"]
   TR -->|toml| J["transformParameterObject → writeParameterFiles, one chained TOML file per stage → zip"]
 ```
@@ -282,7 +283,15 @@ empty typed arrays, and rewrites the Euler stage as an equivalent `Affine`,
 since ngff-zarr decodes only matrix-storing parameterizations. The
 standalone store is a single group whose `scene` holds the systems and the
 sequence, zipped as RFC-9. The same sequence, with the registered image's
-intrinsic system as its input, is what the image export embeds. The `itk` writer gives `@itk-wasm/transform-io`'s `writeTransform`
+intrinsic system as its input, is what the image export embeds; ngff-zarr's
+writer stores its rotation and affine matrices as Zarr arrays named by
+`path`. The `scene` writer holds the same sequence again, between the images
+themselves: each input's registration level (the scalar ITK-Wasm image
+elastix was given, with the units and orientations of the level it was cut
+from) becomes a pyramid, `buildScene` places the two in an `NgffScene` at
+`fixed` and `moving`, with the sequence running from one's intrinsic system
+to the other's, and ngff-zarr's `toOmeZarrOzx` writes the scene at version
+0.6, reporting chunk progress across both images. The `itk` writer gives `@itk-wasm/transform-io`'s `writeTransform`
 the original list (typed arrays substituted), so an `.h5`, `.tfm`, `.mat`,
 or `.iwt.cbor` holds one entry per stage as ITK wrote it; MINC XFM, which
 holds one 3D linear transform, is given the stages multiplied out into a
@@ -290,7 +299,8 @@ single `Affine` instead (`composedAffineTransform`), a 2D registration's
 lifted into 3D with z passed through. The
 `json` writer serializes the elastix `transformParameterObject`. The
 direction of the transform, the stage sequence and the frame each stage is
-expressed in, the `scene` placement, and the list clean-up are each argued in
+expressed in, the `scene` placement, the scene's images, and the list
+clean-up are each argued in
 [[ome-zarr-transform-output]].
 
 ## Cross-cutting concerns
