@@ -49,8 +49,8 @@ importers:
         specifier: ^3.14.0
         version: 3.14.0(@floating-ui/utils@0.2.12)(@types/node@22.20.4)(@types/react@19.3.0)
       '@fideus-labs/fiff':
-        specifier: ^0.8.1
-        version: 0.8.1(@fideus-labs/ngff-zarr@0.38.0)(@fideus-labs/worker-pool@2.1.0)
+        specifier: ^0.8.2
+        version: 0.8.2(@fideus-labs/ngff-zarr@0.38.0)(@fideus-labs/worker-pool@2.1.0)
       '@fideus-labs/ngff-zarr':
         specifier: ^0.38.0
         version: 0.38.0
@@ -81,9 +81,6 @@ importers:
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
-      geotiff:
-        specifier: ^3.0.5
-        version: 3.0.5
       itk-wasm:
         specifier: ^1.0.0-b.201
         version: 1.0.0-b.201(debug@4.4.3)
@@ -307,8 +304,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@fideus-labs/fiff@0.8.1':
-    resolution: {integrity: sha512-FyiJEyl3zuZguAVmvm+qlebPdxnot0imww5PUifNpfDhfwiZ36Fo4Lj8ndVroXVZNyfxCmyKuPYy0J4ETvtFig==}
+  '@fideus-labs/fiff@0.8.2':
+    resolution: {integrity: sha512-/Mk8S2BaXOi7+VMkul4v3VoJUlDSNxovg8+rI6OOVbhHXMehxj/zbeYs6ePcZ8pZ4h6RpZROw20Sv0oCe3QZ5A==}
     peerDependencies:
       '@fideus-labs/ngff-zarr': ^0.38.0
       '@fideus-labs/worker-pool': ^2.1.0
@@ -2449,7 +2446,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@fideus-labs/fiff@0.8.1(@fideus-labs/ngff-zarr@0.38.0)(@fideus-labs/worker-pool@2.1.0)':
+  '@fideus-labs/fiff@0.8.2(@fideus-labs/ngff-zarr@0.38.0)(@fideus-labs/worker-pool@2.1.0)':
     dependencies:
       fflate: 0.8.3
       geotiff: 3.0.5

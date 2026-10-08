@@ -9,7 +9,6 @@
 import { TiffStore, type DeflatePool, type TiffStoreOptions } from '@fideus-labs/fiff'
 import type { fromOmeZarr } from '@fideus-labs/ngff-zarr/browser'
 import type { WorkerPool } from '@fideus-labs/worker-pool'
-import { fromArrayBuffer, fromBlob, fromUrl, type GeoTIFF } from 'geotiff'
 
 export type { DeflatePool, TiffStore, TiffStoreOptions } from '@fideus-labs/fiff'
 
@@ -72,54 +71,25 @@ function toTiffStoreOptions({ pool, ...rest }: OpenTiffStoreOptions): TiffStoreO
   return pool === undefined ? rest : { ...rest, pool: asDeflatePool(pool) }
 }
 
-/** The geotiff 2.x entry point fiff 0.8 still calls, and where geotiff 3.x keeps it. */
-interface LegacyIfdParsing {
-  parser?: { parseFileDirectoryAt(offset: number): Promise<unknown> }
-  parseFileDirectoryAt?: (offset: number) => Promise<unknown>
-}
-
 /**
- * Make SubIFD pyramid levels readable. fiff 0.8 reaches the sub-resolution
- * IFDs of an OME-TIFF pyramid through `GeoTIFF.parseFileDirectoryAt`, a
- * geotiff 2.x internal that every geotiff 3.x release (fiff's own `^3.0.5`
- * range included) moved onto `GeoTIFF.parser`, so every level but the
- * first fails with "tiff.parseFileDirectoryAt is not a function". Putting
- * the old entry point back on the instance, delegating to the parser,
- * lets fiff's indexer parse the level and build its `GeoTIFFImage` from
- * the parsed directory the same way geotiff 3's own `getImage` does. A
- * no-op once fiff or geotiff no longer needs it.
- */
-export function withSubIfdSupport(tiff: GeoTIFF): GeoTIFF {
-  const instance = tiff as unknown as LegacyIfdParsing
-  const { parser } = instance
-  if (typeof instance.parseFileDirectoryAt !== 'function' && typeof parser?.parseFileDirectoryAt === 'function') {
-    instance.parseFileDirectoryAt = (offset) => parser.parseFileDirectoryAt(offset)
-  }
-  return tiff
-}
-
-/**
- * Open a TIFF as a {@link TiffStore}. The GeoTIFF is opened the way fiff's
- * own `TiffStore.fromBlob` / `fromArrayBuffer` / `fromUrl` do it (geotiff
- * `fromBlob` slices a local file through `FileReader`, so Node callers pass
- * an `ArrayBuffer`; `fromUrl` fetches on demand with HTTP range requests
- * rather than downloading the file whole), given {@link withSubIfdSupport},
- * and handed to `TiffStore.fromGeoTIFF`. Only the IFD headers (and the
- * OME-XML, when present) are read here; pixels are pulled chunk by chunk as
- * the store's `get` is called. `options.pool` moves deflate decoding onto
- * that worker pool.
+ * Open a TIFF as a {@link TiffStore} through fiff's own factories:
+ * `TiffStore.fromBlob` (geotiff slices a local file through `FileReader`,
+ * so Node callers pass an `ArrayBuffer` to `fromArrayBuffer`) or
+ * `TiffStore.fromUrl`, which fetches on demand with HTTP range requests
+ * rather than downloading the file whole. Only the IFD headers (SubIFD
+ * pyramid levels included) and the OME-XML, when present, are read here;
+ * pixels are pulled chunk by chunk as the store's `get` is called.
+ * `options.pool` moves deflate decoding onto that worker pool.
  */
 export async function openTiffStore(source: TiffSource, options: OpenTiffStoreOptions = {}): Promise<TiffStore> {
   const storeOptions = toTiffStoreOptions(options)
-  let tiff: GeoTIFF
   if (typeof source === 'string') {
-    tiff = await fromUrl(source, { headers: storeOptions.headers })
-  } else if (source instanceof ArrayBuffer) {
-    tiff = await fromArrayBuffer(source)
-  } else {
-    tiff = await fromBlob(source)
+    return TiffStore.fromUrl(source, storeOptions)
   }
-  return TiffStore.fromGeoTIFF(withSubIfdSupport(tiff), storeOptions)
+  if (source instanceof ArrayBuffer) {
+    return TiffStore.fromArrayBuffer(source, storeOptions)
+  }
+  return TiffStore.fromBlob(source, storeOptions)
 }
 
 /** Whether the file carried OME-XML, so it is an OME-TIFF rather than a plain TIFF. */
