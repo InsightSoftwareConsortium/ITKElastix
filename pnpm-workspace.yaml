@@ -1,3 +1,6 @@
 packages:
   - 'wasm/typescript'
   - 'wasm/typescript/demo-app'
+
+overrides:
+  tar: 7.5.22
