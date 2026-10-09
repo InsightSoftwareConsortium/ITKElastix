@@ -5,7 +5,8 @@
   "main": "\"\"",
   "scripts": {
     "test": "npm run downsample-register",
-    "downsample-register": "node ./downsample-register.mjs"
+    "downsample-register": "node ./downsample-register.mjs",
+    "postinstall": "patch-package"
   },
   "repository": {
     "type": "git",
@@ -29,5 +30,8 @@
   },
   "overrides": {
     "tar": "7.5.22"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.0"
   }
 }

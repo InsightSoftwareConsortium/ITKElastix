@@ -4,3 +4,6 @@ packages:
 
 overrides:
   tar: 7.5.22
+
+patchedDependencies:
+  '@itk-wasm/dam@1.1.1': pnpm-patches/@itk-wasm__dam@1.1.1.patch
