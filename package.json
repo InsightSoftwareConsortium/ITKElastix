@@ -21,10 +21,16 @@
     "python-package-name": "itkwasm-elastix",
     "python-output-dir": "wasm/python"
   },
-  "scripts": {},
+  "scripts": {
+    "postinstall": "patch-package"
+  },
   "license": "Apache-2.0",
   "devDependencies": {
     "@itk-wasm/dam": "^1.1.1",
-    "itk-wasm": "^1.0.0-b.201"
+    "itk-wasm": "^1.0.0-b.201",
+    "patch-package": "^8.0.0"
+  },
+  "overrides": {
+    "tar": "7.5.22"
   }
 }
