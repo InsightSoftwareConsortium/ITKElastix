@@ -1,6 +1,7 @@
 // Viewer behaviour: the four panels (two per comparison) navigate together
 // in every direction (the crosshair through world millimetres, the 2D pan
-// and zoom, the 3D camera), the link survives the result switch swapping
+// and zoom, the 3D camera; the mouse wheel zooms them all and the right
+// button pans them), the link survives the result switch swapping
 // the result comparison's moving side, "Reset view" restores the defaults
 // on all of them and centres the comparison dividers, the slice layout
 // picker is hidden for a 2D pair and drives every panel for a 3D pair,
@@ -154,6 +155,26 @@ test('links navigation across the four panels, across the result switch, and res
     await navigate(page, 'result-moving', { crosshair: [0.5, 0.55, 0.5], pan: [-2, -2, 0, 1.75] })
     await expectPanelsToAgree(page)
     expect(closeTo((await viewFacts(page, 'inputs-moving'))!.pan, [-2, -2, 0, 1.75])).toBe(true)
+  })
+
+  await test.step('the mouse wheel zooms every panel', async () => {
+    const before = (await viewFacts(page, 'inputs-fixed'))!.pan[3]!
+    const box = (await page.locator('[data-comparison="inputs"]').boundingBox())!
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.4)
+    await page.mouse.wheel(0, -100)
+    await expect.poll(async () => (await viewFacts(page, 'inputs-fixed'))!.pan[3]).toBeGreaterThan(before)
+    await expectPanelsToAgree(page)
+  })
+
+  await test.step('dragging with the right button pans every panel', async () => {
+    const before = (await viewFacts(page, 'inputs-fixed'))!.pan
+    const box = (await page.locator('[data-comparison="inputs"]').boundingBox())!
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.4)
+    await page.mouse.down({ button: 'right' })
+    await page.mouse.move(box.x + box.width * 0.4, box.y + box.height * 0.5, { steps: 5 })
+    await page.mouse.up({ button: 'right' })
+    await expect.poll(async () => closeTo((await viewFacts(page, 'inputs-fixed'))!.pan, before)).toBe(false)
+    await expectPanelsToAgree(page)
   })
 
   await test.step('"Reset view" returns every panel to the defaults, centred on the fixed image', async () => {
