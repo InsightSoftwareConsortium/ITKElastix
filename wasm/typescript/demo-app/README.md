@@ -28,7 +28,8 @@ in WebAssembly and web workers; nothing is uploaded.
   once a run has finished (a switch brings the moving image back for a
   before/after of its own). The two dividers move together. The four niivue
   panels behind them navigate together (crosshair, pan and zoom, and 3D
-  camera; 2D images are drawn without the crosshair), with axial, coronal,
+  camera; 2D images are drawn without the crosshair; the mouse wheel zooms
+  about the pointer and the right button pans), with axial, coronal,
   sagittal, multiplanar, and 3D-render layouts for volumes (the render uses
   gradient opacity, so flat regions turn transparent and surfaces stay
   solid), a colormap for each side, and an "Image details" list under each

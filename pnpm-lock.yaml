@@ -73,8 +73,8 @@ importers:
         specifier: ^1.2.1
         version: 1.2.1
       '@niivue/niivue':
-        specifier: 1.0.0-rc.16
-        version: 1.0.0-rc.16
+        specifier: 1.0.0-rc.21
+        version: 1.0.0-rc.21
       cbor-x:
         specifier: ^1.6.6
         version: 1.6.6
@@ -443,8 +443,8 @@ packages:
   '@niivue/cbor-loader@1.2.1':
     resolution: {integrity: sha512-ggSCbMFChShwcgWaPQNYnTDff4SD1uVQ20CmqNJRp5NETOJOqICKOciELqlGoUt0WASMsNc6WmfJv+kF6bsBMA==}
 
-  '@niivue/niivue@1.0.0-rc.16':
-    resolution: {integrity: sha512-ACDAQtuFzP7OhDEFT9iml57nyd7oqAjMAY3g1UPAt2nCmLtxK66BYF3GxBhQvKYbNyN8jCqJBMVwqAD42bLC5g==}
+  '@niivue/niivue@1.0.0-rc.21':
+    resolution: {integrity: sha512-Rf7y9nQE3XohShrlMMGfwLRU33vBf9KLA4Al9GFobjg9y2tFPuftUo5CXNfpGA9kvBRg4IgxO84kgy2Vm2pqbg==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -2665,7 +2665,7 @@ snapshots:
       cbor-x: 1.6.6
       nifti-reader-js: 0.7.1
 
-  '@niivue/niivue@1.0.0-rc.16':
+  '@niivue/niivue@1.0.0-rc.21':
     dependencies:
       cbor-x: 1.6.6
       clipper2-ts: 2.0.1-18

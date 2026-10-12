@@ -19,7 +19,7 @@
 // changing), so the picture is never stretched. The four panels the demo
 // mounts, two per comparison, are named in src/viewer/comparison-options.ts.
 import type { Image } from 'itk-wasm'
-import { NiiVue, SLICE_TYPE, type BackendType, type SyncOpts } from '@niivue/niivue'
+import { DRAG_MODE, NiiVue, SLICE_TYPE, type BackendType, type SyncOpts } from '@niivue/niivue'
 import { iwi2nii } from '@niivue/cbor-loader'
 
 import { imageToIwiCborBytes } from '../io/iwi-cbor'
@@ -236,6 +236,10 @@ export async function createViewerPanel(
     isColorbarVisible: false,
     crosshairWidth: CROSSHAIR_WIDTH,
     sliceType: SLICE_TYPE.AXIAL,
+    // niivue zooms 2D views on the wheel only when a drag mode pans (it steps
+    // slices otherwise), so the right button pans in place of contrast.
+    secondaryDragMode: DRAG_MODE.pan,
+    wheelZoomAnchor: 'pointer',
   })
   await nv.attachToCanvas(canvas)
   ensureIwiLoader(nv)
