@@ -211,5 +211,5 @@ set_tests_properties(read-parameter-files-toml-round-trip-matches-test PROPERTIE
 add_test(NAME default-parameter-map-test
   COMMAND default-parameter-map
     affine
-    ${CMAKE_CURRENT_BINARY_DIR}/affine_default_parameters.json
+    ${CMAKE_CURRENT_BINARY_DIR}/affine_default_parameters.toml
   )
